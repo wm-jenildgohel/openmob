@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-03-24T12:32:02.707Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-03-24T12:38:52.492Z"
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -55,6 +55,7 @@ Plan: 4 of 4
 | Phase 03 P01 | 4min | 1 tasks | 6 files |
 | Phase 03 P02 | 4min | 2 tasks | 5 files |
 | Phase 03 P03 | 3min | 1 tasks | 5 files |
+| Phase 03 P04 | 4min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,9 @@ Recent decisions affecting current work:
 - [Phase 03]: crossterm RAII guard for terminal raw mode restore
 - [Phase 03]: CorsLayer::permissive() for localhost-only server (safe for local dev)
 - [Phase 03]: serde_json::json! macro for IntoResponse flexibility in inject handler
+- [Phase 03]: Top-level TerminalRestoreGuard as safety net separate from Bridge's internal RawModeGuard
+- [Phase 03]: signal_handler() async fn with cfg(unix) for SIGTERM, cfg(not(unix)) for Windows
+- [Phase 03]: Bridge::shutdown() public method for external cancel trigger from signal handler
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T12:32:02.703Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-03-24T12:38:52.486Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: None
