@@ -1,9 +1,11 @@
 mod ansi;
 mod bridge;
 mod busy_detector;
+mod handlers;
 mod patterns;
 mod pty_handler;
 mod queue;
+mod server;
 
 use clap::Parser;
 
