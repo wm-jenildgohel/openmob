@@ -46,5 +46,10 @@ Future<void> main() async {
   // Initial device scan
   await deviceManager.refreshDevices();
 
+  // Poll devices every 5 seconds for real-time status
+  Stream.periodic(const Duration(seconds: 5)).listen((_) {
+    deviceManager.refreshDevices();
+  });
+
   runApp(const OpenMobApp());
 }
