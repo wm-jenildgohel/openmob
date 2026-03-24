@@ -64,7 +64,7 @@ Plans:
   5. AiBridge binds to 127.0.0.1 only, supports --paranoid mode (review before submit), and handles synchronous injection with configurable --timeout
 **Plans**: 4 plans
 Plans:
-- [ ] 03-01-PLAN.md -- Rust Cargo scaffold, portable-pty PTY module, ANSI stripping, agent patterns, clap CLI
+- [x] 03-01-PLAN.md -- Rust Cargo scaffold, portable-pty PTY module, ANSI stripping, agent patterns, clap CLI
 - [ ] 03-02-PLAN.md -- BusyDetector, InjectionQueue, Bridge orchestrator with tokio tasks
 - [ ] 03-03-PLAN.md -- Axum HTTP server with all 5 API endpoints (health, status, inject, queue clear)
 - [ ] 03-04-PLAN.md -- CLI wiring, tool detection, Makefile for cross-compilation
@@ -102,6 +102,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Hub Core + Android Device Layer | 0/4 | Planning complete | - |
 | 2. MCP Server + iOS Simulator | 0/2 | Planning complete | - |
-| 3. AiBridge CLI | 0/4 | Planning complete (Rust) | - |
+| 3. AiBridge CLI | 1/4 | In Progress|  |
 | 4. End-to-End Integration + Hub Polish | 0/TBD | Not started | - |
 | 5. QA & Testing | 0/TBD | Not started | - |

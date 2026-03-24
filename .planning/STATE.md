@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-24T11:27:47.394Z"
+status: Ready to execute
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-24T12:19:44.859Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 10
+  completed_plans: 7
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** AI coding agents can see what's on a mobile device screen and interact with it programmatically -- no quotas, no limits, completely self-hosted.
-**Current focus:** Phase 02 — MCP Server + iOS Simulator
+**Current focus:** Phase 03 — AiBridge CLI
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 03 (AiBridge CLI) — EXECUTING
+Plan: 2 of 4
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Plan: Not started
 | Phase 01 P04 | 4min | 3 tasks | 7 files |
 | Phase 02 P01 | 5min | 2 tasks | 8 files |
 | Phase 02 P02 | 3min | 2 tasks | 18 files |
+| Phase 03 P01 | 4min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,10 @@ Recent decisions affecting current work:
 - [Phase 02]: Nullable optional DI pattern -- services receive SimctlService?/IdbService? where null means unavailable
 - [Phase 02]: Cached isAvailable check -- single process check, cached for service lifetime
 - [Phase 02]: Platform routing via device.platform field, not ID format heuristics
+- [Phase 03]: take_writer() for PTY write handle (portable-pty 0.8 API)
+- [Phase 03]: anyhow crate for ergonomic error handling in PTY operations
+- [Phase 03]: OnceLock for static builtin_patterns storage in detect_agent
+- [Phase 03]: Rust edition 2021 for broader compatibility
 
 ### Pending Todos
 
@@ -92,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T11:22:54.127Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-24T12:19:44.854Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
