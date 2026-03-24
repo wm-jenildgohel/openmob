@@ -3,9 +3,17 @@ import 'package:window_manager/window_manager.dart';
 
 import 'server/api_server.dart';
 import 'services/adb_service.dart';
+import 'services/action_service.dart';
+import 'services/device_manager.dart';
+import 'services/screenshot_service.dart';
+import 'services/ui_tree_service.dart';
 import 'app.dart';
 
 late final AdbService adbService;
+late final DeviceManager deviceManager;
+late final ScreenshotService screenshotService;
+late final UiTreeService uiTreeService;
+late final ActionService actionService;
 late final ApiServer apiServer;
 
 Future<void> main() async {
@@ -26,8 +34,17 @@ Future<void> main() async {
 
   // Initialize services
   adbService = AdbService();
-  apiServer = ApiServer();
+  deviceManager = DeviceManager(adbService);
+  screenshotService = ScreenshotService(adbService);
+  uiTreeService = UiTreeService(adbService);
+  actionService = ActionService(adbService, uiTreeService);
+
+  // Start API server with all services wired in
+  apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService);
   await apiServer.start();
+
+  // Initial device scan
+  await deviceManager.refreshDevices();
 
   runApp(const OpenMobApp());
 }
