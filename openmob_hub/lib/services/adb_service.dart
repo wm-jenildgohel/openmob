@@ -1,0 +1,75 @@
+import 'dart:io';
+import 'dart:convert';
+import 'package:process_run/process_run.dart';
+
+class AdbService {
+  String? _adbPath;
+
+  Future<String> get adbPath async {
+    if (_adbPath != null) return _adbPath!;
+    // Try ANDROID_HOME first
+    final androidHome = Platform.environment['ANDROID_HOME'] ??
+        Platform.environment['ANDROID_SDK_ROOT'];
+    if (androidHome != null) {
+      final candidate = '$androidHome/platform-tools/adb';
+      if (await File(candidate).exists()) {
+        _adbPath = candidate;
+        return _adbPath!;
+      }
+    }
+    // Fallback to PATH lookup
+    final which = whichSync('adb');
+    if (which != null) {
+      _adbPath = which;
+      return _adbPath!;
+    }
+    throw Exception('ADB not found. Set ANDROID_HOME or add adb to PATH.');
+  }
+
+  Future<ProcessResult> run(
+    String serial,
+    List<String> args, {
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final adb = await adbPath;
+    final fullArgs = ['-s', serial, ...args];
+    return Process.run(adb, fullArgs, stdoutEncoding: utf8);
+  }
+
+  Future<List<int>> runBinary(String serial, List<String> args) async {
+    final adb = await adbPath;
+    final fullArgs = ['-s', serial, ...args];
+    final process = await Process.start(adb, fullArgs);
+    final bytes = await process.stdout.fold<List<int>>(
+      [],
+      (prev, chunk) => prev..addAll(chunk),
+    );
+    await process.exitCode;
+    return bytes;
+  }
+
+  Future<ProcessResult> runGlobal(List<String> args) async {
+    final adb = await adbPath;
+    return Process.run(adb, args, stdoutEncoding: utf8);
+  }
+
+  /// Parse 'adb devices' raw output into serial+status pairs
+  Future<List<({String serial, String status, bool isEmulator, bool isWifi})>>
+      listRawDevices() async {
+    final result = await runGlobal(['devices']);
+    final lines = (result.stdout as String).split('\n');
+    return lines
+        .skip(1)
+        .where((l) => l.trim().isNotEmpty)
+        .map((line) {
+          final parts = line.split(RegExp(r'\s+'));
+          return (
+            serial: parts[0],
+            status: parts.length > 1 ? parts[1] : 'unknown',
+            isEmulator: parts[0].startsWith('emulator-'),
+            isWifi: parts[0].contains(':'),
+          );
+        })
+        .toList();
+  }
+}
