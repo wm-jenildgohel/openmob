@@ -62,7 +62,12 @@ Plans:
   3. User can check agent status via GET /health and GET /status, and manage the injection queue via DELETE /queue
   4. AiBridge correctly detects idle state for Claude Code, Codex CLI, and Gemini CLI using built-in regex patterns, with support for custom --busy-pattern
   5. AiBridge binds to 127.0.0.1 only, supports --paranoid mode (review before submit), and handles synchronous injection with configurable --timeout
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 03-01-PLAN.md -- Go project scaffold, PTY module, ANSI stripping, agent patterns, Cobra CLI
+- [ ] 03-02-PLAN.md -- BusyDetector, injection Queue, Bridge orchestrator
+- [ ] 03-03-PLAN.md -- HTTP server with all 5 API endpoints
+- [ ] 03-04-PLAN.md -- CLI wiring, tool detection, Makefile for cross-compilation
 
 ### Phase 4: End-to-End Integration + Hub Polish
 **Goal**: All three components work together as a unified system -- the Hub manages MCP server and AiBridge lifecycles, and the full AI-sees-device-and-acts loop works end-to-end
@@ -97,6 +102,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Hub Core + Android Device Layer | 0/4 | Planning complete | - |
 | 2. MCP Server + iOS Simulator | 0/2 | Planning complete | - |
-| 3. AiBridge CLI | 0/TBD | Not started | - |
+| 3. AiBridge CLI | 0/4 | Planning complete | - |
 | 4. End-to-End Integration + Hub Polish | 0/TBD | Not started | - |
 | 5. QA & Testing | 0/TBD | Not started | - |
