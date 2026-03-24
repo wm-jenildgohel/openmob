@@ -260,6 +260,11 @@ impl Bridge {
     pub fn queue(&self) -> &InjectionQueue {
         &self.queue
     }
+
+    /// Trigger graceful shutdown: cancels all tasks and kills the child process.
+    pub fn shutdown(&self) {
+        self.cancel.cancel();
+    }
 }
 
 /// RAII guard to restore terminal state when dropped.
