@@ -122,7 +122,66 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| — | — | — |
+| DEV-01 | Phase 1 | Pending |
+| DEV-02 | Phase 1 | Pending |
+| DEV-03 | Phase 1 | Pending |
+| DEV-04 | Phase 1 | Pending |
+| DEV-05 | Phase 2 | Pending |
+| DEV-06 | Phase 1 | Pending |
+| DEV-07 | Phase 1 | Pending |
+| UI-01 | Phase 1 | Pending |
+| UI-02 | Phase 1 | Pending |
+| UI-03 | Phase 2 | Pending |
+| UI-04 | Phase 1 | Pending |
+| UI-05 | Phase 1 | Pending |
+| ACT-01 | Phase 1 | Pending |
+| ACT-02 | Phase 1 | Pending |
+| ACT-03 | Phase 1 | Pending |
+| ACT-04 | Phase 1 | Pending |
+| ACT-05 | Phase 1 | Pending |
+| ACT-06 | Phase 1 | Pending |
+| ACT-07 | Phase 1 | Pending |
+| ACT-08 | Phase 1 | Pending |
+| ACT-09 | Phase 1 | Pending |
+| ACT-10 | Phase 1 | Pending |
+| MCP-01 | Phase 2 | Pending |
+| MCP-02 | Phase 2 | Pending |
+| MCP-03 | Phase 2 | Pending |
+| MCP-04 | Phase 2 | Pending |
+| MCP-05 | Phase 2 | Pending |
+| MCP-06 | Phase 2 | Pending |
+| MCP-07 | Phase 2 | Pending |
+| MCP-08 | Phase 2 | Pending |
+| MCP-09 | Phase 2 | Pending |
+| MCP-10 | Phase 2 | Pending |
+| MCP-11 | Phase 2 | Pending |
+| MCP-12 | Phase 2 | Pending |
+| MCP-13 | Phase 5 | Pending |
+| BRG-01 | Phase 3 | Pending |
+| BRG-02 | Phase 3 | Pending |
+| BRG-03 | Phase 3 | Pending |
+| BRG-04 | Phase 3 | Pending |
+| BRG-05 | Phase 3 | Pending |
+| BRG-06 | Phase 3 | Pending |
+| BRG-07 | Phase 3 | Pending |
+| BRG-08 | Phase 3 | Pending |
+| BRG-09 | Phase 3 | Pending |
+| BRG-10 | Phase 3 | Pending |
+| QA-01 | Phase 5 | Pending |
+| QA-02 | Phase 5 | Pending |
+| QA-03 | Phase 5 | Pending |
+| QA-04 | Phase 5 | Pending |
+| HUB-01 | Phase 1 | Pending |
+| HUB-02 | Phase 4 | Pending |
+| HUB-03 | Phase 4 | Pending |
+| HUB-04 | Phase 4 | Pending |
+| HUB-05 | Phase 4 | Pending |
+| HUB-06 | Phase 1 | Pending |
+| HUB-07 | Phase 1 | Pending |
+| FREE-01 | Phase 1 | Pending |
+| FREE-02 | Phase 1 | Pending |
+| FREE-03 | Phase 1 | Pending |
+| FREE-04 | Phase 1 | Pending |
 
 ---
-*Last updated: 2026-03-24 after requirements definition*
+*Last updated: 2026-03-24 after roadmap creation*
