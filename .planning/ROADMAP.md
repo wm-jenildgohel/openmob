@@ -66,7 +66,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md -- Rust Cargo scaffold, portable-pty PTY module, ANSI stripping, agent patterns, clap CLI
 - [x] 03-02-PLAN.md -- BusyDetector, InjectionQueue, Bridge orchestrator with tokio tasks
-- [ ] 03-03-PLAN.md -- Axum HTTP server with all 5 API endpoints (health, status, inject, queue clear)
+- [x] 03-03-PLAN.md -- Axum HTTP server with all 5 API endpoints (health, status, inject, queue clear)
 - [ ] 03-04-PLAN.md -- CLI wiring, tool detection, Makefile for cross-compilation
 
 ### Phase 4: End-to-End Integration + Hub Polish
