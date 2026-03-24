@@ -1,6 +1,8 @@
 mod ansi;
+mod busy_detector;
 mod patterns;
 mod pty_handler;
+mod queue;
 
 use clap::Parser;
 
