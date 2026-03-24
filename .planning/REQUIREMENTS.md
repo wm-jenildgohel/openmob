@@ -14,7 +14,7 @@
 - [x] **DEV-02**: User can connect to Android devices via USB using ADB
 - [x] **DEV-03**: User can connect to Android devices via WiFi ADB (adb tcpip + adb connect)
 - [x] **DEV-04**: User can connect to Android emulators (auto-detected via ADB)
-- [ ] **DEV-05**: User can connect to iOS simulators via xcrun simctl (macOS only)
+- [x] **DEV-05**: User can connect to iOS simulators via xcrun simctl (macOS only)
 - [x] **DEV-06**: User can retrieve device metadata (model, OS, screen resolution, battery) for AI context
 - [x] **DEV-07**: User can start and stop device automation bridge per device
 
@@ -22,7 +22,7 @@
 
 - [x] **UI-01**: User can capture a screenshot from any connected device and receive it as base64-encoded PNG
 - [x] **UI-02**: User can extract the UI accessibility tree from Android devices (uiautomator dump)
-- [ ] **UI-03**: User can extract the UI accessibility tree from iOS simulators (simctl accessibility)
+- [x] **UI-03**: User can extract the UI accessibility tree from iOS simulators (simctl accessibility)
 - [x] **UI-04**: Each element in the UI tree has a stable index number for AI reference (e.g., "tap element #3")
 - [x] **UI-05**: User can filter the UI tree by text regex, bounds, and visibility to reduce LLM context noise
 
@@ -126,12 +126,12 @@
 | DEV-02 | Phase 1 | Complete |
 | DEV-03 | Phase 1 | Complete |
 | DEV-04 | Phase 1 | Complete |
-| DEV-05 | Phase 2 | Pending |
+| DEV-05 | Phase 2 | Complete |
 | DEV-06 | Phase 1 | Complete |
 | DEV-07 | Phase 1 | Complete |
 | UI-01 | Phase 1 | Complete |
 | UI-02 | Phase 1 | Complete |
-| UI-03 | Phase 2 | Pending |
+| UI-03 | Phase 2 | Complete |
 | UI-04 | Phase 1 | Complete |
 | UI-05 | Phase 1 | Complete |
 | ACT-01 | Phase 1 | Complete |

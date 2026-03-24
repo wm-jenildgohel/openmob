@@ -49,7 +49,7 @@ Plans:
   4. All MCP tool calls route through the Hub HTTP API (MCP server is stateless, Hub is single source of truth)
 **Plans**: 2 plans
 Plans:
-- [ ] 02-01-PLAN.md -- iOS Simulator support in Hub (SimctlService, IdbService, platform-aware routing)
+- [x] 02-01-PLAN.md -- iOS Simulator support in Hub (SimctlService, IdbService, platform-aware routing)
 - [x] 02-02-PLAN.md -- TypeScript MCP server with all 11 device tools via stdio transport
 
 ### Phase 3: AiBridge CLI

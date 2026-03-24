@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-24T11:20:13.061Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-24T11:22:54.131Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** AI coding agents can see what's on a mobile device screen and interact with it programmatically -- no quotas, no limits, completely self-hosted.
-**Current focus:** Phase 01 — Hub Core + Android Device Layer
+**Current focus:** Phase 02 — MCP Server + iOS Simulator
 
 ## Current Position
 
 Phase: 2
-Plan: Not started
+Plan: 2 of 2 (complete)
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Plan: Not started
 | Phase 01 P02 | 2min | 2 tasks | 3 files |
 | Phase 01 P03 | 3min | 2 tasks | 6 files |
 | Phase 01 P04 | 4min | 3 tasks | 7 files |
+| Phase 02 P01 | 5min | 2 tasks | 8 files |
 | Phase 02 P02 | 3min | 2 tasks | 18 files |
 
 ## Accumulated Context
@@ -75,6 +76,10 @@ Recent decisions affecting current work:
 - [Phase 02]: zod v3 (3.25.76) used instead of v4 -- MCP SDK 1.27.1 peer-depends on zod v3
 - [Phase 02]: Each MCP tool in separate file with register function pattern for clean modularity
 - [Phase 02]: Native fetch for Hub HTTP calls -- built into Node.js 22+, no extra deps
+- [Phase 02]: SimctlService and IdbService as separate classes for independent availability
+- [Phase 02]: Nullable optional DI pattern -- services receive SimctlService?/IdbService? where null means unavailable
+- [Phase 02]: Cached isAvailable check -- single process check, cached for service lifetime
+- [Phase 02]: Platform routing via device.platform field, not ID format heuristics
 
 ### Pending Todos
 
@@ -87,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T11:20:13.057Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-24T11:22:54.127Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
