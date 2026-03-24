@@ -28,16 +28,16 @@
 
 ### Device Interaction
 
-- [ ] **ACT-01**: User can tap at specific x,y coordinates on any connected device
-- [ ] **ACT-02**: User can tap a UI element by its index number (resolves to center of element bounds)
-- [ ] **ACT-03**: User can type text into the currently focused input field
-- [ ] **ACT-04**: User can perform swipe gestures (up, down, left, right) with configurable distance and duration
-- [ ] **ACT-05**: User can press hardware/soft keys (Home, Back, Enter, Volume Up/Down, Power)
-- [ ] **ACT-06**: User can navigate to home screen with a single command
-- [ ] **ACT-07**: User can launch any app by package name (Android) or bundle ID (iOS)
-- [ ] **ACT-08**: User can terminate/kill a running app
-- [ ] **ACT-09**: User can open a URL or deep link on the device
-- [ ] **ACT-10**: User can perform any interaction that is humanly possible on the device (long press, pinch, multi-touch)
+- [x] **ACT-01**: User can tap at specific x,y coordinates on any connected device
+- [x] **ACT-02**: User can tap a UI element by its index number (resolves to center of element bounds)
+- [x] **ACT-03**: User can type text into the currently focused input field
+- [x] **ACT-04**: User can perform swipe gestures (up, down, left, right) with configurable distance and duration
+- [x] **ACT-05**: User can press hardware/soft keys (Home, Back, Enter, Volume Up/Down, Power)
+- [x] **ACT-06**: User can navigate to home screen with a single command
+- [x] **ACT-07**: User can launch any app by package name (Android) or bundle ID (iOS)
+- [x] **ACT-08**: User can terminate/kill a running app
+- [x] **ACT-09**: User can open a URL or deep link on the device
+- [x] **ACT-10**: User can perform any interaction that is humanly possible on the device (long press, pinch, multi-touch)
 
 ### MCP Server
 
@@ -134,16 +134,16 @@
 | UI-03 | Phase 2 | Pending |
 | UI-04 | Phase 1 | Complete |
 | UI-05 | Phase 1 | Complete |
-| ACT-01 | Phase 1 | Pending |
-| ACT-02 | Phase 1 | Pending |
-| ACT-03 | Phase 1 | Pending |
-| ACT-04 | Phase 1 | Pending |
-| ACT-05 | Phase 1 | Pending |
-| ACT-06 | Phase 1 | Pending |
-| ACT-07 | Phase 1 | Pending |
-| ACT-08 | Phase 1 | Pending |
-| ACT-09 | Phase 1 | Pending |
-| ACT-10 | Phase 1 | Pending |
+| ACT-01 | Phase 1 | Complete |
+| ACT-02 | Phase 1 | Complete |
+| ACT-03 | Phase 1 | Complete |
+| ACT-04 | Phase 1 | Complete |
+| ACT-05 | Phase 1 | Complete |
+| ACT-06 | Phase 1 | Complete |
+| ACT-07 | Phase 1 | Complete |
+| ACT-08 | Phase 1 | Complete |
+| ACT-09 | Phase 1 | Complete |
+| ACT-10 | Phase 1 | Complete |
 | MCP-01 | Phase 2 | Pending |
 | MCP-02 | Phase 2 | Pending |
 | MCP-03 | Phase 2 | Pending |
