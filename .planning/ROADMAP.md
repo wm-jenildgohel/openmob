@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. User can perform tap (by coordinate or element index), swipe, type text, press keys, launch/terminate apps, open URLs, and advanced gestures on any connected Android device via the HTTP API
 **Plans**: 4 plans
 Plans:
-- [ ] 01-01-PLAN.md -- Flutter project scaffold, models, constants, ADB service, HTTP server skeleton
+- [x] 01-01-PLAN.md -- Flutter project scaffold, models, constants, ADB service, HTTP server skeleton
 - [ ] 01-02-PLAN.md -- DeviceManager, ScreenshotService, UiTreeService
 - [ ] 01-03-PLAN.md -- ActionService, all HTTP API route handlers, wiring
 - [ ] 01-04-PLAN.md -- Desktop UI (home screen, device detail, device card, connection badge)

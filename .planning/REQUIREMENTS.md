@@ -82,15 +82,15 @@
 - [ ] **HUB-03**: Hub provides start/stop bridge controls per device
 - [ ] **HUB-04**: Hub shows device/bridge logs in a scrollable log viewer
 - [ ] **HUB-05**: Hub manages MCP server and AiBridge process lifecycle (start/stop/restart)
-- [ ] **HUB-06**: Hub runs entirely locally with zero cloud dependency
-- [ ] **HUB-07**: Hub works on Windows, macOS, and Linux
+- [x] **HUB-06**: Hub runs entirely locally with zero cloud dependency
+- [x] **HUB-07**: Hub works on Windows, macOS, and Linux
 
 ### Self-Hosted & Free
 
-- [ ] **FREE-01**: No usage quotas, no daily point limits, no device limits
-- [ ] **FREE-02**: Fully offline operation — no license validation, no telemetry, no phone-home
-- [ ] **FREE-03**: All components bind to localhost only by default (security)
-- [ ] **FREE-04**: MIT licensed, fully open source
+- [x] **FREE-01**: No usage quotas, no daily point limits, no device limits
+- [x] **FREE-02**: Fully offline operation — no license validation, no telemetry, no phone-home
+- [x] **FREE-03**: All components bind to localhost only by default (security)
+- [x] **FREE-04**: MIT licensed, fully open source
 
 ---
 
@@ -176,12 +176,12 @@
 | HUB-03 | Phase 4 | Pending |
 | HUB-04 | Phase 4 | Pending |
 | HUB-05 | Phase 4 | Pending |
-| HUB-06 | Phase 1 | Pending |
-| HUB-07 | Phase 1 | Pending |
-| FREE-01 | Phase 1 | Pending |
-| FREE-02 | Phase 1 | Pending |
-| FREE-03 | Phase 1 | Pending |
-| FREE-04 | Phase 1 | Pending |
+| HUB-06 | Phase 1 | Complete |
+| HUB-07 | Phase 1 | Complete |
+| FREE-01 | Phase 1 | Complete |
+| FREE-02 | Phase 1 | Complete |
+| FREE-03 | Phase 1 | Complete |
+| FREE-04 | Phase 1 | Complete |
 
 ---
 *Last updated: 2026-03-24 after roadmap creation*
