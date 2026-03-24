@@ -47,7 +47,10 @@ Plans:
   2. AI agent can list connected devices, capture screenshots, read UI trees, and perform all device interactions through MCP tool calls
   3. User can connect to iOS Simulators on macOS and perform screenshot capture, UI tree extraction, and device interactions via the same MCP tools
   4. All MCP tool calls route through the Hub HTTP API (MCP server is stateless, Hub is single source of truth)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 02-01-PLAN.md -- iOS Simulator support in Hub (SimctlService, IdbService, platform-aware routing)
+- [ ] 02-02-PLAN.md -- TypeScript MCP server with all 11 device tools via stdio transport
 
 ### Phase 3: AiBridge CLI
 **Goal**: Users can wrap any terminal AI agent with AiBridge to enable automatic context injection when the agent is idle
@@ -93,7 +96,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Hub Core + Android Device Layer | 0/4 | Planning complete | - |
-| 2. MCP Server + iOS Simulator | 0/TBD | Not started | - |
+| 2. MCP Server + iOS Simulator | 0/2 | Planning complete | - |
 | 3. AiBridge CLI | 0/TBD | Not started | - |
 | 4. End-to-End Integration + Hub Polish | 0/TBD | Not started | - |
 | 5. QA & Testing | 0/TBD | Not started | - |
