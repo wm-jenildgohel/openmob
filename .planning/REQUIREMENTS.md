@@ -59,11 +59,11 @@
 
 - [x] **BRG-01**: AiBridge wraps any terminal AI agent (Claude Code, Codex, Gemini CLI) with a PTY layer
 - [ ] **BRG-02**: AiBridge exposes HTTP API on localhost with POST /inject for text injection
-- [ ] **BRG-03**: AiBridge detects when the wrapped AI agent is idle via regex-based pattern matching
+- [x] **BRG-03**: AiBridge detects when the wrapped AI agent is idle via regex-based pattern matching
 - [x] **BRG-04**: AiBridge has built-in idle detection patterns for Claude Code, Codex CLI, and Gemini CLI
-- [ ] **BRG-05**: AiBridge maintains an injection queue (FIFO) with priority support (max 100 items)
+- [x] **BRG-05**: AiBridge maintains an injection queue (FIFO) with priority support (max 100 items)
 - [ ] **BRG-06**: AiBridge exposes GET /health and GET /status endpoints for monitoring
-- [ ] **BRG-07**: AiBridge supports --paranoid mode (inject text without auto-submitting)
+- [x] **BRG-07**: AiBridge supports --paranoid mode (inject text without auto-submitting)
 - [x] **BRG-08**: AiBridge supports custom --busy-pattern flag for other AI tools
 - [ ] **BRG-09**: AiBridge supports synchronous injection with configurable timeout (--timeout flag)
 - [ ] **BRG-10**: AiBridge binds to 127.0.0.1 only (localhost security, no network exposure)
@@ -159,11 +159,11 @@
 | MCP-13 | Phase 5 | Pending |
 | BRG-01 | Phase 3 | Complete |
 | BRG-02 | Phase 3 | Pending |
-| BRG-03 | Phase 3 | Pending |
+| BRG-03 | Phase 3 | Complete |
 | BRG-04 | Phase 3 | Complete |
-| BRG-05 | Phase 3 | Pending |
+| BRG-05 | Phase 3 | Complete |
 | BRG-06 | Phase 3 | Pending |
-| BRG-07 | Phase 3 | Pending |
+| BRG-07 | Phase 3 | Complete |
 | BRG-08 | Phase 3 | Complete |
 | BRG-09 | Phase 3 | Pending |
 | BRG-10 | Phase 3 | Pending |
