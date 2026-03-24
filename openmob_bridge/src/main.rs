@@ -1,4 +1,5 @@
 mod ansi;
+mod bridge;
 mod busy_detector;
 mod patterns;
 mod pty_handler;
