@@ -1,16 +1,18 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { hubGet } from "../hub-client.js";
-import type { UiTreeResult } from "../types.js";
+import type { HubClient } from "../../common/hub-client.js";
+import { deviceIdSchema } from "../../common/schemas.js";
+import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import type { UiTreeResult } from "../../../types/index.js";
 
-export function registerGetUiTree(server: McpServer): void {
+export function registerGetUiTree(server: McpServer, hub: HubClient): void {
   server.registerTool(
     "get_ui_tree",
     {
       description:
         "Get the UI accessibility tree from a device. Returns elements with index numbers that can be used with the tap tool. Optionally filter by text pattern or visibility.",
       inputSchema: {
-        device_id: z.string().describe("Device ID"),
+        device_id: deviceIdSchema,
         text_filter: z.string().optional().describe("Regex pattern to filter elements by text"),
         visible_only: z.boolean().optional().describe("Only return visible elements"),
       },
@@ -22,15 +24,10 @@ export function registerGetUiTree(server: McpServer): void {
         if (visible_only !== undefined) params.set("visible", String(visible_only));
         const queryString = params.toString() ? `?${params.toString()}` : "";
 
-        const data = await hubGet<UiTreeResult>(`/devices/${device_id}/ui-tree${queryString}`);
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data.nodes, null, 2) }],
-        };
+        const data = await hub.get<UiTreeResult>(`/devices/${device_id}/ui-tree${queryString}`);
+        return createTextResponse(data.nodes);
       } catch (error) {
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ error: String(error) }) }],
-          isError: true,
-        };
+        return createErrorResponse(error);
       }
     }
   );

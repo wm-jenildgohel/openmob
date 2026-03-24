@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "description": "MCP server for OpenMob - mobile device automation via AI agents",
   "type": "module",
-  "main": "build/index.js",
+  "main": "build/app/index.js",
   "bin": {
-    "openmob-mcp": "build/index.js"
+    "openmob-mcp": "build/app/index.js"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
-    "start": "node build/index.js"
+    "dev": "tsx src/app/index.ts",
+    "start": "node build/app/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",

@@ -1,16 +1,18 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { hubPost } from "../hub-client.js";
-import type { ActionResult } from "../types.js";
+import type { HubClient } from "../../common/hub-client.js";
+import { deviceIdSchema } from "../../common/schemas.js";
+import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import type { ActionResult } from "../../../types/index.js";
 
-export function registerSwipe(server: McpServer): void {
+export function registerSwipe(server: McpServer, hub: HubClient): void {
   server.registerTool(
     "swipe",
     {
       description:
         "Perform a swipe gesture on the device screen from start point to end point.",
       inputSchema: {
-        device_id: z.string().describe("Device ID"),
+        device_id: deviceIdSchema,
         x1: z.number().describe("Start X"),
         y1: z.number().describe("Start Y"),
         x2: z.number().describe("End X"),
@@ -20,21 +22,16 @@ export function registerSwipe(server: McpServer): void {
     },
     async ({ device_id, x1, y1, x2, y2, duration }) => {
       try {
-        const result = await hubPost<ActionResult>(`/devices/${device_id}/swipe`, {
+        const result = await hub.post<ActionResult>(`/devices/${device_id}/swipe`, {
           x1,
           y1,
           x2,
           y2,
           duration,
         });
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(result) }],
-        };
+        return createTextResponse(result);
       } catch (error) {
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ error: String(error) }) }],
-          isError: true,
-        };
+        return createErrorResponse(error);
       }
     }
   );
