@@ -12,6 +12,8 @@ class Device {
   final String connectionType;
   final String status;
   final bool bridgeActive;
+  final String platform;    // 'android' or 'ios'
+  final String deviceType;  // 'physical', 'emulator', 'simulator'
 
   const Device({
     required this.id,
@@ -27,6 +29,8 @@ class Device {
     this.connectionType = 'usb',
     this.status = 'connected',
     this.bridgeActive = false,
+    this.platform = 'android',
+    this.deviceType = 'physical',
   });
 
   factory Device.fromAdb({
@@ -39,11 +43,45 @@ class Device {
             ? 'wifi'
             : 'usb';
 
+    final deviceType = connectionType == 'emulator' ? 'emulator' : 'physical';
+
     return Device(
       id: serial,
       serial: serial,
       status: status == 'device' ? 'connected' : status,
       connectionType: connectionType,
+      platform: 'android',
+      deviceType: deviceType,
+    );
+  }
+
+  /// Create a Device from xcrun simctl output.
+  /// [runtime] is e.g. 'com.apple.CoreSimulator.SimRuntime.iOS-17-5' -> '17.5'
+  factory Device.fromSimctl({
+    required String udid,
+    required String name,
+    required String state,
+    required String runtime,
+    required String deviceTypeId,
+  }) {
+    // Extract OS version from runtime string
+    // e.g. 'com.apple.CoreSimulator.SimRuntime.iOS-17-5' -> '17.5'
+    String osVersion = 'unknown';
+    final rtMatch = RegExp(r'iOS[.-](\d+)[.-](\d+)').firstMatch(runtime);
+    if (rtMatch != null) {
+      osVersion = '${rtMatch.group(1)}.${rtMatch.group(2)}';
+    }
+
+    return Device(
+      id: udid,
+      serial: udid,
+      model: name,
+      manufacturer: 'Apple',
+      osVersion: osVersion,
+      connectionType: 'simulator',
+      status: state == 'Booted' ? 'connected' : 'disconnected',
+      platform: 'ios',
+      deviceType: 'simulator',
     );
   }
 
@@ -61,6 +99,8 @@ class Device {
     String? connectionType,
     String? status,
     bool? bridgeActive,
+    String? platform,
+    String? deviceType,
   }) {
     return Device(
       id: id ?? this.id,
@@ -76,6 +116,8 @@ class Device {
       connectionType: connectionType ?? this.connectionType,
       status: status ?? this.status,
       bridgeActive: bridgeActive ?? this.bridgeActive,
+      platform: platform ?? this.platform,
+      deviceType: deviceType ?? this.deviceType,
     );
   }
 
@@ -94,6 +136,8 @@ class Device {
       'connectionType': connectionType,
       'status': status,
       'bridgeActive': bridgeActive,
+      'platform': platform,
+      'deviceType': deviceType,
     };
   }
 
@@ -112,6 +156,8 @@ class Device {
       connectionType: json['connectionType'] as String? ?? 'usb',
       status: json['status'] as String? ?? 'connected',
       bridgeActive: json['bridgeActive'] as bool? ?? false,
+      platform: json['platform'] as String? ?? 'android',
+      deviceType: json['deviceType'] as String? ?? 'physical',
     );
   }
 }
