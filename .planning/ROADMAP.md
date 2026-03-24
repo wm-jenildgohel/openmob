@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Hub Core + Android Device Layer** - Flutter Desktop hub with HTTP API, Android device discovery/automation, screenshot capture, UI tree extraction, and core device interactions
 - [ ] **Phase 2: MCP Server + iOS Simulator** - TypeScript MCP server exposing all device tools via stdio, plus iOS Simulator automation via xcrun simctl
-- [ ] **Phase 3: AiBridge CLI** - Go PTY wrapper with HTTP injection API, idle detection for Claude Code/Codex/Gemini CLI, and priority queue
+- [ ] **Phase 3: AiBridge CLI** - Rust PTY wrapper with HTTP injection API (axum), idle detection for Claude Code/Codex/Gemini CLI, and priority queue
 - [ ] **Phase 4: End-to-End Integration + Hub Polish** - Wire all three components together, Hub manages process lifecycles, live device preview, full desktop UI
 - [ ] **Phase 5: QA & Testing** - AI-driven test execution, test script management, Flutter test integration, and test result visualization in Hub
 
@@ -57,16 +57,16 @@ Plans:
 **Depends on**: Nothing (independent of Phase 1-2, but sequenced after for focus)
 **Requirements**: BRG-01, BRG-02, BRG-03, BRG-04, BRG-05, BRG-06, BRG-07, BRG-08, BRG-09, BRG-10
 **Success Criteria** (what must be TRUE):
-  1. User can run `aibridge wrap claude` (or codex/gemini) and interact with the AI agent normally through the PTY layer
+  1. User can run `aibridge -- claude` (or codex/gemini) and interact with the AI agent normally through the PTY layer
   2. User can POST text to localhost:9999/inject and see it delivered to the AI agent when idle (or immediately in non-paranoid mode)
   3. User can check agent status via GET /health and GET /status, and manage the injection queue via DELETE /queue
   4. AiBridge correctly detects idle state for Claude Code, Codex CLI, and Gemini CLI using built-in regex patterns, with support for custom --busy-pattern
   5. AiBridge binds to 127.0.0.1 only, supports --paranoid mode (review before submit), and handles synchronous injection with configurable --timeout
 **Plans**: 4 plans
 Plans:
-- [ ] 03-01-PLAN.md -- Go project scaffold, PTY module, ANSI stripping, agent patterns, Cobra CLI
-- [ ] 03-02-PLAN.md -- BusyDetector, injection Queue, Bridge orchestrator
-- [ ] 03-03-PLAN.md -- HTTP server with all 5 API endpoints
+- [ ] 03-01-PLAN.md -- Rust Cargo scaffold, portable-pty PTY module, ANSI stripping, agent patterns, clap CLI
+- [ ] 03-02-PLAN.md -- BusyDetector, InjectionQueue, Bridge orchestrator with tokio tasks
+- [ ] 03-03-PLAN.md -- Axum HTTP server with all 5 API endpoints (health, status, inject, queue clear)
 - [ ] 03-04-PLAN.md -- CLI wiring, tool detection, Makefile for cross-compilation
 
 ### Phase 4: End-to-End Integration + Hub Polish
@@ -102,6 +102,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Hub Core + Android Device Layer | 0/4 | Planning complete | - |
 | 2. MCP Server + iOS Simulator | 0/2 | Planning complete | - |
-| 3. AiBridge CLI | 0/4 | Planning complete | - |
+| 3. AiBridge CLI | 0/4 | Planning complete (Rust) | - |
 | 4. End-to-End Integration + Hub Polish | 0/TBD | Not started | - |
 | 5. QA & Testing | 0/TBD | Not started | - |
