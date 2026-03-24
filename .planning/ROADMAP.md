@@ -30,7 +30,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can capture a screenshot from any connected Android device and receive it as base64 PNG via the Hub's HTTP API
   4. User can extract a filtered UI accessibility tree with stable element indices from any connected Android device
   5. User can perform tap (by coordinate or element index), swipe, type text, press keys, launch/terminate apps, open URLs, and advanced gestures on any connected Android device via the HTTP API
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-01-PLAN.md -- Flutter project scaffold, models, constants, ADB service, HTTP server skeleton
+- [ ] 01-02-PLAN.md -- DeviceManager, ScreenshotService, UiTreeService
+- [ ] 01-03-PLAN.md -- ActionService, all HTTP API route handlers, wiring
+- [ ] 01-04-PLAN.md -- Desktop UI (home screen, device detail, device card, connection badge)
 **UI hint**: yes
 
 ### Phase 2: MCP Server + iOS Simulator
@@ -87,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Hub Core + Android Device Layer | 0/TBD | Not started | - |
+| 1. Hub Core + Android Device Layer | 0/4 | Planning complete | - |
 | 2. MCP Server + iOS Simulator | 0/TBD | Not started | - |
 | 3. AiBridge CLI | 0/TBD | Not started | - |
 | 4. End-to-End Integration + Hub Polish | 0/TBD | Not started | - |
