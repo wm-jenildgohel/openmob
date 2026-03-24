@@ -10,21 +10,21 @@
 
 ### Device Management
 
-- [ ] **DEV-01**: User can list all connected Android devices (USB, WiFi, emulator) with model, OS version, and screen size
-- [ ] **DEV-02**: User can connect to Android devices via USB using ADB
-- [ ] **DEV-03**: User can connect to Android devices via WiFi ADB (adb tcpip + adb connect)
-- [ ] **DEV-04**: User can connect to Android emulators (auto-detected via ADB)
+- [x] **DEV-01**: User can list all connected Android devices (USB, WiFi, emulator) with model, OS version, and screen size
+- [x] **DEV-02**: User can connect to Android devices via USB using ADB
+- [x] **DEV-03**: User can connect to Android devices via WiFi ADB (adb tcpip + adb connect)
+- [x] **DEV-04**: User can connect to Android emulators (auto-detected via ADB)
 - [ ] **DEV-05**: User can connect to iOS simulators via xcrun simctl (macOS only)
-- [ ] **DEV-06**: User can retrieve device metadata (model, OS, screen resolution, battery) for AI context
-- [ ] **DEV-07**: User can start and stop device automation bridge per device
+- [x] **DEV-06**: User can retrieve device metadata (model, OS, screen resolution, battery) for AI context
+- [x] **DEV-07**: User can start and stop device automation bridge per device
 
 ### Screen Capture & UI Inspection
 
-- [ ] **UI-01**: User can capture a screenshot from any connected device and receive it as base64-encoded PNG
-- [ ] **UI-02**: User can extract the UI accessibility tree from Android devices (uiautomator dump)
+- [x] **UI-01**: User can capture a screenshot from any connected device and receive it as base64-encoded PNG
+- [x] **UI-02**: User can extract the UI accessibility tree from Android devices (uiautomator dump)
 - [ ] **UI-03**: User can extract the UI accessibility tree from iOS simulators (simctl accessibility)
-- [ ] **UI-04**: Each element in the UI tree has a stable index number for AI reference (e.g., "tap element #3")
-- [ ] **UI-05**: User can filter the UI tree by text regex, bounds, and visibility to reduce LLM context noise
+- [x] **UI-04**: Each element in the UI tree has a stable index number for AI reference (e.g., "tap element #3")
+- [x] **UI-05**: User can filter the UI tree by text regex, bounds, and visibility to reduce LLM context noise
 
 ### Device Interaction
 
@@ -122,18 +122,18 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| DEV-01 | Phase 1 | Pending |
-| DEV-02 | Phase 1 | Pending |
-| DEV-03 | Phase 1 | Pending |
-| DEV-04 | Phase 1 | Pending |
+| DEV-01 | Phase 1 | Complete |
+| DEV-02 | Phase 1 | Complete |
+| DEV-03 | Phase 1 | Complete |
+| DEV-04 | Phase 1 | Complete |
 | DEV-05 | Phase 2 | Pending |
-| DEV-06 | Phase 1 | Pending |
-| DEV-07 | Phase 1 | Pending |
-| UI-01 | Phase 1 | Pending |
-| UI-02 | Phase 1 | Pending |
+| DEV-06 | Phase 1 | Complete |
+| DEV-07 | Phase 1 | Complete |
+| UI-01 | Phase 1 | Complete |
+| UI-02 | Phase 1 | Complete |
 | UI-03 | Phase 2 | Pending |
-| UI-04 | Phase 1 | Pending |
-| UI-05 | Phase 1 | Pending |
+| UI-04 | Phase 1 | Complete |
+| UI-05 | Phase 1 | Complete |
 | ACT-01 | Phase 1 | Pending |
 | ACT-02 | Phase 1 | Pending |
 | ACT-03 | Phase 1 | Pending |

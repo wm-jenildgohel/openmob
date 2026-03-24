@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-03-24T10:39:19.105Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-03-24T10:43:09.946Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 01 (Hub Core + Android Device Layer) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Plan: 2 of 4
 
 *Updated after each plan completion*
 | Phase 01 P01 | 3min | 2 tasks | 13 files |
+| Phase 01 P02 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,9 @@ Recent decisions affecting current work:
 - [Phase 01]: shelf for HTTP server (Dart team maintained, composable middleware)
 - [Phase 01]: ADB path resolution: ANDROID_HOME first, PATH fallback
 - [Phase 01]: Dart record types for listRawDevices structured return
+- [Phase 01]: exec-out instead of shell for binary-safe ADB output (screencap, uiautomator)
+- [Phase 01]: Sequential UI node index assignment before filtering for stable indices
+- [Phase 01]: PNG IHDR header parsing for screenshot dimensions (avoids extra ADB call)
 
 ### Pending Todos
 
@@ -73,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T10:39:19.101Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-03-24T10:43:09.942Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
