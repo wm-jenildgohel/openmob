@@ -3,17 +3,29 @@ import 'package:rxdart/rxdart.dart';
 import '../models/device.dart';
 import '../core/constants.dart';
 import 'adb_service.dart';
+import 'simctl_service.dart';
+import 'idb_service.dart';
 
 class DeviceManager {
   final AdbService _adb;
+  final SimctlService? _simctl;
+  final IdbService? _idb;
 
-  DeviceManager(this._adb);
+  DeviceManager(this._adb, {SimctlService? simctl, IdbService? idb})
+      : _simctl = simctl,
+        _idb = idb;
 
   final _devices = BehaviorSubject<List<Device>>.seeded([]);
 
   ValueStream<List<Device>> get devices$ => _devices.stream;
 
   List<Device> get currentDevices => _devices.value;
+
+  /// Expose simctl service so other services can check iOS tool availability.
+  SimctlService? get simctl => _simctl;
+
+  /// Expose idb service so other services can check iOS tool availability.
+  IdbService? get idb => _idb;
 
   Future<void> refreshDevices() async {
     final rawDevices = await _adb.listRawDevices();
@@ -30,6 +42,16 @@ class DeviceManager {
         }
       } else {
         enriched.add(Device.fromAdb(serial: raw.serial, status: raw.status));
+      }
+    }
+
+    // Merge iOS simulators if simctl is available
+    if (_simctl != null) {
+      try {
+        final simulators = await _simctl.listSimulators();
+        enriched.addAll(simulators);
+      } catch (_) {
+        // Silently ignore simctl errors
       }
     }
 
@@ -113,6 +135,8 @@ class DeviceManager {
       connectionType: connectionType,
       status: 'connected',
       bridgeActive: false,
+      platform: 'android',
+      deviceType: connectionType == 'emulator' ? 'emulator' : 'physical',
     );
   }
 

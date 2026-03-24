@@ -7,9 +7,13 @@ import 'services/action_service.dart';
 import 'services/device_manager.dart';
 import 'services/screenshot_service.dart';
 import 'services/ui_tree_service.dart';
+import 'services/simctl_service.dart';
+import 'services/idb_service.dart';
 import 'app.dart';
 
 late final AdbService adbService;
+late final SimctlService simctlService;
+late final IdbService idbService;
 late final DeviceManager deviceManager;
 late final ScreenshotService screenshotService;
 late final UiTreeService uiTreeService;
@@ -34,10 +38,37 @@ Future<void> main() async {
 
   // Initialize services
   adbService = AdbService();
-  deviceManager = DeviceManager(adbService);
-  screenshotService = ScreenshotService(adbService);
-  uiTreeService = UiTreeService(adbService);
-  actionService = ActionService(adbService, uiTreeService);
+  simctlService = SimctlService();
+  idbService = IdbService();
+
+  // Check iOS tool availability
+  final simctlAvail = await simctlService.isAvailable;
+  final idbAvail = await idbService.isAvailable;
+
+  print('iOS Simulator support: simctl=${simctlAvail ? "available" : "not available"}, idb=${idbAvail ? "available" : "not available"}');
+
+  deviceManager = DeviceManager(
+    adbService,
+    simctl: simctlAvail ? simctlService : null,
+    idb: idbAvail ? idbService : null,
+  );
+  screenshotService = ScreenshotService(
+    adbService,
+    simctl: simctlAvail ? simctlService : null,
+    dm: deviceManager,
+  );
+  uiTreeService = UiTreeService(
+    adbService,
+    idb: idbAvail ? idbService : null,
+    dm: deviceManager,
+  );
+  actionService = ActionService(
+    adbService,
+    uiTreeService,
+    simctl: simctlAvail ? simctlService : null,
+    idb: idbAvail ? idbService : null,
+    dm: deviceManager,
+  );
 
   // Start API server with all services wired in
   apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService);

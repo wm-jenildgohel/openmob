@@ -1,17 +1,36 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'adb_service.dart';
+import 'device_manager.dart';
+import 'simctl_service.dart';
 
 class ScreenshotService {
   final AdbService _adb;
+  final SimctlService? _simctl;
+  final DeviceManager _dm;
 
-  ScreenshotService(this._adb);
+  ScreenshotService(this._adb, {SimctlService? simctl, required DeviceManager dm})
+      : _simctl = simctl,
+        _dm = dm;
 
-  /// Capture a PNG screenshot from the device via exec-out (binary-safe).
+  /// Capture a PNG screenshot from the device.
+  /// Routes to simctl for iOS or ADB for Android.
   /// Returns a record with base64-encoded PNG, width, and height.
   Future<({String base64, int width, int height})> captureScreenshot(
     String serial,
   ) async {
+    final device = _dm.getDevice(serial);
+
+    // iOS path: use simctl
+    if (device?.platform == 'ios' && _simctl != null) {
+      final rawBytes = await _simctl.captureScreenshot(serial);
+      final bytes = Uint8List.fromList(rawBytes);
+      final encoded = base64Encode(bytes);
+      final dims = _parsePngDimensions(bytes);
+      return (base64: encoded, width: dims.width, height: dims.height);
+    }
+
+    // Android path: use ADB (existing)
     final bytes = await _adb.runBinary(
       serial,
       ['exec-out', 'screencap', '-p'],

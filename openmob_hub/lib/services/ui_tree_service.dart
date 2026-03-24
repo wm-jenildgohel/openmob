@@ -1,21 +1,44 @@
 import 'package:xml/xml.dart';
 import '../models/ui_node.dart';
 import 'adb_service.dart';
+import 'device_manager.dart';
+import 'idb_service.dart';
 
 class UiTreeService {
   final AdbService _adb;
+  final IdbService? _idb;
+  final DeviceManager _dm;
 
-  UiTreeService(this._adb);
+  UiTreeService(this._adb, {IdbService? idb, required DeviceManager dm})
+      : _idb = idb,
+        _dm = dm;
 
-  /// Dump, parse, index, and optionally filter the Android UI tree.
-  ///
-  /// Uses uiautomator dump /dev/tty via exec-out for direct stdout XML.
-  /// Assigns sequential indices to ALL nodes before filtering, so indices
-  /// remain stable regardless of filter.
+  /// Dump, parse, index, and optionally filter the UI tree.
+  /// Routes to idb for iOS or uiautomator for Android.
   Future<List<UiNode>> getUiTree(
     String serial, {
     UiTreeFilter? filter,
   }) async {
+    final device = _dm.getDevice(serial);
+
+    // iOS path
+    if (device?.platform == 'ios') {
+      if (_idb != null) {
+        try {
+          final nodes = await _idb.describeAll(serial);
+          if (filter != null) {
+            return nodes.where((node) => filter.matches(node)).toList();
+          }
+          return nodes;
+        } catch (_) {
+          return [];
+        }
+      }
+      // idb not available -- graceful degradation, return empty list
+      return [];
+    }
+
+    // Android path (existing)
     try {
       final result = await _adb.run(
         serial,
