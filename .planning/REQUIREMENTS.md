@@ -41,18 +41,18 @@
 
 ### MCP Server
 
-- [ ] **MCP-01**: MCP server exposes all device tools via stdio transport (compatible with Cursor, Claude Desktop, Windsurf, VS Code)
-- [ ] **MCP-02**: Tool: list_devices — returns connected devices with metadata
-- [ ] **MCP-03**: Tool: get_screenshot — captures and returns base64 screenshot for specified device
-- [ ] **MCP-04**: Tool: get_ui_tree — returns filtered accessibility tree with element indices
-- [ ] **MCP-05**: Tool: tap — tap by coordinates or element index
-- [ ] **MCP-06**: Tool: type_text — input text into focused field
-- [ ] **MCP-07**: Tool: swipe — perform directional swipe gesture
-- [ ] **MCP-08**: Tool: launch_app — start app by package/bundle ID
-- [ ] **MCP-09**: Tool: terminate_app — kill running app
-- [ ] **MCP-10**: Tool: press_button — press hardware/soft key
-- [ ] **MCP-11**: Tool: go_home — navigate to home screen
-- [ ] **MCP-12**: Tool: open_url — open URL/deep link on device
+- [x] **MCP-01**: MCP server exposes all device tools via stdio transport (compatible with Cursor, Claude Desktop, Windsurf, VS Code)
+- [x] **MCP-02**: Tool: list_devices — returns connected devices with metadata
+- [x] **MCP-03**: Tool: get_screenshot — captures and returns base64 screenshot for specified device
+- [x] **MCP-04**: Tool: get_ui_tree — returns filtered accessibility tree with element indices
+- [x] **MCP-05**: Tool: tap — tap by coordinates or element index
+- [x] **MCP-06**: Tool: type_text — input text into focused field
+- [x] **MCP-07**: Tool: swipe — perform directional swipe gesture
+- [x] **MCP-08**: Tool: launch_app — start app by package/bundle ID
+- [x] **MCP-09**: Tool: terminate_app — kill running app
+- [x] **MCP-10**: Tool: press_button — press hardware/soft key
+- [x] **MCP-11**: Tool: go_home — navigate to home screen
+- [x] **MCP-12**: Tool: open_url — open URL/deep link on device
 - [ ] **MCP-13**: Tool: run_test — execute a test scenario (unit, integration, or manual) and return results
 
 ### AiBridge CLI
@@ -144,18 +144,18 @@
 | ACT-08 | Phase 1 | Complete |
 | ACT-09 | Phase 1 | Complete |
 | ACT-10 | Phase 1 | Complete |
-| MCP-01 | Phase 2 | Pending |
-| MCP-02 | Phase 2 | Pending |
-| MCP-03 | Phase 2 | Pending |
-| MCP-04 | Phase 2 | Pending |
-| MCP-05 | Phase 2 | Pending |
-| MCP-06 | Phase 2 | Pending |
-| MCP-07 | Phase 2 | Pending |
-| MCP-08 | Phase 2 | Pending |
-| MCP-09 | Phase 2 | Pending |
-| MCP-10 | Phase 2 | Pending |
-| MCP-11 | Phase 2 | Pending |
-| MCP-12 | Phase 2 | Pending |
+| MCP-01 | Phase 2 | Complete |
+| MCP-02 | Phase 2 | Complete |
+| MCP-03 | Phase 2 | Complete |
+| MCP-04 | Phase 2 | Complete |
+| MCP-05 | Phase 2 | Complete |
+| MCP-06 | Phase 2 | Complete |
+| MCP-07 | Phase 2 | Complete |
+| MCP-08 | Phase 2 | Complete |
+| MCP-09 | Phase 2 | Complete |
+| MCP-10 | Phase 2 | Complete |
+| MCP-11 | Phase 2 | Complete |
+| MCP-12 | Phase 2 | Complete |
 | MCP-13 | Phase 5 | Pending |
 | BRG-01 | Phase 3 | Pending |
 | BRG-02 | Phase 3 | Pending |

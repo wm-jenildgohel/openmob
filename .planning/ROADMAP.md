@@ -50,7 +50,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [ ] 02-01-PLAN.md -- iOS Simulator support in Hub (SimctlService, IdbService, platform-aware routing)
-- [ ] 02-02-PLAN.md -- TypeScript MCP server with all 11 device tools via stdio transport
+- [x] 02-02-PLAN.md -- TypeScript MCP server with all 11 device tools via stdio transport
 
 ### Phase 3: AiBridge CLI
 **Goal**: Users can wrap any terminal AI agent with AiBridge to enable automatic context injection when the agent is idle

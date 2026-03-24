@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-03-24T11:00:05.838Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-24T11:20:13.061Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -50,6 +50,7 @@ Plan: Not started
 | Phase 01 P02 | 2min | 2 tasks | 3 files |
 | Phase 01 P03 | 3min | 2 tasks | 6 files |
 | Phase 01 P04 | 4min | 3 tasks | 7 files |
+| Phase 02 P02 | 3min | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Route files as pure functions returning Router, receives services as DI params
 - [Phase 01]: ValueStreamBuilder (context, value, child) signature -- not AsyncSnapshot pattern
 - [Phase 01]: ResColors centralized color class for consistent UI color management
+- [Phase 02]: zod v3 (3.25.76) used instead of v4 -- MCP SDK 1.27.1 peer-depends on zod v3
+- [Phase 02]: Each MCP tool in separate file with register function pattern for clean modularity
+- [Phase 02]: Native fetch for Hub HTTP calls -- built into Node.js 22+, no extra deps
 
 ### Pending Todos
 
@@ -83,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T10:55:12.864Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-03-24T11:20:13.057Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
