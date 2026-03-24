@@ -77,7 +77,7 @@
 
 ### Flutter Desktop Hub
 
-- [ ] **HUB-01**: Hub displays all connected devices with real-time connection status (connected/disconnected/bridged)
+- [x] **HUB-01**: Hub displays all connected devices with real-time connection status (connected/disconnected/bridged)
 - [ ] **HUB-02**: Hub shows live screen preview for any connected device (periodic screenshot polling)
 - [ ] **HUB-03**: Hub provides start/stop bridge controls per device
 - [ ] **HUB-04**: Hub shows device/bridge logs in a scrollable log viewer
@@ -171,7 +171,7 @@
 | QA-02 | Phase 5 | Pending |
 | QA-03 | Phase 5 | Pending |
 | QA-04 | Phase 5 | Pending |
-| HUB-01 | Phase 1 | Pending |
+| HUB-01 | Phase 1 | Complete |
 | HUB-02 | Phase 4 | Pending |
 | HUB-03 | Phase 4 | Pending |
 | HUB-04 | Phase 4 | Pending |
