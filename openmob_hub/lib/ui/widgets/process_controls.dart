@@ -104,9 +104,9 @@ class ProcessControls extends StatelessWidget {
 
             final statusLabel = switch (info.status) {
               ProcessStatus.running => 'Running${info.pid != null ? ' (PID: ${info.pid})' : ''}',
-              ProcessStatus.stopped => 'Stopped',
+              ProcessStatus.stopped => 'Not running',
               ProcessStatus.starting => 'Starting...',
-              ProcessStatus.error => 'Error: ${info.errorMessage ?? "Unknown"}',
+              ProcessStatus.error => info.errorMessage ?? 'Error',
             };
 
             return Column(
@@ -127,10 +127,21 @@ class ProcessControls extends StatelessWidget {
                         color: statusColor,
                       ),
                     ),
+                    const Spacer(),
+                    Tooltip(
+                      message: 'Optional: wraps terminal AI agents (Claude Code, Codex, Gemini)\n'
+                          'with context injection. Not needed for MCP-based testing.',
+                      child: Icon(Icons.info_outline, size: 18, color: ResColors.muted),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(statusLabel, style: textTheme.bodyMedium?.copyWith(color: statusColor)),
+                Text(
+                  statusLabel,
+                  style: textTheme.bodyMedium?.copyWith(color: statusColor),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -138,20 +149,16 @@ class ProcessControls extends StatelessWidget {
                       onPressed: (info.status == ProcessStatus.running ||
                               info.status == ProcessStatus.starting)
                           ? null
-                          : () => processManager.startBridge(),
+                          : () => _showAgentPicker(context),
                       child: const Text('Start'),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: info.status == ProcessStatus.stopped
-                          ? null
-                          : () => processManager.stopBridge(),
+                      onPressed: (info.status == ProcessStatus.running ||
+                              info.status == ProcessStatus.error)
+                          ? () => processManager.stopBridge()
+                          : null,
                       child: const Text('Stop'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => processManager.restartBridge(),
-                      child: const Text('Restart'),
                     ),
                   ],
                 ),
@@ -159,6 +166,55 @@ class ProcessControls extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+
+  void _showAgentPicker(BuildContext context) {
+    final agents = processManager.availableAgents;
+
+    if (agents.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'No AI agents found in PATH. Install claude, codex, or gemini first.',
+          ),
+          backgroundColor: ResColors.error,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
+
+    if (agents.length == 1) {
+      processManager.startBridge(agent: agents.first);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Select AI Agent'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: agents.map((agent) {
+            return ListTile(
+              leading: const Icon(Icons.terminal),
+              title: Text(agent),
+              subtitle: Text('Wrap $agent with context injection'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                processManager.startBridge(agent: agent);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }

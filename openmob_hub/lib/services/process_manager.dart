@@ -161,6 +161,18 @@ class ProcessManager {
     return null;
   }
 
+  /// Returns list of available AI agents found in PATH
+  List<String> get availableAgents {
+    final agents = <String>[];
+    for (final name in ['claude', 'codex', 'gemini']) {
+      try {
+        final result = Process.runSync('which', [name]);
+        if (result.exitCode == 0) agents.add(name);
+      } catch (_) {}
+    }
+    return agents;
+  }
+
   Future<void> startBridge({String agent = 'claude', int port = 9999}) async {
     if (_bridgeStatus.value.status == ProcessStatus.running) return;
 
@@ -169,10 +181,26 @@ class ProcessManager {
       _bridgeStatus.add(const ProcessInfo(
         name: 'AiBridge',
         status: ProcessStatus.error,
-        errorMessage: 'aibridge binary not found. Build it: cd openmob_bridge && cargo build --release',
+        errorMessage: 'aibridge binary not found. Build it:\ncd openmob_bridge && cargo build --release',
       ));
       _logService.addLine('hub', 'AiBridge binary not found', level: LogLevel.error);
       return;
+    }
+
+    // Validate the agent command exists in PATH
+    try {
+      final result = Process.runSync('which', [agent]);
+      if (result.exitCode != 0) {
+        _bridgeStatus.add(ProcessInfo(
+          name: 'AiBridge',
+          status: ProcessStatus.error,
+          errorMessage: '"$agent" not found in PATH.\nInstall it first or choose a different agent.',
+        ));
+        _logService.addLine('hub', 'Agent "$agent" not found in PATH', level: LogLevel.error);
+        return;
+      }
+    } catch (_) {
+      // `which` not available — try starting anyway
     }
 
     _bridgeStatus.add(_bridgeStatus.value.copyWith(status: ProcessStatus.starting));

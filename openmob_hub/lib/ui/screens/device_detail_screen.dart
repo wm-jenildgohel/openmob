@@ -169,7 +169,17 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Automation Bridge', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Text('Device Automation', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Tooltip(
+                  message: 'Enable this device for MCP tool control.\n'
+                      'When active, AI agents can interact with this device.',
+                  child: Icon(Icons.info_outline, size: 18, color: ResColors.muted),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -183,7 +193,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  device.bridgeActive ? 'Active' : 'Inactive',
+                  device.bridgeActive ? 'Enabled - AI agents can control this device' : 'Disabled',
                   style: textTheme.bodyMedium?.copyWith(
                     color: device.bridgeActive ? ResColors.connected : ResColors.offline,
                     fontWeight: FontWeight.w500,
@@ -195,18 +205,14 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
             Row(
               children: [
                 ElevatedButton.icon(
-                  onPressed: device.bridgeActive ? null : () => deviceManager.startBridge(widget.deviceId),
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start Bridge'),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: device.bridgeActive ? () => deviceManager.stopBridge(widget.deviceId) : null,
-                  icon: const Icon(Icons.stop),
-                  label: const Text('Stop Bridge'),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: ResColors.offline,
-                  ),
+                  onPressed: device.bridgeActive
+                      ? () => deviceManager.stopBridge(widget.deviceId)
+                      : () => deviceManager.startBridge(widget.deviceId),
+                  icon: Icon(device.bridgeActive ? Icons.stop : Icons.play_arrow),
+                  label: Text(device.bridgeActive ? 'Disable' : 'Enable'),
+                  style: device.bridgeActive
+                      ? ElevatedButton.styleFrom(foregroundColor: ResColors.offline)
+                      : null,
                 ),
               ],
             ),
