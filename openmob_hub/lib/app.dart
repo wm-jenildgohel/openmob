@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import 'core/res_colors.dart';
+import 'main.dart';
+import 'services/auto_setup_service.dart';
 import 'ui/screens/dashboard_shell.dart';
 import 'ui/screens/device_detail_screen.dart';
+import 'ui/screens/setup_screen.dart';
 
 class OpenMobApp extends StatelessWidget {
   const OpenMobApp({super.key});
@@ -13,7 +17,23 @@ class OpenMobApp extends StatelessWidget {
       title: 'OpenMob Hub',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
-      home: const DashboardShell(),
+      home: ValueStreamBuilder<SetupStatus>(
+        stream: autoSetupService.status$,
+        builder: (context, status, child) {
+          if (status.phase == SetupPhase.complete) {
+            return const DashboardShell();
+          }
+          return SetupScreen(
+            onComplete: () {
+              // Force rebuild to show dashboard
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const DashboardShell()),
+                (_) => false,
+              );
+            },
+          );
+        },
+      ),
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '');
         if (uri.pathSegments.length == 2 && uri.pathSegments[0] == 'device') {

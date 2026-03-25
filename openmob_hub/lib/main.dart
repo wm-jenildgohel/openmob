@@ -9,6 +9,7 @@ import 'services/log_service.dart';
 import 'services/process_manager.dart';
 import 'services/screenshot_service.dart';
 import 'services/ai_tool_setup_service.dart';
+import 'services/auto_setup_service.dart';
 import 'services/system_check_service.dart';
 import 'services/test_runner_service.dart';
 import 'services/ui_tree_service.dart';
@@ -28,6 +29,7 @@ late final LogService logService;
 late final SystemCheckService systemCheckService;
 late final ProcessManager processManager;
 late final AiToolSetupService aiToolSetupService;
+late final AutoSetupService autoSetupService;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +96,12 @@ Future<void> main() async {
   systemCheckService = SystemCheckService(logService: logService);
   processManager = ProcessManager(logService);
   aiToolSetupService = AiToolSetupService(logService);
+  autoSetupService = AutoSetupService(
+    systemCheckService,
+    aiToolSetupService,
+    processManager,
+    logService,
+  );
 
   // Start API server — if port is busy, log error but don't crash
   apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
@@ -112,12 +120,11 @@ Future<void> main() async {
 }
 
 Future<void> _initBackground() async {
-  // System check + AI tool detection
+  // Auto-setup runs automatically — installs missing tools, configures AI tools
   try {
-    await systemCheckService.checkAll();
-    await aiToolSetupService.detectAll();
+    await autoSetupService.runAutoSetup();
   } catch (e) {
-    logService.addLine('hub', 'System check failed: $e', level: LogLevel.warning);
+    logService.addLine('hub', 'Auto-setup failed: $e', level: LogLevel.warning);
   }
 
   // Initial device scan
