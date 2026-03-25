@@ -19,6 +19,7 @@ class DashboardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ResColors.bg,
       body: ValueStreamBuilder<int>(
         stream: _navIndex.stream,
         builder: (context, index, child) {
@@ -28,7 +29,6 @@ class DashboardShell extends StatelessWidget {
                 selectedIndex: index,
                 onDestinationSelected: (i) => _navIndex.add(i),
               ),
-              VerticalDivider(width: 1, color: ResColors.cardBorder),
               Expanded(
                 child: _buildContent(context, index),
               ),
@@ -54,39 +54,62 @@ class DashboardShell extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Dashboard',
-            style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const ProcessControls(),
-          const SizedBox(height: 24),
+          // Header
           Row(
             children: [
-              Text(
-                'Connected Devices',
-                style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Dashboard', style: textTheme.headlineSmall),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Manage processes and connected devices',
+                    style: textTheme.bodyMedium,
+                  ),
+                ],
               ),
               const Spacer(),
+              // Status indicator
+              _buildApiStatus(),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Process controls
+          const ProcessControls(),
+          const SizedBox(height: 32),
+
+          // Devices header
+          Row(
+            children: [
+              const Icon(Icons.phone_android_rounded, size: 20, color: ResColors.textSecondary),
+              const SizedBox(width: 8),
+              Text('Connected Devices', style: textTheme.titleMedium),
+              const SizedBox(width: 12),
               ValueStreamBuilder<List<Device>>(
                 stream: deviceManager.devices$,
                 builder: (context, devices, child) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: ResColors.accent,
-                      borderRadius: BorderRadius.circular(12),
+                      color: devices.isNotEmpty ? ResColors.accentSoft : ResColors.bgSurface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: devices.isNotEmpty
+                            ? ResColors.accent.withValues(alpha: 0.3)
+                            : ResColors.cardBorder,
+                      ),
                     ),
                     child: Text(
                       '${devices.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                      style: TextStyle(
+                        color: devices.isNotEmpty ? ResColors.accent : ResColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
                     ),
                   );
@@ -94,7 +117,9 @@ class DashboardShell extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
+          // Device list
           Expanded(
             child: ValueStreamBuilder<List<Device>>(
               stream: deviceManager.devices$,
@@ -104,51 +129,198 @@ class DashboardShell extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.phone_android, size: 48, color: ResColors.muted),
-                        const SizedBox(height: 12),
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: ResColors.bgSurface,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.phone_android_rounded,
+                            size: 32,
+                            color: ResColors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Text(
                           'No devices connected',
-                          style: TextStyle(color: ResColors.muted),
+                          style: textTheme.titleMedium?.copyWith(color: ResColors.textSecondary),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Connect via USB, WiFi ADB, or start an emulator',
+                          style: textTheme.bodySmall,
                         ),
                       ],
                     ),
                   );
                 }
 
-                return ListView.builder(
+                return ListView.separated(
                   itemCount: devices.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final device = devices[index];
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.phone_android,
-                          color: ResColors.accent,
-                        ),
-                        title: Text(device.model),
-                        subtitle: Text('${device.manufacturer} | ${device.connectionType}'),
-                        trailing: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: device.status == 'connected'
-                                ? ResColors.connected
-                                : ResColors.offline,
-                          ),
-                        ),
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/device/${device.id}',
-                        ),
-                      ),
-                    );
+                    return _DeviceRow(device: device);
                   },
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildApiStatus() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: ResColors.accentSoft,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: ResColors.accent.withValues(alpha: 0.3)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 8, color: ResColors.accent),
+          SizedBox(width: 6),
+          Text(
+            'API :8686',
+            style: TextStyle(
+              color: ResColors.accent,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeviceRow extends StatefulWidget {
+  final Device device;
+  const _DeviceRow({required this.device});
+
+  @override
+  State<_DeviceRow> createState() => _DeviceRowState();
+}
+
+class _DeviceRowState extends State<_DeviceRow> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final device = widget.device;
+    final statusColor = switch (device.status.toLowerCase()) {
+      'connected' => ResColors.connected,
+      'bridged' => ResColors.bridged,
+      _ => ResColors.stopped,
+    };
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, '/device/${device.id}'),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _hovering ? ResColors.cardHover : ResColors.cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hovering ? ResColors.border : ResColors.cardBorder,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Device icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: ResColors.bgSurface,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  device.platform == 'ios'
+                      ? Icons.phone_iphone_rounded
+                      : Icons.phone_android_rounded,
+                  color: ResColors.accent,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      device.model,
+                      style: const TextStyle(
+                        color: ResColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${device.manufacturer} \u2022 ${device.osVersion} \u2022 ${device.screenWidth}x${device.screenHeight}',
+                      style: const TextStyle(
+                        color: ResColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Connection badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ResColors.bgSurface,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  device.connectionType.toUpperCase(),
+                  style: const TextStyle(
+                    color: ResColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Status dot
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: statusColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: statusColor.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: _hovering ? ResColors.textSecondary : ResColors.textMuted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

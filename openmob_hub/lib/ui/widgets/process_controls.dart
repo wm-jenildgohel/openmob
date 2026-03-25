@@ -13,218 +13,284 @@ class ProcessControls extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _buildMcpCard(context)),
-        const SizedBox(width: 16),
-        Expanded(child: _buildBridgeCard(context)),
-      ],
-    );
-  }
-
-  Widget _buildMcpCard(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ValueStreamBuilder<ProcessInfo>(
+        Expanded(child: _ProcessCard(
+          title: 'MCP Server',
+          subtitle: 'Device tools for AI agents',
+          icon: Icons.hub_rounded,
           stream: processManager.mcpStatus$,
-          builder: (context, info, child) {
-            final statusColor = _statusColor(info.status);
-            final statusText = switch (info.status) {
-              ProcessStatus.running => 'Running (PID: ${info.pid})',
-              ProcessStatus.stopped => 'Stopped',
-              ProcessStatus.starting => 'Starting...',
-              ProcessStatus.error => 'Error: ${info.errorMessage ?? "Unknown"}',
-            };
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'MCP Server',
-                      style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(statusText, style: textTheme.bodyMedium?.copyWith(color: statusColor)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: (info.status == ProcessStatus.running ||
-                              info.status == ProcessStatus.starting)
-                          ? null
-                          : () => processManager.startMcp(),
-                      child: const Text('Start'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: info.status == ProcessStatus.stopped
-                          ? null
-                          : () => processManager.stopMcp(),
-                      child: const Text('Stop'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => processManager.restartMcp(),
-                      child: const Text('Restart'),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBridgeCard(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ValueStreamBuilder<ProcessInfo>(
+          onStart: () => processManager.startMcp(),
+          onStop: () => processManager.stopMcp(),
+          onRestart: () => processManager.restartMcp(),
+        )),
+        const SizedBox(width: 12),
+        Expanded(child: _ProcessCard(
+          title: 'AiBridge',
+          subtitle: 'Terminal agent wrapper',
+          icon: Icons.terminal_rounded,
           stream: processManager.bridgeStatus$,
-          builder: (context, info, child) {
-            final statusColor = _statusColor(info.status);
-
-            final statusLabel = switch (info.status) {
-              ProcessStatus.running => 'Running${info.pid != null ? ' (PID: ${info.pid})' : ''}',
-              ProcessStatus.stopped => 'Not running',
-              ProcessStatus.starting => 'Starting...',
-              ProcessStatus.error => info.errorMessage ?? 'Error',
-            };
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'AiBridge',
-                      style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: statusColor,
-                      ),
-                    ),
-                    const Spacer(),
-                    Tooltip(
-                      message: 'Optional: wraps terminal AI agents (Claude Code, Codex, Gemini)\n'
-                          'with context injection. Not needed for MCP-based testing.',
-                      child: Icon(Icons.info_outline, size: 18, color: ResColors.muted),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  statusLabel,
-                  style: textTheme.bodyMedium?.copyWith(color: statusColor),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: (info.status == ProcessStatus.running ||
-                              info.status == ProcessStatus.starting)
-                          ? null
-                          : () => _showAgentPicker(context),
-                      child: const Text('Start'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: (info.status == ProcessStatus.running ||
-                              info.status == ProcessStatus.error)
-                          ? () => processManager.stopBridge()
-                          : null,
-                      child: const Text('Stop'),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+          onStart: () => _showAgentPicker(context),
+          onStop: () => processManager.stopBridge(),
+          isOptional: true,
+        )),
+      ],
     );
   }
 
   void _showAgentPicker(BuildContext context) {
     final agents = processManager.availableAgents;
-
     if (agents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'No AI agents found in PATH. Install claude, codex, or gemini first.',
-          ),
-          backgroundColor: ResColors.error,
-          duration: const Duration(seconds: 5),
-        ),
+        const SnackBar(content: Text('No AI agents found in PATH (claude, codex, gemini)')),
       );
       return;
     }
-
     if (agents.length == 1) {
       processManager.startBridge(agent: agents.first);
       return;
     }
-
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Select AI Agent'),
+        title: const Text('Select Agent'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: agents.map((agent) {
-            return ListTile(
-              leading: const Icon(Icons.terminal),
-              title: Text(agent),
-              subtitle: Text('Wrap $agent with context injection'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                processManager.startBridge(agent: agent);
-              },
-            );
-          }).toList(),
+          children: agents.map((a) => ListTile(
+            leading: const Icon(Icons.terminal_rounded),
+            title: Text(a),
+            onTap: () { Navigator.pop(ctx); processManager.startBridge(agent: a); },
+          )).toList(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
       ),
     );
   }
+}
 
-  Color _statusColor(ProcessStatus status) {
-    return switch (status) {
-      ProcessStatus.running => ResColors.running,
-      ProcessStatus.stopped => ResColors.stopped,
-      ProcessStatus.starting => ResColors.warning,
-      ProcessStatus.error => ResColors.error,
-    };
+class _ProcessCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final ValueStream<ProcessInfo> stream;
+  final VoidCallback onStart;
+  final VoidCallback onStop;
+  final VoidCallback? onRestart;
+  final bool isOptional;
+
+  const _ProcessCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.stream,
+    required this.onStart,
+    required this.onStop,
+    this.onRestart,
+    this.isOptional = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueStreamBuilder<ProcessInfo>(
+      stream: stream,
+      builder: (context, info, child) {
+        final isRunning = info.status == ProcessStatus.running;
+        final isStarting = info.status == ProcessStatus.starting;
+        final isError = info.status == ProcessStatus.error;
+
+        final statusColor = switch (info.status) {
+          ProcessStatus.running => ResColors.running,
+          ProcessStatus.starting => ResColors.warning,
+          ProcessStatus.error => ResColors.error,
+          ProcessStatus.stopped => ResColors.stopped,
+        };
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: ResColors.cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isRunning
+                  ? ResColors.accent.withValues(alpha: 0.3)
+                  : ResColors.cardBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isRunning ? ResColors.accentSoft : ResColors.bgSurface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 18, color: isRunning ? ResColors.accent : ResColors.textMuted),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(title, style: const TextStyle(
+                              color: ResColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            )),
+                            if (isOptional) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: ResColors.border),
+                                ),
+                                child: const Text('Optional', style: TextStyle(
+                                  color: ResColors.textMuted,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
+                                )),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(subtitle, style: const TextStyle(
+                          color: ResColors.textMuted,
+                          fontSize: 11,
+                        )),
+                      ],
+                    ),
+                  ),
+                  // Status dot with glow
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: statusColor,
+                      boxShadow: isRunning ? [
+                        BoxShadow(color: statusColor.withValues(alpha: 0.5), blurRadius: 8),
+                      ] : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Status text
+              Text(
+                switch (info.status) {
+                  ProcessStatus.running => 'Running${info.pid != null ? ' \u2022 PID ${info.pid}' : ''}',
+                  ProcessStatus.stopped => 'Stopped',
+                  ProcessStatus.starting => 'Starting...',
+                  ProcessStatus.error => info.errorMessage ?? 'Error',
+                },
+                style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w500),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              // Action buttons
+              Row(
+                children: [
+                  _ActionButton(
+                    label: 'Start',
+                    icon: Icons.play_arrow_rounded,
+                    onPressed: (isRunning || isStarting) ? null : onStart,
+                    isPrimary: true,
+                  ),
+                  const SizedBox(width: 8),
+                  _ActionButton(
+                    label: 'Stop',
+                    icon: Icons.stop_rounded,
+                    onPressed: (isRunning || isError) ? onStop : null,
+                  ),
+                  if (onRestart != null) ...[
+                    const SizedBox(width: 8),
+                    _ActionButton(
+                      label: 'Restart',
+                      icon: Icons.refresh_rounded,
+                      onPressed: isRunning ? onRestart : null,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ActionButton extends StatefulWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool isPrimary;
+
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    this.onPressed,
+    this.isPrimary = false,
+  });
+
+  @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null;
+    final bg = !enabled
+        ? ResColors.bgSurface.withValues(alpha: 0.5)
+        : widget.isPrimary
+            ? (_hovering ? ResColors.accentHover : ResColors.accent)
+            : (_hovering ? ResColors.bgSurface : ResColors.cardBg);
+    final fg = !enabled
+        ? ResColors.textMuted
+        : widget.isPrimary
+            ? ResColors.textOnAccent
+            : ResColors.textSecondary;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: widget.isPrimary && enabled
+                  ? Colors.transparent
+                  : ResColors.cardBorder,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, size: 14, color: fg),
+              const SizedBox(width: 4),
+              Text(widget.label, style: TextStyle(
+                color: fg,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
