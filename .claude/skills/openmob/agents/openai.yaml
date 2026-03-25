@@ -1,0 +1,70 @@
+name: openmob-mobile-automation
+description: |
+  See and control mobile devices (Android/iOS) for QA testing and app automation.
+  Connects to OpenMob Hub at http://127.0.0.1:8686.
+
+  Workflow: list devices → screenshot → read ui-tree → tap/type/swipe → verify
+
+  Always use ui-tree?visible=true to find elements by index, then tap by index.
+  After each action, re-fetch ui-tree to verify the result.
+
+tools:
+  - name: list_devices
+    type: http
+    method: GET
+    url: http://127.0.0.1:8686/api/v1/devices/
+    description: List all connected mobile devices with metadata
+
+  - name: get_screenshot
+    type: http
+    method: GET
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/screenshot
+    description: Capture device screenshot as base64 PNG
+
+  - name: get_ui_tree
+    type: http
+    method: GET
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/ui-tree?visible=true
+    description: Get visible UI elements with tap-ready indices
+
+  - name: tap
+    type: http
+    method: POST
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/tap
+    description: "Tap by element index: {index: N} or coordinates: {x, y}"
+
+  - name: type_text
+    type: http
+    method: POST
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/type
+    description: "Type text into focused field: {text: 'hello'}"
+
+  - name: swipe
+    type: http
+    method: POST
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/swipe
+    description: "Swipe gesture: {x1, y1, x2, y2, duration}"
+
+  - name: press_key
+    type: http
+    method: POST
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/keyevent
+    description: "Press key: {keyCode: 3} Home=3 Back=4 Enter=66"
+
+  - name: launch_app
+    type: http
+    method: POST
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/launch
+    description: "Launch app: {package: 'com.android.settings'}"
+
+  - name: terminate_app
+    type: http
+    method: POST
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/terminate
+    description: "Kill app: {package: 'com.android.settings'}"
+
+  - name: open_url
+    type: http
+    method: POST
+    url: http://127.0.0.1:8686/api/v1/devices/{device_id}/open-url
+    description: "Open URL on device: {url: 'https://google.com'}"
