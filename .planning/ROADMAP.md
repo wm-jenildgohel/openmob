@@ -97,7 +97,7 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md -- Hub backend: test models, TestRunnerService, test API routes, wiring
 - [x] 05-02-PLAN.md -- MCP run_test tool: TypeScript tool + types + registration
-- [ ] 05-03-PLAN.md -- Hub UI: TestingScreen with script editor, runner, results dashboard
+- [x] 05-03-PLAN.md -- Hub UI: TestingScreen with script editor, runner, results dashboard
 **UI hint**: yes
 
 ## Progress
