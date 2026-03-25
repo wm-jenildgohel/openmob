@@ -89,7 +89,7 @@ Future<void> main() async {
     logService,
     uiTree: uiTreeService,
   );
-  systemCheckService = SystemCheckService();
+  systemCheckService = SystemCheckService(logService: logService);
   processManager = ProcessManager(logService);
 
   // Start API server — if port is busy, log error but don't crash

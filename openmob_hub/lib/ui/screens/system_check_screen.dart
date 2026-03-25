@@ -34,7 +34,7 @@ class SystemCheckScreen extends StatelessWidget {
         final allAvailable = available == total;
 
         // Separate into required and optional
-        const requiredNames = {'ADB', 'Node.js', 'npm'};
+        const requiredNames = {'ADB', 'MCP Server'};
         final required = tools.where((t) => requiredNames.contains(t.name)).toList();
         final optional = tools.where((t) => !requiredNames.contains(t.name)).toList();
 
