@@ -6,7 +6,9 @@ import 'package:rxdart/rxdart.dart';
 
 import 'log_service.dart';
 
-const _currentVersion = '1.0.0';
+/// Version is set in pubspec.yaml — update there before creating a release.
+/// The workflow reads it from the tag the user provides manually.
+const _currentVersion = '0.0.6';
 const _repoOwner = 'wm-jenildgohel';
 const _repoName = 'openmob';
 const _apiBase = 'https://api.github.com/repos/$_repoOwner/$_repoName';
