@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/res_colors.dart';
 import '../../main.dart';
 import '../../models/ai_tool.dart';
 import '../../models/tool_status.dart';
+import '../../services/update_service.dart';
 import '../widgets/tool_status_card.dart';
 
 class SystemCheckScreen extends StatelessWidget {
@@ -41,11 +43,166 @@ class SystemCheckScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
+          _buildUpdateSection(context),
+          const SizedBox(height: 32),
           _buildToolsSection(context),
           const SizedBox(height: 32),
           _buildAiToolsSection(context),
         ],
       ),
+    );
+  }
+
+  Widget _buildUpdateSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return ValueStreamBuilder<UpdateInfo>(
+      stream: updateService.status$,
+      builder: (context, info, child) {
+        final Color statusColor;
+        final IconData statusIcon;
+        final String statusText;
+        final String subtitle;
+
+        switch (info.status) {
+          case UpdateStatus.idle:
+          case UpdateStatus.checking:
+            statusColor = ResColors.textSecondary;
+            statusIcon = Icons.update_rounded;
+            statusText = 'Checking for updates...';
+            subtitle = 'Current version: v${info.currentVersion}';
+          case UpdateStatus.upToDate:
+            statusColor = ResColors.connected;
+            statusIcon = Icons.check_circle_rounded;
+            statusText = 'Up to date';
+            subtitle = 'v${info.currentVersion} is the latest version';
+          case UpdateStatus.available:
+            statusColor = ResColors.accent;
+            statusIcon = Icons.new_releases_rounded;
+            statusText = 'Update available: v${info.latestVersion}';
+            subtitle = 'Current: v${info.currentVersion}';
+          case UpdateStatus.downloading:
+            statusColor = ResColors.warning;
+            statusIcon = Icons.downloading_rounded;
+            statusText = 'Downloading v${info.latestVersion}...';
+            subtitle = '${(info.progress * 100).toInt()}%';
+          case UpdateStatus.installing:
+            statusColor = ResColors.warning;
+            statusIcon = Icons.install_desktop_rounded;
+            statusText = 'Installing...';
+            subtitle = 'Please wait';
+          case UpdateStatus.error:
+            statusColor = ResColors.error;
+            statusIcon = Icons.error_outline_rounded;
+            statusText = 'Update check failed';
+            subtitle = info.error ?? 'Unknown error';
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: ResColors.cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: info.status == UpdateStatus.available
+                  ? ResColors.accent.withValues(alpha: 0.4)
+                  : ResColors.cardBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(statusIcon, color: statusColor, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(statusText, style: textTheme.titleSmall?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                        )),
+                        const SizedBox(height: 2),
+                        Text(subtitle, style: textTheme.bodySmall?.copyWith(
+                          color: ResColors.textSecondary,
+                        )),
+                      ],
+                    ),
+                  ),
+                  if (info.status == UpdateStatus.available) ...[
+                    if (info.downloadUrl != null)
+                      ElevatedButton.icon(
+                        onPressed: () => updateService.downloadAndInstall(),
+                        icon: const Icon(Icons.download_rounded, size: 16),
+                        label: const Text('Download'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ResColors.accent,
+                          foregroundColor: ResColors.textOnAccent,
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () => launchUrl(
+                        Uri.parse('https://github.com/wm-jenildgohel/openmob/releases'),
+                      ),
+                      child: const Text('View Release'),
+                    ),
+                  ],
+                  if (info.status == UpdateStatus.upToDate || info.status == UpdateStatus.error)
+                    TextButton.icon(
+                      onPressed: () => updateService.checkForUpdate(),
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: const Text('Check Again'),
+                    ),
+                  if (info.status == UpdateStatus.idle || info.status == UpdateStatus.checking)
+                    const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                ],
+              ),
+              if (info.status == UpdateStatus.downloading) ...[
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: info.progress,
+                  backgroundColor: ResColors.cardBorder,
+                  color: ResColors.accent,
+                ),
+              ],
+              if (info.status == UpdateStatus.available && info.releaseNotes != null && info.releaseNotes!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ResColors.bg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('What\'s new:', style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: ResColors.textPrimary,
+                      )),
+                      const SizedBox(height: 4),
+                      Text(
+                        info.releaseNotes!.length > 300
+                            ? '${info.releaseNotes!.substring(0, 300)}...'
+                            : info.releaseNotes!,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: ResColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
