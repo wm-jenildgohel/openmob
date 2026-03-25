@@ -5,18 +5,39 @@ import '../../core/res_colors.dart';
 import '../../main.dart';
 import '../../models/device.dart';
 import '../widgets/connection_badge.dart';
+import '../widgets/live_preview.dart';
 
-class DeviceDetailScreen extends StatelessWidget {
+class DeviceDetailScreen extends StatefulWidget {
   final String deviceId;
 
   const DeviceDetailScreen({super.key, required this.deviceId});
+
+  @override
+  State<DeviceDetailScreen> createState() => _DeviceDetailScreenState();
+}
+
+class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
+  late final LivePreviewController _previewController;
+
+  @override
+  void initState() {
+    super.initState();
+    _previewController = LivePreviewController(deviceId: widget.deviceId);
+    _previewController.start();
+  }
+
+  @override
+  void dispose() {
+    _previewController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ValueStreamBuilder<List<Device>>(
       stream: deviceManager.devices$,
       builder: (context, devices, child) {
-        final device = devices.where((d) => d.id == deviceId).firstOrNull;
+        final device = devices.where((d) => d.id == widget.deviceId).firstOrNull;
 
         if (device == null) {
           return Scaffold(
@@ -56,18 +77,58 @@ class DeviceDetailScreen extends StatelessWidget {
               ],
             ),
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMetadataCard(context, device),
-                const SizedBox(height: 16),
-                _buildBridgeCard(context, device),
-                const SizedBox(height: 16),
-                _buildApiInfoCard(context, device),
-              ],
-            ),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= 900) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: LivePreview(controller: _previewController),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildMetadataCard(context, device),
+                            const SizedBox(height: 16),
+                            _buildBridgeCard(context, device),
+                            const SizedBox(height: 16),
+                            _buildApiInfoCard(context, device),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 300,
+                      child: LivePreview(controller: _previewController),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMetadataCard(context, device),
+                    const SizedBox(height: 16),
+                    _buildBridgeCard(context, device),
+                    const SizedBox(height: 16),
+                    _buildApiInfoCard(context, device),
+                  ],
+                ),
+              );
+            },
           ),
         );
       },
@@ -87,9 +148,10 @@ class DeviceDetailScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _infoRow('Serial', device.serial),
             _infoRow('Manufacturer', device.manufacturer),
-            _infoRow('OS Version', 'Android ${device.osVersion} (SDK ${device.sdkVersion})'),
+            _infoRow('OS Version', '${device.platform == 'ios' ? 'iOS' : 'Android'} ${device.osVersion}${device.sdkVersion > 0 ? ' (SDK ${device.sdkVersion})' : ''}'),
             _infoRow('Screen', '${device.screenWidth}x${device.screenHeight}'),
-            _infoRow('Battery', '${device.batteryLevel}% (${device.batteryStatus})'),
+            if (device.batteryLevel >= 0)
+              _infoRow('Battery', '${device.batteryLevel}% (${device.batteryStatus})'),
             _infoRow('Connection', device.connectionType),
             _statusRow('Status', device.status),
           ],
@@ -133,13 +195,13 @@ class DeviceDetailScreen extends StatelessWidget {
             Row(
               children: [
                 ElevatedButton.icon(
-                  onPressed: device.bridgeActive ? null : () => deviceManager.startBridge(deviceId),
+                  onPressed: device.bridgeActive ? null : () => deviceManager.startBridge(widget.deviceId),
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Start Bridge'),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: device.bridgeActive ? () => deviceManager.stopBridge(deviceId) : null,
+                  onPressed: device.bridgeActive ? () => deviceManager.stopBridge(widget.deviceId) : null,
                   icon: const Icon(Icons.stop),
                   label: const Text('Stop Bridge'),
                   style: ElevatedButton.styleFrom(
