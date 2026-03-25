@@ -17,8 +17,6 @@ import 'core/constants.dart';
 import 'app.dart';
 
 late final AdbService adbService;
-late final SimctlService simctlService;
-late final IdbService idbService;
 late final DeviceManager deviceManager;
 late final ScreenshotService screenshotService;
 late final UiTreeService uiTreeService;
@@ -33,7 +31,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
 
-  // Configure window
   const windowOptions = WindowOptions(
     size: Size(1024, 768),
     minimumSize: Size(800, 600),
@@ -45,16 +42,23 @@ Future<void> main() async {
     await windowManager.focus();
   });
 
-  // Initialize services
+  // Initialize logging first — everything else can log errors to it
+  logService = LogService();
+
+  // Initialize core services with safe defaults
   adbService = AdbService();
-  simctlService = SimctlService();
-  idbService = IdbService();
+  final simctlService = SimctlService();
+  final idbService = IdbService();
 
-  // Check iOS tool availability
-  final simctlAvail = await simctlService.isAvailable;
-  final idbAvail = await idbService.isAvailable;
-
-  print('iOS Simulator support: simctl=${simctlAvail ? "available" : "not available"}, idb=${idbAvail ? "available" : "not available"}');
+  // Check iOS tool availability (safe — returns false on error)
+  var simctlAvail = false;
+  var idbAvail = false;
+  try {
+    simctlAvail = await simctlService.isAvailable;
+    idbAvail = await idbService.isAvailable;
+  } catch (e) {
+    logService.addLine('hub', 'iOS tool check failed: $e', level: LogLevel.warning);
+  }
 
   deviceManager = DeviceManager(
     adbService,
@@ -78,11 +82,6 @@ Future<void> main() async {
     idb: idbAvail ? idbService : null,
     dm: deviceManager,
   );
-
-  // Initialize process management and logging services
-  logService = LogService();
-
-  // Initialize test runner service
   testRunnerService = TestRunnerService(
     actionService,
     screenshotService,
@@ -90,22 +89,44 @@ Future<void> main() async {
     logService,
     uiTree: uiTreeService,
   );
-
-  // Start API server with all services wired in
-  apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
-  await apiServer.start();
   systemCheckService = SystemCheckService();
   processManager = ProcessManager(logService);
-  await systemCheckService.checkAll();
-  logService.addLine('hub', 'OpenMob Hub started on port ${ApiConstants.port}');
+
+  // Start API server — if port is busy, log error but don't crash
+  apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
+  try {
+    await apiServer.start();
+    logService.addLine('hub', 'API server started on port ${ApiConstants.port}');
+  } catch (e) {
+    logService.addLine('hub', 'API server failed to start: $e', level: LogLevel.error);
+  }
+
+  // Run the UI immediately — don't block on device scan or system check
+  runApp(const OpenMobApp());
+
+  // Background tasks — run after UI is visible
+  _initBackground();
+}
+
+Future<void> _initBackground() async {
+  // System check
+  try {
+    await systemCheckService.checkAll();
+  } catch (e) {
+    logService.addLine('hub', 'System check failed: $e', level: LogLevel.warning);
+  }
 
   // Initial device scan
-  await deviceManager.refreshDevices();
+  try {
+    await deviceManager.refreshDevices();
+  } catch (e) {
+    logService.addLine('hub', 'Initial device scan failed: $e', level: LogLevel.warning);
+  }
 
-  // Poll devices every 5 seconds for real-time status
+  // Poll devices every 5 seconds
   Stream.periodic(const Duration(seconds: 5)).listen((_) {
-    deviceManager.refreshDevices();
+    try {
+      deviceManager.refreshDevices();
+    } catch (_) {}
   });
-
-  runApp(const OpenMobApp());
 }
