@@ -106,7 +106,8 @@ class ProcessManager {
           _logService.addLine('hub', 'Node.js not found in PATH', level: LogLevel.error);
           return;
         }
-        _mcpProcess = await Process.start('node', ['build${_sep}app${_sep}index.js'], workingDirectory: mcpDir);
+        // Use absolute path to avoid Windows path resolution issues
+        _mcpProcess = await Process.start('node', [indexJs]);
       } else {
         _mcpStatus.add(const ProcessInfo(
           name: 'MCP Server',
@@ -251,15 +252,20 @@ class ProcessManager {
 
   /// Detect available terminal emulator on the system
   String? get _terminalEmulator {
+    if (Platform.isWindows) {
+      // Windows Terminal (wt.exe) is preferred, then cmd.exe as fallback
+      for (final term in ['wt', 'cmd']) {
+        try {
+          final result = Process.runSync('where', [term]);
+          if (result.exitCode == 0) return term;
+        } catch (_) {}
+      }
+      return 'cmd'; // cmd.exe is always available on Windows
+    }
+
     final terminals = [
-      'gnome-terminal',
-      'konsole',
-      'xfce4-terminal',
-      'mate-terminal',
-      'tilix',
-      'alacritty',
-      'kitty',
-      'xterm',
+      'gnome-terminal', 'konsole', 'xfce4-terminal', 'mate-terminal',
+      'tilix', 'alacritty', 'kitty', 'xterm',
     ];
     for (final term in terminals) {
       try {
@@ -278,22 +284,25 @@ class ProcessManager {
       _bridgeStatus.add(const ProcessInfo(
         name: 'AiBridge',
         status: ProcessStatus.error,
-        errorMessage: 'aibridge binary not found. Build it:\ncd openmob_bridge && cargo build --release',
+        errorMessage: 'AiBridge not found — go to System Check',
       ));
       _logService.addLine('hub', 'AiBridge binary not found', level: LogLevel.error);
       return;
     }
 
-    // Validate the agent command exists in PATH
+    // Validate the agent command exists
     try {
-      final result = Process.runSync('which', [agent]);
+      final result = Process.runSync(
+        Platform.isWindows ? 'where' : 'which',
+        [agent],
+      );
       if (result.exitCode != 0) {
         _bridgeStatus.add(ProcessInfo(
           name: 'AiBridge',
           status: ProcessStatus.error,
-          errorMessage: '"$agent" not found in PATH.\nInstall it first or choose a different agent.',
+          errorMessage: '"$agent" not found on this computer',
         ));
-        _logService.addLine('hub', 'Agent "$agent" not found in PATH', level: LogLevel.error);
+        _logService.addLine('hub', 'Agent "$agent" not found', level: LogLevel.error);
         return;
       }
     } catch (_) {}
@@ -303,7 +312,7 @@ class ProcessManager {
       _bridgeStatus.add(const ProcessInfo(
         name: 'AiBridge',
         status: ProcessStatus.error,
-        errorMessage: 'No terminal emulator found.\nAiBridge needs a real terminal. Run manually:\naibridge -- claude',
+        errorMessage: 'No terminal found on this system',
       ));
       _logService.addLine('hub', 'No terminal emulator found', level: LogLevel.error);
       return;
@@ -312,29 +321,35 @@ class ProcessManager {
     _bridgeStatus.add(_bridgeStatus.value.copyWith(status: ProcessStatus.starting));
 
     try {
-      final bridgeCmd = '$binary --port $port -- $agent';
-
-      // Launch in a real terminal emulator so AiBridge gets a proper PTY
       final List<String> termArgs;
-      switch (terminal) {
-        case 'gnome-terminal':
-          termArgs = ['gnome-terminal', '--title', 'AiBridge ($agent)', '--', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-        case 'konsole':
-          termArgs = ['konsole', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-        case 'xfce4-terminal':
-          termArgs = ['xfce4-terminal', '--title', 'AiBridge ($agent)', '-e', 'bash -c "$bridgeCmd; echo AiBridge exited; read"'];
-        case 'alacritty':
-          termArgs = ['alacritty', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-        case 'kitty':
-          termArgs = ['kitty', '--title', 'AiBridge ($agent)', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-        default:
-          termArgs = [terminal, '-e', 'bash -c "$bridgeCmd"'];
+
+      if (Platform.isWindows) {
+        // Windows: use Windows Terminal (wt) or cmd.exe
+        if (terminal == 'wt') {
+          termArgs = ['wt', '--title', 'AiBridge ($agent)', '--', binary, '--port', '$port', '--', agent];
+        } else {
+          termArgs = ['cmd', '/c', 'start', 'AiBridge ($agent)', binary, '--port', '$port', '--', agent];
+        }
+      } else {
+        // Unix: use detected terminal
+        final bridgeCmd = '$binary --port $port -- $agent';
+        switch (terminal) {
+          case 'gnome-terminal':
+            termArgs = ['gnome-terminal', '--title', 'AiBridge ($agent)', '--', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+          case 'konsole':
+            termArgs = ['konsole', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+          case 'alacritty':
+            termArgs = ['alacritty', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+          case 'kitty':
+            termArgs = ['kitty', '--title', 'AiBridge ($agent)', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+          default:
+            termArgs = [terminal, '-e', 'bash', '-c', bridgeCmd];
+        }
       }
 
       _bridgeProcess = await Process.start(
         termArgs.first,
         termArgs.sublist(1),
-        environment: {'TERM': 'xterm-256color'},
       );
 
       _bridgeStatus.add(ProcessInfo(

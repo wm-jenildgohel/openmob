@@ -103,13 +103,22 @@ Future<void> main() async {
     logService,
   );
 
-  // Start API server — if port is busy, log error but don't crash
+  // Start API server — check if port is free, retry once
   apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
   try {
     await apiServer.start();
-    logService.addLine('hub', 'API server started on port ${ApiConstants.port}');
+    logService.addLine('hub', 'Hub ready on port ${ApiConstants.port}');
   } catch (e) {
-    logService.addLine('hub', 'API server failed to start: $e', level: LogLevel.error);
+    // Port might be in use by another instance — try to check and warn
+    logService.addLine('hub', 'Port ${ApiConstants.port} is in use — close other OpenMob instances', level: LogLevel.warning);
+    // Try once more after a short delay
+    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await apiServer.start();
+      logService.addLine('hub', 'Hub ready on port ${ApiConstants.port}');
+    } catch (_) {
+      logService.addLine('hub', 'Could not start — another instance may be running', level: LogLevel.error);
+    }
   }
 
   // Run the UI immediately — don't block on device scan or system check

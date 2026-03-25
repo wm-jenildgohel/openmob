@@ -347,6 +347,8 @@ class AiToolSetupService {
 
   // ─── Install All ───
 
+  bool _skillsInstalled = false;
+
   Future<void> installAll() async {
     for (final tool in currentTools) {
       if (tool.detected && !tool.configured) {
@@ -368,8 +370,11 @@ class AiToolSetupService {
         }
       }
     }
-    // Install skill files for all detected tools
-    await _installSkillFiles();
+    // Install skill files once (not on every call)
+    if (!_skillsInstalled) {
+      await _installSkillFiles();
+      _skillsInstalled = true;
+    }
     await detectAll();
   }
 
