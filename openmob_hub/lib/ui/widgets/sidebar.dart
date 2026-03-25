@@ -33,17 +33,13 @@ class Sidebar extends StatelessWidget {
         children: [
           const SizedBox(height: 16),
           // Logo
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: ResColors.accentSoft,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.hub_rounded,
-              color: ResColors.accent,
-              size: 22,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              'assets/openmob.png',
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
             ),
           ),
           const SizedBox(height: 8),
