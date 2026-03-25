@@ -15,7 +15,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: '3.29.3'
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 jobs:
   # ─── Build Hub (Linux + Windows) ───
@@ -130,14 +130,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: node18-linux-x64
-            output: openmob-mcp-linux
+          - target: node20-linux-x64
+            output: openmob-mcp
             name: linux-x64
-          - target: node18-win-x64
+          - target: node20-win-x64
             output: openmob-mcp.exe
             name: windows-x64
-          - target: node18-macos-x64
-            output: openmob-mcp-macos
+          - target: node20-macos-x64
+            output: openmob-mcp
             name: macos-x64
     runs-on: ubuntu-latest
     steps:
@@ -153,10 +153,15 @@ jobs:
           npm install
           npm run build
 
-      - name: Bundle with pkg
+      - name: Bundle into single file (esbuild)
         working-directory: openmob_mcp
         run: |
-          npx pkg build/app/index.js --target ${{ matrix.target }} --output dist/${{ matrix.output }}
+          npx esbuild build/app/index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/openmob-mcp-bundle.cjs
+
+      - name: Create standalone binary (pkg)
+        working-directory: openmob_mcp
+        run: |
+          npx pkg dist/openmob-mcp-bundle.cjs --target ${{ matrix.target }} --output dist/${{ matrix.output }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -193,8 +198,8 @@ jobs:
           cp artifacts/bridge-linux-x64/aibridge release/openmob-linux-x64/
           chmod +x release/openmob-linux-x64/aibridge
           # MCP
-          cp artifacts/mcp-linux-x64/openmob-mcp-linux release/openmob-linux-x64/
-          chmod +x release/openmob-linux-x64/openmob-mcp-linux
+          cp artifacts/mcp-linux-x64/openmob-mcp release/openmob-linux-x64/
+          chmod +x release/openmob-linux-x64/openmob-mcp
           # Skills
           cp -r openmob_skills release/openmob-linux-x64/
           # Launcher
@@ -227,7 +232,8 @@ jobs:
           # AiBridge (arm64)
           cp artifacts/bridge-macos-arm64/aibridge release/openmob-macos-x64/aibridge-arm64
           # MCP
-          cp artifacts/mcp-macos-x64/openmob-mcp-macos release/openmob-macos-x64/
+          cp artifacts/mcp-macos-x64/openmob-mcp release/openmob-macos-x64/
+          chmod +x release/openmob-macos-x64/openmob-mcp
           # Skills
           cp -r openmob_skills release/openmob-macos-x64/
           # Archive

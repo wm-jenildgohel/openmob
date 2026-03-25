@@ -24,11 +24,13 @@ class SystemCheckService {
     return '$home/.openmob/tools';
   }
 
-  /// Bundled tools directory (next to the app executable)
+  /// App executable directory (where bundled tools live)
   String get _bundledDir {
     final exe = Platform.resolvedExecutable;
-    return '${File(exe).parent.path}/tools';
+    return File(exe).parent.path;
   }
+
+  String get _sep => Platform.pathSeparator;
 
   Future<void> checkAll() async {
     final results = <ToolStatus>[];
@@ -55,8 +57,8 @@ class SystemCheckService {
   Future<ToolStatus> _checkAdb() async {
     // 1. Check bundled (next to app)
     final bundledAdb = Platform.isWindows
-        ? '$_bundledDir/platform-tools/adb.exe'
-        : '$_bundledDir/platform-tools/adb';
+        ? '$_bundledDir${_sep}platform-tools${_sep}adb.exe'
+        : '$_bundledDir${_sep}platform-tools${_sep}adb';
     if (File(bundledAdb).existsSync()) {
       _resolvedAdbPath = bundledAdb;
       return await _verifyAdb(bundledAdb, 'bundled');
@@ -399,8 +401,8 @@ class SystemCheckService {
   Future<ToolStatus> _checkMcpServer() async {
     // 1. Check bundled binary (next to app)
     final bundledMcp = Platform.isWindows
-        ? '$_bundledDir/openmob-mcp.exe'
-        : '$_bundledDir/openmob-mcp';
+        ? '$_bundledDir${_sep}openmob-mcp.exe'
+        : '$_bundledDir${_sep}openmob-mcp';
     if (File(bundledMcp).existsSync()) {
       return ToolStatus(
         name: 'MCP Server',
@@ -456,8 +458,8 @@ class SystemCheckService {
   Future<ToolStatus> _checkAiBridge() async {
     // 1. Check bundled (next to app)
     final bundledBridge = Platform.isWindows
-        ? '$_bundledDir/aibridge.exe'
-        : '$_bundledDir/aibridge';
+        ? '$_bundledDir${_sep}aibridge.exe'
+        : '$_bundledDir${_sep}aibridge';
     if (File(bundledBridge).existsSync()) {
       return ToolStatus(
         name: 'AiBridge',

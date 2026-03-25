@@ -17,18 +17,23 @@ class AiToolSetupService {
 
   /// Resolve the MCP server binary/script path
   String get _mcpCommand {
-    // Check bundled binary
+    final sep = Platform.pathSeparator;
     final exe = Platform.resolvedExecutable;
     final bundledDir = File(exe).parent.path;
-    final bundledBin = Platform.isWindows
-        ? '$bundledDir/tools/openmob-mcp.exe'
-        : '$bundledDir/tools/openmob-mcp';
-    if (File(bundledBin).existsSync()) return bundledBin;
+    final binName = Platform.isWindows ? 'openmob-mcp.exe' : 'openmob-mcp';
 
-    // Check project build
+    // Check bundled binary — right next to hub exe (CMake copies here)
+    final bundledFlat = '$bundledDir$sep$binName';
+    if (File(bundledFlat).existsSync()) return bundledFlat;
+
+    // Check bundled binary — in tools/ subdir
+    final bundledTools = '$bundledDir${sep}tools$sep$binName';
+    if (File(bundledTools).existsSync()) return bundledTools;
+
+    // Check project build (dev mode — Node.js)
     var dir = Directory.current;
     for (var i = 0; i < 5; i++) {
-      final candidate = '${dir.path}/openmob_mcp/build/app/index.js';
+      final candidate = '${dir.path}${sep}openmob_mcp${sep}build${sep}app${sep}index.js';
       if (File(candidate).existsSync()) return candidate;
       dir = dir.parent;
     }

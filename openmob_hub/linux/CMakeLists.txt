@@ -126,3 +126,31 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# === Bundled Tools (MCP Server + AiBridge) ===
+# Copy pre-built binaries next to the Hub executable if they exist.
+# Build these first: openmob_mcp/scripts/build-sea.sh + cargo build --release
+set(BUNDLED_TOOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../bundled_tools")
+
+# MCP Server (Node.js SEA binary)
+if(EXISTS "${BUNDLED_TOOLS_DIR}/openmob-mcp")
+  install(FILES "${BUNDLED_TOOLS_DIR}/openmob-mcp"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+    COMPONENT Runtime)
+endif()
+
+# AiBridge (Rust binary)
+if(EXISTS "${BUNDLED_TOOLS_DIR}/aibridge")
+  install(FILES "${BUNDLED_TOOLS_DIR}/aibridge"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+    COMPONENT Runtime)
+endif()
+
+# Skills directory
+if(EXISTS "${BUNDLED_TOOLS_DIR}/openmob_skills")
+  install(DIRECTORY "${BUNDLED_TOOLS_DIR}/openmob_skills"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    COMPONENT Runtime)
+endif()

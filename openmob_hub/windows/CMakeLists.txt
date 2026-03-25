@@ -106,3 +106,37 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# === Bundled Tools (MCP Server + AiBridge) ===
+# Copy pre-built binaries next to the Hub executable if they exist.
+# Build these first with: openmob_mcp/scripts/build-sea.ps1 + cargo build --release
+set(BUNDLED_TOOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../bundled_tools")
+
+# MCP Server (Node.js SEA binary)
+if(EXISTS "${BUNDLED_TOOLS_DIR}/openmob-mcp.exe")
+  install(FILES "${BUNDLED_TOOLS_DIR}/openmob-mcp.exe"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    COMPONENT Runtime)
+elseif(EXISTS "${BUNDLED_TOOLS_DIR}/openmob-mcp")
+  install(FILES "${BUNDLED_TOOLS_DIR}/openmob-mcp"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    COMPONENT Runtime)
+endif()
+
+# AiBridge (Rust binary)
+if(EXISTS "${BUNDLED_TOOLS_DIR}/aibridge.exe")
+  install(FILES "${BUNDLED_TOOLS_DIR}/aibridge.exe"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    COMPONENT Runtime)
+elseif(EXISTS "${BUNDLED_TOOLS_DIR}/aibridge")
+  install(FILES "${BUNDLED_TOOLS_DIR}/aibridge"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    COMPONENT Runtime)
+endif()
+
+# Skills directory
+if(EXISTS "${BUNDLED_TOOLS_DIR}/openmob_skills")
+  install(DIRECTORY "${BUNDLED_TOOLS_DIR}/openmob_skills"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    COMPONENT Runtime)
+endif()
