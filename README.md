@@ -220,16 +220,16 @@ Full API reference in [`openmob_skills/SKILL.md`](openmob_skills/SKILL.md).
 
 ### Real Example: Testing a Login Flow
 
-This was tested live on a Samsung Galaxy S9+ running LinkLocal app:
+This was tested live on a real Android device:
 
 | Step | AI Action | Result |
 |------|-----------|--------|
-| 1 | `launch_app("com.wmt.linklocal.android")` | App opened |
+| 1 | `launch_app("com.example.myapp")` | App opened |
 | 2 | `get_ui_tree(visible=true)` → found "Profile" at index 25 | Read screen |
 | 3 | `tap(index=25)` | "Account required" dialog appeared |
 | 4 | `tap(index=15)` → "Sign In" | Login screen opened |
 | 5 | `tap(x=720, y=855)` → focus email field | Keyboard appeared |
-| 6 | `type_text("test@linklocal.com")` | Email entered |
+| 6 | `type_text("test@example.com")` | Email entered |
 | 7 | `tap(index=16)` → "Using Password" | Password screen appeared |
 | 8 | `tap(x=720, y=908)` + `type_text("Test@1234")` | Password entered |
 | 9 | `tap(index=18)` → "Sign In" | "User not found" error toast caught |

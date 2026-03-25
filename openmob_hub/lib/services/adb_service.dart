@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:process_run/process_run.dart';
 
 class AdbService {
   String? _adbPath;
@@ -18,11 +17,19 @@ class AdbService {
       }
     }
     // Fallback to PATH lookup
-    final which = whichSync('adb');
-    if (which != null) {
-      _adbPath = which;
-      return _adbPath!;
-    }
+    try {
+      final result = Process.runSync(
+        Platform.isWindows ? 'where' : 'which',
+        ['adb'],
+      );
+      if (result.exitCode == 0) {
+        final path = (result.stdout as String).trim().split('\n').first;
+        if (path.isNotEmpty) {
+          _adbPath = path;
+          return _adbPath!;
+        }
+      }
+    } catch (_) {}
     throw Exception('ADB not found. Set ANDROID_HOME or add adb to PATH.');
   }
 
