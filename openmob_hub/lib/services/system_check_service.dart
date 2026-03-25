@@ -275,47 +275,85 @@ class SystemCheckService {
     }
   }
 
-  /// Install AiBridge — download prebuilt binary from GitHub releases
+  /// Install AiBridge — copy from project build or download from GitHub releases
   Future<bool> installAiBridge() async {
     _updateToolStatus('AiBridge', installing: true, progress: 0.0);
-    _log('Downloading AiBridge...');
+    _log('Installing AiBridge...');
 
     try {
+      final sep = Platform.pathSeparator;
+      final dir = Directory(_toolsDir);
+      await dir.create(recursive: true);
+      final binaryName = Platform.isWindows ? 'aibridge.exe' : 'aibridge';
+      final destFile = File('$_toolsDir$sep$binaryName');
+
+      // 1. Try to copy from project build directory first
+      _updateToolStatus('AiBridge', installing: true, progress: 0.2);
+      var searchDir = Directory.current;
+      for (var i = 0; i < 5; i++) {
+        final candidate = Platform.isWindows
+            ? '${searchDir.path}${sep}openmob_bridge${sep}target${sep}release${sep}aibridge.exe'
+            : '${searchDir.path}${sep}openmob_bridge${sep}target${sep}release${sep}aibridge';
+        if (File(candidate).existsSync()) {
+          await File(candidate).copy(destFile.path);
+          if (!Platform.isWindows) {
+            await Process.run('chmod', ['+x', destFile.path]);
+          }
+          _log('AiBridge copied from project build');
+          _updateToolStatus('AiBridge', installing: false, progress: 1.0);
+          await checkAll();
+          return true;
+        }
+        searchDir = searchDir.parent;
+      }
+
+      // 2. Try downloading from GitHub releases
+      _updateToolStatus('AiBridge', installing: true, progress: 0.3);
       final url = _aiBridgeDownloadUrl;
       if (url == null) {
-        _log('No AiBridge download URL for this platform', error: true);
-        _updateToolStatus('AiBridge', installing: false);
+        _log('No download available for this platform', error: true);
+        _updateToolError('AiBridge', 'Not available for this platform');
         return false;
       }
 
-      _updateToolStatus('AiBridge', installing: true, progress: 0.3);
-      final response = await http.get(Uri.parse(url));
+      _log('Downloading from GitHub releases...');
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => http.Response('timeout', 408),
+      );
+
+      if (response.statusCode == 404) {
+        _log('No release found on GitHub', error: true);
+        _updateToolError('AiBridge', 'No release available yet — this is optional');
+        return false;
+      }
+
       if (response.statusCode != 200) {
-        _log('AiBridge download failed: HTTP ${response.statusCode}', error: true);
-        _updateToolStatus('AiBridge', installing: false);
+        _log('Download failed: HTTP ${response.statusCode}', error: true);
+        _updateToolError('AiBridge', 'Download failed — check your internet connection');
+        return false;
+      }
+
+      if (response.bodyBytes.length < 1000) {
+        _log('Downloaded file too small — likely an error page', error: true);
+        _updateToolError('AiBridge', 'Download failed — no release available yet');
         return false;
       }
 
       _updateToolStatus('AiBridge', installing: true, progress: 0.7);
-
-      final dir = Directory(_toolsDir);
-      await dir.create(recursive: true);
-
-      final binaryName = Platform.isWindows ? 'aibridge.exe' : 'aibridge';
-      final binaryFile = File('$_toolsDir/$binaryName');
-      await binaryFile.writeAsBytes(response.bodyBytes);
+      await destFile.writeAsBytes(response.bodyBytes);
 
       if (!Platform.isWindows) {
-        await Process.run('chmod', ['+x', binaryFile.path]);
+        await Process.run('chmod', ['+x', destFile.path]);
       }
 
-      _log('AiBridge installed at ${binaryFile.path}');
+      _log('AiBridge installed successfully');
       _updateToolStatus('AiBridge', installing: false, progress: 1.0);
       await checkAll();
       return true;
     } catch (e) {
       _log('AiBridge install failed: $e', error: true);
-      _updateToolStatus('AiBridge', installing: false);
+      _updateToolError('AiBridge', 'Installation failed — this tool is optional');
       return false;
     }
   }
@@ -389,12 +427,13 @@ class SystemCheckService {
     try {
       final result = await Process.run('node', ['--version']);
       if (result.exitCode == 0) {
-        _log('Node.js ${(result.stdout as String).trim()} found — needs build');
+        _log('Node.js ${(result.stdout as String).trim()} found — needs MCP build');
         return const ToolStatus(
           name: 'MCP Server',
           available: false,
           version: 'Needs setup',
           installHint: 'Needs setup — click Install',
+          canAutoInstall: true,
         );
       }
     } catch (_) {}
@@ -402,7 +441,7 @@ class SystemCheckService {
     return const ToolStatus(
       name: 'MCP Server',
       available: false,
-      installHint: 'Required for AI tools — click Install',
+      installHint: 'Not installed — click Install',
       canAutoInstall: true,
     );
   }
@@ -510,6 +549,22 @@ class SystemCheckService {
     final updated = currentTools.map((t) {
       if (t.name == name) {
         return t.copyWith(installing: installing, installProgress: progress);
+      }
+      return t;
+    }).toList();
+    _tools.add(updated);
+  }
+
+  void _updateToolError(String name, String message) {
+    final updated = currentTools.map((t) {
+      if (t.name == name) {
+        return ToolStatus(
+          name: t.name,
+          available: false,
+          installHint: message,
+          canAutoInstall: t.canAutoInstall,
+          installing: false,
+        );
       }
       return t;
     }).toList();

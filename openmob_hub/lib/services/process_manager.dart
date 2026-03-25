@@ -33,34 +33,73 @@ class ProcessManager {
 
   // --- Path resolution ---
 
-  String get _projectRoot {
+  String get _sep => Platform.pathSeparator;
+
+  String? get _projectRoot {
     var dir = Directory.current;
     for (var i = 0; i < 5; i++) {
-      final mcpDir = Directory('${dir.path}/openmob_mcp');
-      final bridgeDir = Directory('${dir.path}/openmob_bridge');
-      if (mcpDir.existsSync() && bridgeDir.existsSync()) {
-        return dir.path;
-      }
+      final mcpDir = Directory('${dir.path}${_sep}openmob_mcp');
+      if (mcpDir.existsSync()) return dir.path;
       dir = dir.parent;
     }
-    return Directory.current.parent.path;
+    // Also check next to the executable
+    final exeDir = File(Platform.resolvedExecutable).parent.parent;
+    final mcpDir = Directory('${exeDir.path}${_sep}openmob_mcp');
+    if (mcpDir.existsSync()) return exeDir.path;
+    return null;
   }
 
-  String get _mcpDir => '$_projectRoot/openmob_mcp';
+  String? get _mcpDir {
+    final root = _projectRoot;
+    if (root == null) return null;
+    return '$root${_sep}openmob_mcp';
+  }
 
   // --- MCP Server lifecycle ---
 
   Future<void> startMcp() async {
     if (_mcpStatus.value.status == ProcessStatus.running) return;
 
+    final mcpDir = _mcpDir;
+
+    // Check bundled binary first (next to app)
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
+    final bundledMcp = Platform.isWindows
+        ? '$exeDir${_sep}tools${_sep}openmob-mcp.exe'
+        : '$exeDir${_sep}tools${_sep}openmob-mcp';
+    final bundledMcpAlt = Platform.isWindows
+        ? '$exeDir${_sep}openmob-mcp.exe'
+        : '$exeDir${_sep}openmob-mcp';
+
     _mcpStatus.add(_mcpStatus.value.copyWith(status: ProcessStatus.starting));
 
     try {
-      _mcpProcess = await Process.start(
-        'node',
-        ['build/app/index.js'],
-        workingDirectory: _mcpDir,
-      );
+      // Try bundled binary
+      if (File(bundledMcp).existsSync() || File(bundledMcpAlt).existsSync()) {
+        final bin = File(bundledMcp).existsSync() ? bundledMcp : bundledMcpAlt;
+        _mcpProcess = await Process.start(bin, []);
+      } else if (mcpDir != null && Directory(mcpDir).existsSync()) {
+        // Try project build
+        final indexJs = '$mcpDir${_sep}build${_sep}app${_sep}index.js';
+        if (!File(indexJs).existsSync()) {
+          _mcpStatus.add(const ProcessInfo(
+            name: 'MCP Server',
+            status: ProcessStatus.error,
+            errorMessage: 'MCP Server needs setup — go to System Check',
+          ));
+          _logService.addLine('hub', 'MCP index.js not found at $indexJs', level: LogLevel.error);
+          return;
+        }
+        _mcpProcess = await Process.start('node', ['build${_sep}app${_sep}index.js'], workingDirectory: mcpDir);
+      } else {
+        _mcpStatus.add(const ProcessInfo(
+          name: 'MCP Server',
+          status: ProcessStatus.error,
+          errorMessage: 'MCP Server not found — go to System Check to install',
+        ));
+        _logService.addLine('hub', 'MCP directory not found', level: LogLevel.error);
+        return;
+      }
 
       _mcpProcess!.stdout
           .transform(utf8.decoder)
@@ -87,10 +126,10 @@ class ProcessManager {
 
       _mcpProcess!.exitCode.then((code) {
         if (code != 0) {
-          _mcpStatus.add(ProcessInfo(
+          _mcpStatus.add(const ProcessInfo(
             name: 'MCP Server',
             status: ProcessStatus.error,
-            errorMessage: 'Exited with code $code',
+            errorMessage: 'Stopped unexpectedly — check System Check',
           ));
           _logService.addLine('hub', 'MCP Server exited with code $code',
               level: LogLevel.error);
@@ -104,10 +143,10 @@ class ProcessManager {
         _mcpProcess = null;
       });
     } catch (e) {
-      _mcpStatus.add(ProcessInfo(
+      _mcpStatus.add(const ProcessInfo(
         name: 'MCP Server',
         status: ProcessStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: 'Could not start — go to System Check',
       ));
       _logService.addLine('hub', 'Failed to start MCP Server: $e',
           level: LogLevel.error);
@@ -140,33 +179,54 @@ class ProcessManager {
   // --- AiBridge lifecycle ---
 
   String? get _bridgeBinary {
-    // Check common locations for the aibridge binary
-    final candidates = [
-      '$_projectRoot/openmob_bridge/target/release/aibridge',
-      '$_projectRoot/openmob_bridge/target/debug/aibridge',
-    ];
+    final binaryName = Platform.isWindows ? 'aibridge.exe' : 'aibridge';
 
-    // Also check PATH via `which`
+    // Check bundled (next to app)
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
+    for (final subDir in ['tools', '']) {
+      final candidate = subDir.isEmpty
+          ? '$exeDir$_sep$binaryName'
+          : '$exeDir$_sep$subDir$_sep$binaryName';
+      if (File(candidate).existsSync()) return candidate;
+    }
+
+    // Check PATH
     try {
-      final result = Process.runSync('which', ['aibridge']);
+      final result = Process.runSync(
+        Platform.isWindows ? 'where' : 'which',
+        ['aibridge'],
+      );
       if (result.exitCode == 0) {
-        final path = (result.stdout as String).trim();
+        final path = (result.stdout as String).trim().split('\n').first;
         if (path.isNotEmpty) return path;
       }
     } catch (_) {}
 
-    for (final path in candidates) {
-      if (File(path).existsSync()) return path;
+    // Check downloaded (~/.openmob/tools/)
+    final home = Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ?? '.';
+    final downloaded = '$home$_sep.openmob${_sep}tools$_sep$binaryName';
+    if (File(downloaded).existsSync()) return downloaded;
+
+    // Check project build
+    final root = _projectRoot;
+    if (root != null) {
+      final candidate = '$root${_sep}openmob_bridge${_sep}target${_sep}release$_sep$binaryName';
+      if (File(candidate).existsSync()) return candidate;
     }
+
     return null;
   }
 
-  /// Returns list of available AI agents found in PATH
+  /// Returns list of available AI agents found on this computer
   List<String> get availableAgents {
     final agents = <String>[];
     for (final name in ['claude', 'codex', 'gemini']) {
       try {
-        final result = Process.runSync('which', [name]);
+        final result = Process.runSync(
+          Platform.isWindows ? 'where' : 'which',
+          [name],
+        );
         if (result.exitCode == 0) agents.add(name);
       } catch (_) {}
     }
