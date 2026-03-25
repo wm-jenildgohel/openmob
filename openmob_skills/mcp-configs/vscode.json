@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "openmob": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["build/app/index.js"],
+      "cwd": "${workspaceFolder}/../openmob_mcp",
+      "env": {
+        "OPENMOB_HUB_URL": "http://127.0.0.1:8686/api/v1"
+      }
+    }
+  }
+}
