@@ -114,8 +114,13 @@ class ToolStatusCard extends StatelessWidget {
   }
 
   void _handleInstall(BuildContext context) {
-    if (tool.name == 'ADB') {
-      systemCheckService.installAdb();
+    switch (tool.name) {
+      case 'ADB':
+        systemCheckService.installAdb();
+      case 'MCP Server':
+        systemCheckService.installNode();
+      case 'AiBridge':
+        systemCheckService.installAiBridge();
     }
   }
 }

@@ -222,6 +222,113 @@ class SystemCheckService {
     return null;
   }
 
+  /// Install Node.js (needed for MCP server if not bundled as binary)
+  Future<bool> installNode() async {
+    _updateToolStatus('MCP Server', installing: true, progress: 0.0);
+    _log('Installing Node.js...');
+
+    try {
+      if (Platform.isWindows) {
+        // Use winget on Windows
+        _updateToolStatus('MCP Server', installing: true, progress: 0.3);
+        final result = await Process.run(
+          'winget',
+          ['install', '--id', 'OpenJS.NodeJS.LTS', '-e', '--accept-package-agreements', '--accept-source-agreements'],
+        );
+        if (result.exitCode != 0) {
+          _log('winget install failed: ${result.stderr}', error: true);
+          _updateToolStatus('MCP Server', installing: false);
+          return false;
+        }
+      } else if (Platform.isLinux) {
+        // Download Node.js binary
+        _updateToolStatus('MCP Server', installing: true, progress: 0.2);
+        final response = await http.get(Uri.parse('https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-x64.tar.xz'));
+        if (response.statusCode != 200) {
+          _log('Node.js download failed', error: true);
+          _updateToolStatus('MCP Server', installing: false);
+          return false;
+        }
+        _updateToolStatus('MCP Server', installing: true, progress: 0.6);
+        final nodeDir = Directory('$_toolsDir/node');
+        await nodeDir.create(recursive: true);
+        final archive = File('$_toolsDir/node.tar.xz');
+        await archive.writeAsBytes(response.bodyBytes);
+        await Process.run('tar', ['-xf', archive.path, '-C', nodeDir.path, '--strip-components=1']);
+        await archive.delete();
+      } else if (Platform.isMacOS) {
+        final result = await Process.run('brew', ['install', 'node@20']);
+        if (result.exitCode != 0) {
+          _log('brew install failed: ${result.stderr}', error: true);
+          _updateToolStatus('MCP Server', installing: false);
+          return false;
+        }
+      }
+
+      _log('Node.js installed');
+      _updateToolStatus('MCP Server', installing: false, progress: 1.0);
+      await checkAll();
+      return true;
+    } catch (e) {
+      _log('Node.js install failed: $e', error: true);
+      _updateToolStatus('MCP Server', installing: false);
+      return false;
+    }
+  }
+
+  /// Install AiBridge — download prebuilt binary from GitHub releases
+  Future<bool> installAiBridge() async {
+    _updateToolStatus('AiBridge', installing: true, progress: 0.0);
+    _log('Downloading AiBridge...');
+
+    try {
+      final url = _aiBridgeDownloadUrl;
+      if (url == null) {
+        _log('No AiBridge download URL for this platform', error: true);
+        _updateToolStatus('AiBridge', installing: false);
+        return false;
+      }
+
+      _updateToolStatus('AiBridge', installing: true, progress: 0.3);
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        _log('AiBridge download failed: HTTP ${response.statusCode}', error: true);
+        _updateToolStatus('AiBridge', installing: false);
+        return false;
+      }
+
+      _updateToolStatus('AiBridge', installing: true, progress: 0.7);
+
+      final dir = Directory(_toolsDir);
+      await dir.create(recursive: true);
+
+      final binaryName = Platform.isWindows ? 'aibridge.exe' : 'aibridge';
+      final binaryFile = File('$_toolsDir/$binaryName');
+      await binaryFile.writeAsBytes(response.bodyBytes);
+
+      if (!Platform.isWindows) {
+        await Process.run('chmod', ['+x', binaryFile.path]);
+      }
+
+      _log('AiBridge installed at ${binaryFile.path}');
+      _updateToolStatus('AiBridge', installing: false, progress: 1.0);
+      await checkAll();
+      return true;
+    } catch (e) {
+      _log('AiBridge install failed: $e', error: true);
+      _updateToolStatus('AiBridge', installing: false);
+      return false;
+    }
+  }
+
+  String? get _aiBridgeDownloadUrl {
+    const base = 'https://github.com/wm-jenildgohel/openmob/releases/latest/download';
+    if (Platform.isWindows) return '$base/aibridge-windows-x64.exe';
+    if (Platform.isLinux) return '$base/aibridge-linux-x64';
+    if (Platform.isMacOS) return '$base/aibridge-macos-x64';
+    return null;
+  }
+
   // ─── scrcpy (screen mirroring) ───
 
   Future<ToolStatus> _checkScrcpy() async {
@@ -270,7 +377,8 @@ class SystemCheckService {
     // 2. Check project build
     var dir = Directory.current;
     for (var i = 0; i < 5; i++) {
-      final candidate = '${dir.path}/openmob_mcp/build/app/index.js';
+      final sep = Platform.pathSeparator;
+      final candidate = '${dir.path}${sep}openmob_mcp${sep}build${sep}app${sep}index.js';
       if (File(candidate).existsSync()) {
         return ToolStatus(
           name: 'MCP Server',
@@ -287,19 +395,24 @@ class SystemCheckService {
     try {
       final result = await Process.run('node', ['--version']);
       if (result.exitCode == 0) {
+        final nodeVer = (result.stdout as String).trim();
+        final hint = Platform.isWindows
+            ? 'Run in terminal:\n  cd openmob_mcp\n  npm install\n  npm run build'
+            : 'Run: cd openmob_mcp && npm install && npm run build';
         return ToolStatus(
           name: 'MCP Server',
           available: false,
-          version: 'Node.js ${(result.stdout as String).trim()} available',
-          installHint: 'Run: cd openmob_mcp && npm install && npm run build',
+          version: 'Node.js $nodeVer found — needs build',
+          installHint: hint,
         );
       }
     } catch (_) {}
 
-    return const ToolStatus(
+    return ToolStatus(
       name: 'MCP Server',
       available: false,
-      installHint: 'MCP Server binary not found. Included in release downloads.',
+      installHint: 'Node.js required — will be installed automatically',
+      canAutoInstall: true,
     );
   }
 
@@ -338,11 +451,12 @@ class SystemCheckService {
     } catch (_) {}
 
     // 3. Check project build
+    final sep = Platform.pathSeparator;
     var dir = Directory.current;
     for (var i = 0; i < 5; i++) {
       final candidate = Platform.isWindows
-          ? '${dir.path}/openmob_bridge/target/release/aibridge.exe'
-          : '${dir.path}/openmob_bridge/target/release/aibridge';
+          ? '${dir.path}${sep}openmob_bridge${sep}target${sep}release${sep}aibridge.exe'
+          : '${dir.path}${sep}openmob_bridge${sep}target${sep}release${sep}aibridge';
       if (File(candidate).existsSync()) {
         return ToolStatus(
           name: 'AiBridge',
@@ -355,10 +469,25 @@ class SystemCheckService {
       dir = dir.parent;
     }
 
+    // 4. Check downloaded (~/.openmob/tools/)
+    final downloadedBridge = Platform.isWindows
+        ? '$_toolsDir${sep}aibridge.exe'
+        : '$_toolsDir${sep}aibridge';
+    if (File(downloadedBridge).existsSync()) {
+      return ToolStatus(
+        name: 'AiBridge',
+        available: true,
+        version: 'downloaded',
+        path: downloadedBridge,
+        installHint: '',
+      );
+    }
+
     return const ToolStatus(
       name: 'AiBridge',
       available: false,
-      installHint: 'Optional. Included in release downloads or build: cd openmob_bridge && cargo build --release',
+      installHint: 'Optional — wraps terminal AI agents with context injection',
+      canAutoInstall: true,
     );
   }
 
