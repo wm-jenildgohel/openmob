@@ -1,0 +1,247 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: '3.41.0'
+  NODE_VERSION: '20'
+
+jobs:
+  # ─── Build Hub (Linux + Windows) ───
+  build-hub-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build libgtk-3-dev
+
+      - name: Build Hub (Linux)
+        working-directory: openmob_hub
+        run: |
+          flutter pub get
+          flutter build linux --release
+
+      - name: Package Hub (Linux)
+        run: |
+          mkdir -p artifacts/linux
+          cp -r openmob_hub/build/linux/x64/release/bundle/* artifacts/linux/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hub-linux-x64
+          path: artifacts/linux/
+
+  build-hub-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Build Hub (Windows)
+        working-directory: openmob_hub
+        run: |
+          flutter pub get
+          flutter build windows --release
+
+      - name: Package Hub (Windows)
+        shell: bash
+        run: |
+          mkdir -p artifacts/windows
+          cp -r openmob_hub/build/windows/x64/runner/Release/* artifacts/windows/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hub-windows-x64
+          path: artifacts/windows/
+
+  # ─── Build AiBridge (Linux + Windows + macOS) ───
+  build-bridge:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: aibridge
+            name: linux-x64
+          - os: ubuntu-latest
+            target: x86_64-pc-windows-gnu
+            artifact: aibridge.exe
+            name: windows-x64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: aibridge
+            name: macos-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: aibridge
+            name: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install MinGW (Windows cross-compile)
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: sudo apt-get install -y gcc-mingw-w64-x86-64
+
+      - name: Build AiBridge
+        working-directory: openmob_bridge
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          cp openmob_bridge/target/${{ matrix.target }}/release/${{ matrix.artifact }} artifacts/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bridge-${{ matrix.name }}
+          path: artifacts/
+
+  # ─── Build MCP Server (cross-platform Node.js bundle) ───
+  build-mcp:
+    strategy:
+      matrix:
+        include:
+          - target: node18-linux-x64
+            output: openmob-mcp-linux
+            name: linux-x64
+          - target: node18-win-x64
+            output: openmob-mcp.exe
+            name: windows-x64
+          - target: node18-macos-x64
+            output: openmob-mcp-macos
+            name: macos-x64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install & Build
+        working-directory: openmob_mcp
+        run: |
+          npm install
+          npm run build
+
+      - name: Bundle with pkg
+        working-directory: openmob_mcp
+        run: |
+          npx pkg build/app/index.js --target ${{ matrix.target }} --output dist/${{ matrix.output }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcp-${{ matrix.name }}
+          path: openmob_mcp/dist/${{ matrix.output }}
+
+  # ─── Package & Release ───
+  release:
+    needs: [build-hub-linux, build-hub-windows, build-bridge, build-mcp]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Package Linux distribution
+        run: |
+          mkdir -p release/openmob-linux-x64
+          # Hub
+          cp -r artifacts/hub-linux-x64/* release/openmob-linux-x64/
+          # AiBridge
+          cp artifacts/bridge-linux-x64/aibridge release/openmob-linux-x64/
+          chmod +x release/openmob-linux-x64/aibridge
+          # MCP
+          cp artifacts/mcp-linux-x64/openmob-mcp-linux release/openmob-linux-x64/
+          chmod +x release/openmob-linux-x64/openmob-mcp-linux
+          # Skills
+          cp -r openmob_skills release/openmob-linux-x64/
+          # Launcher
+          cp dist/openmob-linux-x64/openmob release/openmob-linux-x64/ 2>/dev/null || true
+          chmod +x release/openmob-linux-x64/openmob 2>/dev/null || true
+          # Archive
+          cd release && tar -czf openmob-${{ steps.version.outputs.version }}-linux-x64.tar.gz openmob-linux-x64/
+
+      - name: Package Windows distribution
+        run: |
+          mkdir -p release/openmob-windows-x64
+          # Hub
+          cp -r artifacts/hub-windows-x64/* release/openmob-windows-x64/
+          # AiBridge
+          cp artifacts/bridge-windows-x64/aibridge.exe release/openmob-windows-x64/
+          # MCP
+          cp artifacts/mcp-windows-x64/openmob-mcp.exe release/openmob-windows-x64/
+          # Skills
+          cp -r openmob_skills release/openmob-windows-x64/
+          # Launcher
+          cp dist/openmob-windows-x64/openmob.bat release/openmob-windows-x64/ 2>/dev/null || true
+          # Archive
+          cd release && zip -r openmob-${{ steps.version.outputs.version }}-windows-x64.zip openmob-windows-x64/
+
+      - name: Package macOS distribution
+        run: |
+          mkdir -p release/openmob-macos-x64
+          # AiBridge (x64)
+          cp artifacts/bridge-macos-x64/aibridge release/openmob-macos-x64/aibridge
+          # AiBridge (arm64)
+          cp artifacts/bridge-macos-arm64/aibridge release/openmob-macos-x64/aibridge-arm64
+          # MCP
+          cp artifacts/mcp-macos-x64/openmob-mcp-macos release/openmob-macos-x64/
+          # Skills
+          cp -r openmob_skills release/openmob-macos-x64/
+          # Archive
+          cd release && tar -czf openmob-${{ steps.version.outputs.version }}-macos-x64.tar.gz openmob-macos-x64/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: OpenMob ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            release/openmob-${{ steps.version.outputs.version }}-linux-x64.tar.gz
+            release/openmob-${{ steps.version.outputs.version }}-windows-x64.zip
+            release/openmob-${{ steps.version.outputs.version }}-macos-x64.tar.gz

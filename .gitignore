@@ -1,0 +1,35 @@
+# Flutter
+openmob_hub/build/
+openmob_hub/.dart_tool/
+openmob_hub/.packages
+openmob_hub/.flutter-plugins
+openmob_hub/.flutter-plugins-dependencies
+openmob_hub/pubspec.lock
+
+# Rust
+openmob_bridge/target/
+
+# Node.js / TypeScript
+openmob_mcp/node_modules/
+openmob_mcp/build/
+openmob_mcp/dist/
+
+# Distribution binaries (too large for git)
+dist/openmob-linux-x64/
+dist/openmob-linux-x64.tar.gz
+dist/openmob-windows-x64/aibridge.exe
+dist/openmob-windows-x64/openmob-mcp.exe
+dist/openmob-windows-x64.zip
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
