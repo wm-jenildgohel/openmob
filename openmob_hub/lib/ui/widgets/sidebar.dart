@@ -45,6 +45,10 @@ class Sidebar extends StatelessWidget {
           label: Text('Logs'),
         ),
         NavigationRailDestination(
+          icon: Icon(Icons.science),
+          label: Text('Testing'),
+        ),
+        NavigationRailDestination(
           icon: Icon(Icons.settings),
           label: Text('System'),
         ),

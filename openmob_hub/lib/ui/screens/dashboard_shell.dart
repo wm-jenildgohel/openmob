@@ -9,6 +9,7 @@ import '../widgets/process_controls.dart';
 import 'home_screen.dart';
 import 'logs_screen.dart';
 import 'system_check_screen.dart';
+import 'testing_screen.dart';
 
 final _navIndex = BehaviorSubject<int>.seeded(0);
 
@@ -43,7 +44,8 @@ class DashboardShell extends StatelessWidget {
       0 => _buildDashboard(context),
       1 => const HomeScreen(),
       2 => const LogsScreen(),
-      3 => const SystemCheckScreen(),
+      3 => const TestingScreen(),
+      4 => const SystemCheckScreen(),
       _ => _buildDashboard(context),
     };
   }
