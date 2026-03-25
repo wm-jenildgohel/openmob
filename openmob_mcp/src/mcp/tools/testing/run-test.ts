@@ -53,7 +53,7 @@ export function registerRunTest(server: McpServer, hub: HubClient): void {
       try {
         const script = await hub.post<{ id: string }>("/tests/", {
           name,
-          deviceId: device_id,
+          device_id: device_id,
           steps,
         });
         const result = await hub.post<TestResult>(`/tests/${script.id}/run`, {});
