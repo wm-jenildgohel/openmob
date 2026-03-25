@@ -79,7 +79,7 @@ class ProcessManager {
         final bin = File(bundledMcp).existsSync() ? bundledMcp : bundledMcpAlt;
         _mcpProcess = await Process.start(bin, []);
       } else if (mcpDir != null && Directory(mcpDir).existsSync()) {
-        // Try project build
+        // Try project build — but check Node.js first
         final indexJs = '$mcpDir${_sep}build${_sep}app${_sep}index.js';
         if (!File(indexJs).existsSync()) {
           _mcpStatus.add(const ProcessInfo(
@@ -90,12 +90,28 @@ class ProcessManager {
           _logService.addLine('hub', 'MCP index.js not found at $indexJs', level: LogLevel.error);
           return;
         }
+        // Verify Node.js is installed
+        try {
+          final nodeCheck = Process.runSync(
+            Platform.isWindows ? 'where' : 'which',
+            ['node'],
+          );
+          if (nodeCheck.exitCode != 0) throw Exception('not found');
+        } catch (_) {
+          _mcpStatus.add(const ProcessInfo(
+            name: 'MCP Server',
+            status: ProcessStatus.error,
+            errorMessage: 'Node.js is not installed — go to System Check',
+          ));
+          _logService.addLine('hub', 'Node.js not found in PATH', level: LogLevel.error);
+          return;
+        }
         _mcpProcess = await Process.start('node', ['build${_sep}app${_sep}index.js'], workingDirectory: mcpDir);
       } else {
         _mcpStatus.add(const ProcessInfo(
           name: 'MCP Server',
           status: ProcessStatus.error,
-          errorMessage: 'MCP Server not found — go to System Check to install',
+          errorMessage: 'MCP Server not found — go to System Check',
         ));
         _logService.addLine('hub', 'MCP directory not found', level: LogLevel.error);
         return;

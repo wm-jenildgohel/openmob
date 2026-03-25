@@ -517,8 +517,7 @@ class SystemCheckService {
     return const ToolStatus(
       name: 'AiBridge',
       available: false,
-      installHint: 'Optional — enables AI agent integration',
-      canAutoInstall: true,
+      installHint: 'Optional — not required for device testing',
     );
   }
 
