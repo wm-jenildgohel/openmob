@@ -80,7 +80,7 @@ Plans:
   4. The full loop works: AI agent (via AiBridge) receives device context (via MCP), decides on actions, executes them on device, and sees updated state -- all orchestrated through the Hub
 **Plans**: 2 plans
 Plans:
-- [ ] 04-01-PLAN.md -- ProcessManager, LogService, SystemCheckService, models, ResColors update, main.dart wiring
+- [x] 04-01-PLAN.md -- ProcessManager, LogService, SystemCheckService, models, ResColors update, main.dart wiring
 - [ ] 04-02-PLAN.md -- Desktop UI overhaul: DashboardShell, sidebar, process controls, live preview, log viewer, system check screen
 **UI hint**: yes
 

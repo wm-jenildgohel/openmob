@@ -79,9 +79,9 @@
 
 - [x] **HUB-01**: Hub displays all connected devices with real-time connection status (connected/disconnected/bridged)
 - [ ] **HUB-02**: Hub shows live screen preview for any connected device (periodic screenshot polling)
-- [ ] **HUB-03**: Hub provides start/stop bridge controls per device
-- [ ] **HUB-04**: Hub shows device/bridge logs in a scrollable log viewer
-- [ ] **HUB-05**: Hub manages MCP server and AiBridge process lifecycle (start/stop/restart)
+- [x] **HUB-03**: Hub provides start/stop bridge controls per device
+- [x] **HUB-04**: Hub shows device/bridge logs in a scrollable log viewer
+- [x] **HUB-05**: Hub manages MCP server and AiBridge process lifecycle (start/stop/restart)
 - [x] **HUB-06**: Hub runs entirely locally with zero cloud dependency
 - [x] **HUB-07**: Hub works on Windows, macOS, and Linux
 
@@ -173,9 +173,9 @@
 | QA-04 | Phase 5 | Pending |
 | HUB-01 | Phase 1 | Complete |
 | HUB-02 | Phase 4 | Pending |
-| HUB-03 | Phase 4 | Pending |
-| HUB-04 | Phase 4 | Pending |
-| HUB-05 | Phase 4 | Pending |
+| HUB-03 | Phase 4 | Complete |
+| HUB-04 | Phase 4 | Complete |
+| HUB-05 | Phase 4 | Complete |
 | HUB-06 | Phase 1 | Complete |
 | HUB-07 | Phase 1 | Complete |
 | FREE-01 | Phase 1 | Complete |
