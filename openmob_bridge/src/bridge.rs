@@ -1,16 +1,19 @@
 use crate::ansi;
 use crate::busy_detector::BusyDetector;
-use crate::pty_handler::PtyHandler;
+use crate::pty_handler::{PtyHandler, PtyReader, PtyWriter};
 use crate::queue::InjectionQueue;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
 /// Bridge orchestrator: wires PTY I/O, idle detection, and injection delivery
-/// into 4 concurrent tokio tasks (PTY read, stdin forward, detector tick, injection loop).
+/// into 4 concurrent tokio tasks. Reader and writer use separate locks so
+/// reading PTY output never blocks writing user input.
 pub struct Bridge {
-    pty: Arc<std::sync::Mutex<PtyHandler>>,
+    reader: Arc<Mutex<PtyReader>>,
+    writer: Arc<Mutex<PtyWriter>>,
+    child: Arc<Mutex<Box<dyn portable_pty::Child + Send>>>,
     detector: Arc<BusyDetector>,
     queue: InjectionQueue,
     inject_notify_tx: tokio::sync::mpsc::Sender<()>,
@@ -38,7 +41,9 @@ impl Bridge {
         let cancel = CancellationToken::new();
 
         Ok(Self {
-            pty: Arc::new(std::sync::Mutex::new(pty)),
+            reader: pty.reader,
+            writer: pty.writer,
+            child: pty.child,
             detector,
             queue,
             inject_notify_tx,
@@ -49,11 +54,7 @@ impl Bridge {
         })
     }
 
-    /// Run the bridge: spawns 4 concurrent tasks and manages terminal raw mode.
-    /// Returns when the child process exits or cancel is triggered.
-    /// Can only be called once (takes ownership of the inject_notify receiver).
     pub async fn run(&self) -> anyhow::Result<()> {
-        // Take the inject_notify receiver (can only run once)
         let mut inject_rx = self
             .inject_notify_rx
             .lock()
@@ -61,16 +62,13 @@ impl Bridge {
             .take()
             .ok_or_else(|| anyhow::anyhow!("Bridge.run() can only be called once"))?;
 
-        // Enable raw mode so keypresses are forwarded immediately
         crossterm::terminal::enable_raw_mode()?;
-
-        // RAII guard restores terminal on drop (exit, panic, cancel)
         let _raw_guard = RawModeGuard;
 
         let cancel = self.cancel.clone();
 
-        // Task 1: PTY Read Loop (spawn_blocking -- PTY read is synchronous)
-        let pty_read = self.pty.clone();
+        // Task 1: PTY Read — uses reader lock only (never blocks writer)
+        let reader = self.reader.clone();
         let detector_read = self.detector.clone();
         let child_running_read = self.child_running.clone();
         let cancel_read = self.cancel.clone();
@@ -81,8 +79,8 @@ impl Bridge {
                     break;
                 }
                 let n = {
-                    let mut pty = pty_read.lock().unwrap();
-                    match pty.read(&mut buf) {
+                    let mut r = reader.lock().unwrap();
+                    match r.read(&mut buf) {
                         Ok(0) => {
                             child_running_read.store(false, Ordering::SeqCst);
                             cancel_read.cancel();
@@ -97,14 +95,14 @@ impl Bridge {
                     }
                 };
 
-                // Write raw output to stdout for the user to see
+                // Write to stdout for user to see
                 {
                     use std::io::Write;
                     let _ = std::io::stdout().write_all(&buf[..n]);
                     let _ = std::io::stdout().flush();
                 }
 
-                // Strip ANSI and feed lines to detector
+                // Feed to detector
                 let cleaned = ansi::strip_ansi(&buf[..n]);
                 let det = detector_read.clone();
                 for line in cleaned.lines() {
@@ -119,8 +117,8 @@ impl Bridge {
             }
         });
 
-        // Task 2: Stdin Forward (spawn_blocking -- stdin is synchronous)
-        let pty_stdin = self.pty.clone();
+        // Task 2: Stdin Forward — uses writer lock only (never blocks reader)
+        let writer_stdin = self.writer.clone();
         let cancel_stdin = self.cancel.clone();
         let stdin_handle = tokio::task::spawn_blocking(move || {
             use std::io::Read;
@@ -134,8 +132,8 @@ impl Bridge {
                 match stdin_lock.read(&mut buf) {
                     Ok(0) => break,
                     Ok(n) => {
-                        let mut pty = pty_stdin.lock().unwrap();
-                        if pty.write_all(&buf[..n]).is_err() {
+                        let mut w = writer_stdin.lock().unwrap();
+                        if w.write_all(&buf[..n]).is_err() {
                             break;
                         }
                     }
@@ -157,7 +155,6 @@ impl Bridge {
                 det.run(on_idle_tx, cancel_det).await;
             });
 
-            // Forward idle signals to injection loop
             loop {
                 tokio::select! {
                     _ = cancel_tick.cancelled() => break,
@@ -175,10 +172,10 @@ impl Bridge {
             det_task.abort();
         });
 
-        // Task 4: Injection Loop
+        // Task 4: Injection Loop — uses writer lock (brief, non-blocking)
         let detector_inject = self.detector.clone();
         let queue_inject = self.queue.clone();
-        let pty_inject = self.pty.clone();
+        let writer_inject = self.writer.clone();
         let cancel_inject = self.cancel.clone();
         let inject_handle = tokio::spawn(async move {
             loop {
@@ -188,14 +185,13 @@ impl Bridge {
                         if msg.is_none() {
                             break;
                         }
-                        // Drain queue while idle
                         while detector_inject.is_idle().await {
                             match queue_inject.dequeue().await {
                                 Some(item) => {
                                     let text = item.text.clone();
                                     {
-                                        let mut pty = pty_inject.lock().unwrap();
-                                        let _ = pty.inject_text(&text);
+                                        let mut w = writer_inject.lock().unwrap();
+                                        let _ = w.inject_text(&text);
                                     }
                                     if let Some(tx) = item.sync_tx {
                                         let _ = tx.send(());
@@ -212,63 +208,52 @@ impl Bridge {
         // Wait for cancellation or child exit
         cancel.cancelled().await;
 
-        // Cleanup: abort async tasks
         tick_handle.abort();
         inject_handle.abort();
 
         // Kill child if still running
         {
-            let mut pty = self.pty.lock().unwrap();
-            if pty.is_alive() {
-                pty.kill();
+            let mut child = self.child.lock().unwrap();
+            if child.try_wait().ok().flatten().is_none() {
+                let _ = child.kill();
             }
         }
 
-        // Wait for blocking tasks to finish
-        
         let _ = read_handle.await;
         let _ = stdin_handle.await;
 
         Ok(())
     }
 
-    /// Non-blocking signal to wake the injection loop.
     pub fn notify_enqueue(&self) {
         let _ = self.inject_notify_tx.try_send(());
     }
 
-    /// Returns whether the agent is currently idle.
     pub async fn is_idle(&self) -> bool {
         self.detector.is_idle().await
     }
 
-    /// Returns the current queue length.
     pub async fn queue_len(&self) -> usize {
         self.queue.len().await
     }
 
-    /// Returns whether the child process is still running.
     pub fn is_child_running(&self) -> bool {
         self.child_running.load(Ordering::SeqCst)
     }
 
-    /// Returns how long the bridge has been running.
     pub fn uptime(&self) -> Duration {
         self.start_time.elapsed()
     }
 
-    /// Returns a reference to the injection queue.
     pub fn queue(&self) -> &InjectionQueue {
         &self.queue
     }
 
-    /// Trigger graceful shutdown: cancels all tasks and kills the child process.
     pub fn shutdown(&self) {
         self.cancel.cancel();
     }
 }
 
-/// RAII guard to restore terminal state when dropped.
 struct RawModeGuard;
 
 impl Drop for RawModeGuard {
