@@ -170,6 +170,42 @@ class ActionService {
     }
   }
 
+  /// Wake screen + swipe up to unlock (no PIN/pattern).
+  Future<ActionResult> unlockDevice(String serial) async {
+    if (_isIos(serial)) {
+      // iOS simulators are always unlocked
+      return ActionResult.ok(data: {'message': 'iOS simulators do not have lock screens'});
+    }
+
+    try {
+      // Send WAKEUP keyevent (224) — only wakes, never turns off
+      await _adb.run(serial, ['shell', 'input', 'keyevent', '224']);
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Get screen dimensions for swipe
+      final device = _dm.getDevice(serial);
+      final w = device?.screenWidth ?? 1080;
+      final h = device?.screenHeight ?? 1920;
+      final cx = w ~/ 2;
+
+      // Swipe up from bottom to dismiss lock screen
+      await _adb.run(serial, [
+        'shell', 'input', 'swipe',
+        '$cx', '${(h * 0.85).toInt()}',
+        '$cx', '${(h * 0.3).toInt()}',
+        '300',
+      ]);
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Dismiss any remaining keyguard
+      await _adb.run(serial, ['shell', 'input', 'keyevent', '82']); // MENU dismisses keyguard
+
+      return ActionResult.ok(data: {'message': 'Device unlocked'});
+    } catch (e) {
+      return ActionResult.fail('Unlock failed: $e');
+    }
+  }
+
   /// Press the Home button.
   Future<ActionResult> goHome(String serial) async {
     if (_isIos(serial)) {

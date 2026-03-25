@@ -145,6 +145,22 @@ Router actionRoutes(ActionService action, DeviceManager dm) {
     }
   });
 
+  // POST /<id>/unlock -> wake screen + swipe to unlock
+  router.post('/<id>/unlock', (Request request, String id) async {
+    final device = dm.getDevice(id);
+    if (device == null) {
+      return Response.notFound(jsonEncode({'error': 'Device not found'}));
+    }
+    try {
+      final result = await action.unlockDevice(device.serial);
+      return Response.ok(jsonEncode(result.toJson()));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Unlock failed: $e'}),
+      );
+    }
+  });
+
   // POST /<id>/gesture -> execute named gesture
   router.post('/<id>/gesture', (Request request, String id) async {
     final device = dm.getDevice(id);
