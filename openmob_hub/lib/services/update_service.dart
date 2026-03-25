@@ -8,7 +8,7 @@ import 'log_service.dart';
 
 /// Version is set in pubspec.yaml — update there before creating a release.
 /// The workflow reads it from the tag the user provides manually.
-const _currentVersion = '0.0.6';
+const _currentVersion = '0.0.7';
 const _repoOwner = 'wm-jenildgohel';
 const _repoName = 'openmob';
 const _apiBase = 'https://api.github.com/repos/$_repoOwner/$_repoName';
