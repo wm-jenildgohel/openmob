@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
@@ -21,6 +22,38 @@ class LogViewer extends StatelessWidget {
           children: [
             Text('Logs', style: textTheme.titleMedium),
             const Spacer(),
+            ValueStreamBuilder<List<LogEntry>>(
+              stream: logService.logs$,
+              builder: (context, logs, child) {
+                return IconButton(
+                  icon: const Icon(Icons.copy),
+                  tooltip: 'Copy logs',
+                  onPressed: logs.isEmpty
+                      ? null
+                      : () {
+                          final filtered = filterSource != null
+                              ? logs
+                                  .where((e) => e.source == filterSource)
+                                  .toList()
+                              : logs;
+                          final text = filtered.map((e) {
+                            final ts =
+                                '${e.timestamp.hour.toString().padLeft(2, '0')}:'
+                                '${e.timestamp.minute.toString().padLeft(2, '0')}:'
+                                '${e.timestamp.second.toString().padLeft(2, '0')}';
+                            return '[$ts] [${e.source}] ${e.message}';
+                          }).join('\n');
+                          Clipboard.setData(ClipboardData(text: text));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Logs copied to clipboard'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: 'Clear logs',
