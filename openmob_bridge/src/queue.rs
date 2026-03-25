@@ -6,8 +6,10 @@ const MAX_QUEUE_SIZE: usize = 100;
 
 /// An item queued for injection into the PTY.
 pub struct Injection {
+    #[allow(dead_code)] // used for logging/tracking in status endpoint
     pub id: String,
     pub text: String,
+    #[allow(dead_code)] // stored for queue introspection via /status
     pub priority: bool,
     pub sync_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }

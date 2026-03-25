@@ -5,6 +5,7 @@ use std::io::{self, Read, Write};
 /// Provides spawn, read, write, inject, resize, and lifecycle operations.
 pub struct PtyHandler {
     child: Box<dyn Child + Send>,
+    #[allow(dead_code)] // kept for RAII PTY lifetime + resize()
     master: Box<dyn MasterPty + Send>,
     reader: Box<dyn Read + Send>,
     writer: Box<dyn Write + Send>,
@@ -81,6 +82,7 @@ impl PtyHandler {
     }
 
     /// Resize the PTY to the given dimensions.
+    #[allow(dead_code)] // public API for future SIGWINCH forwarding
     pub fn resize(&self, cols: u16, rows: u16) -> anyhow::Result<()> {
         self.master.resize(PtySize {
             rows,
