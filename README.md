@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app-logo.png" alt="OpenMob" width="360">
+  <img src="app-logo.png" alt="OpenMob" width="520">
 </p>
 
 <h1 align="center">OpenMob</h1>
