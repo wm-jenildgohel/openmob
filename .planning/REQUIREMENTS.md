@@ -71,9 +71,9 @@
 ### QA & Testing
 
 - [x] **QA-01**: AI agent can use MCP tools to execute test scenarios on device and report pass/fail results
-- [ ] **QA-02**: User can define test scripts (sequence of actions + assertions) and run them from the hub
-- [ ] **QA-03**: User can run Flutter tests (flutter test / flutter drive) from the hub and view results
-- [ ] **QA-04**: Test results are displayed in the hub with pass/fail status, screenshots on failure, and execution time
+- [x] **QA-02**: User can define test scripts (sequence of actions + assertions) and run them from the hub
+- [x] **QA-03**: User can run Flutter tests (flutter test / flutter drive) from the hub and view results
+- [x] **QA-04**: Test results are displayed in the hub with pass/fail status, screenshots on failure, and execution time
 
 ### Flutter Desktop Hub
 
@@ -168,9 +168,9 @@
 | BRG-09 | Phase 3 | Complete |
 | BRG-10 | Phase 3 | Complete |
 | QA-01 | Phase 5 | Complete |
-| QA-02 | Phase 5 | Pending |
-| QA-03 | Phase 5 | Pending |
-| QA-04 | Phase 5 | Pending |
+| QA-02 | Phase 5 | Complete |
+| QA-03 | Phase 5 | Complete |
+| QA-04 | Phase 5 | Complete |
 | HUB-01 | Phase 1 | Complete |
 | HUB-02 | Phase 4 | Complete |
 | HUB-03 | Phase 4 | Complete |
