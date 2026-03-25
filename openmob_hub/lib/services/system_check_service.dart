@@ -34,6 +34,7 @@ class SystemCheckService {
     final results = <ToolStatus>[];
 
     results.add(await _checkAdb());
+    results.add(await _checkScrcpy());
     results.add(await _checkMcpServer());
     results.add(await _checkAiBridge());
 
@@ -219,6 +220,34 @@ class SystemCheckService {
       return 'https://dl.google.com/android/repository/platform-tools-latest-linux.zip';
     }
     return null;
+  }
+
+  // ─── scrcpy (screen mirroring) ───
+
+  Future<ToolStatus> _checkScrcpy() async {
+    try {
+      final result = await Process.run('scrcpy', ['--version']);
+      if (result.exitCode == 0) {
+        final ver = (result.stdout as String).split('\n').first.trim();
+        return ToolStatus(
+          name: 'scrcpy',
+          available: true,
+          version: ver,
+          installHint: '',
+        );
+      }
+    } catch (_) {}
+
+    return ToolStatus(
+      name: 'scrcpy',
+      available: false,
+      installHint: Platform.isLinux
+          ? 'Install: sudo apt install scrcpy'
+          : Platform.isMacOS
+              ? 'Install: brew install scrcpy'
+              : 'Download from https://github.com/Genymobile/scrcpy',
+      canAutoInstall: false,
+    );
   }
 
   // ─── MCP Server ───

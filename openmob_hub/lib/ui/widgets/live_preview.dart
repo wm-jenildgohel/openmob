@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -23,7 +22,7 @@ class LivePreviewController {
   Timer? _timer;
 
   void start() {
-    _timer = Timer.periodic(const Duration(seconds: 2), (_) => _fetch());
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) => _fetch());
     _fetch();
   }
 
@@ -32,10 +31,9 @@ class LivePreviewController {
     if (_loading.value) return;
     _loading.add(true);
     try {
-      final result = await screenshotService.captureScreenshot(deviceId);
+      final bytes = await screenshotService.capturePreview(deviceId);
       if (_disposed) return;
-      final bytes = base64Decode(result.base64);
-      _image.add(Uint8List.fromList(bytes));
+      _image.add(bytes);
     } catch (_) {
       // Device might be disconnected -- silently ignore
     } finally {

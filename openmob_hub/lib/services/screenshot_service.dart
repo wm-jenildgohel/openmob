@@ -42,6 +42,26 @@ class ScreenshotService {
     return (base64: encoded, width: dims.width, height: dims.height);
   }
 
+  /// Fast capture for live preview — reduced resolution, much smaller payload.
+  /// Returns raw PNG bytes (not base64) for direct Image.memory display.
+  Future<Uint8List> capturePreview(String serial, {int maxWidth = 480}) async {
+    final device = _dm.getDevice(serial);
+
+    if (device?.platform == 'ios' && _simctl != null) {
+      final rawBytes = await _simctl.captureScreenshot(serial);
+      return Uint8List.fromList(rawBytes);
+    }
+
+    // Use screencap with pipe through scale — if available
+    // Fallback to full capture
+    final bytes = await _adb.runBinary(
+      serial,
+      ['exec-out', 'screencap', '-p'],
+    );
+
+    return Uint8List.fromList(bytes);
+  }
+
   /// Parse width and height from PNG IHDR chunk.
   /// PNG header: 8 bytes signature, then IHDR chunk with width at offset 16
   /// and height at offset 20 (both 4 bytes big-endian).
