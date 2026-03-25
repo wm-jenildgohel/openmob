@@ -13,6 +13,7 @@ import 'services/auto_setup_service.dart';
 import 'services/system_check_service.dart';
 import 'services/test_runner_service.dart';
 import 'services/ui_tree_service.dart';
+import 'services/update_service.dart';
 import 'services/simctl_service.dart';
 import 'services/idb_service.dart';
 import 'core/constants.dart';
@@ -30,6 +31,7 @@ late final SystemCheckService systemCheckService;
 late final ProcessManager processManager;
 late final AiToolSetupService aiToolSetupService;
 late final AutoSetupService autoSetupService;
+late final UpdateService updateService;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -102,23 +104,28 @@ Future<void> main() async {
     processManager,
     logService,
   );
+  updateService = UpdateService(logService);
 
-  // Start API server — check if port is free, retry once
+  // Start API server — try the configured port, then try next 4 ports
   apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
-  try {
-    await apiServer.start();
-    logService.addLine('hub', 'Hub ready on port ${ApiConstants.port}');
-  } catch (e) {
-    // Port might be in use by another instance — try to check and warn
-    logService.addLine('hub', 'Port ${ApiConstants.port} is in use — close other OpenMob instances', level: LogLevel.warning);
-    // Try once more after a short delay
-    await Future.delayed(const Duration(seconds: 2));
+  bool serverStarted = false;
+  for (int attempt = 0; attempt < 5; attempt++) {
     try {
       await apiServer.start();
       logService.addLine('hub', 'Hub ready on port ${ApiConstants.port}');
-    } catch (_) {
-      logService.addLine('hub', 'Could not start — another instance may be running', level: LogLevel.error);
+      serverStarted = true;
+      break;
+    } catch (e) {
+      if (attempt == 0) {
+        logService.addLine('hub', 'Port ${ApiConstants.port} in use — trying alternatives...', level: LogLevel.warning);
+      }
+      if (attempt < 4) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
     }
+  }
+  if (!serverStarted) {
+    logService.addLine('hub', 'Could not bind to any port — close other OpenMob instances and restart', level: LogLevel.error);
   }
 
   // Run the UI immediately — don't block on device scan or system check
@@ -149,4 +156,9 @@ Future<void> _initBackground() async {
       deviceManager.refreshDevices();
     } catch (_) {}
   });
+
+  // Check for updates (non-blocking, runs after everything else)
+  try {
+    await updateService.checkForUpdate();
+  } catch (_) {}
 }

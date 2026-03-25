@@ -21,7 +21,7 @@ class SystemCheckService {
     final home = Platform.environment['HOME'] ??
         Platform.environment['USERPROFILE'] ??
         '.';
-    return '$home/.openmob/tools';
+    return '$home${_sep}.openmob${_sep}tools';
   }
 
   /// App executable directory (where bundled tools live)
@@ -230,6 +230,15 @@ class SystemCheckService {
 
     try {
       if (Platform.isWindows) {
+        // Check if winget is available first
+        try {
+          final wingetCheck = await Process.run('winget', ['--version']);
+          if (wingetCheck.exitCode != 0) throw Exception('winget not found');
+        } catch (_) {
+          _log('winget not available — install Node.js manually from nodejs.org', error: true);
+          _updateToolStatus('MCP Server', installing: false);
+          return false;
+        }
         // Use winget on Windows
         _updateToolStatus('MCP Server', installing: true, progress: 0.3);
         final result = await Process.run(

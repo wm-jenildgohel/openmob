@@ -348,9 +348,10 @@ class ProcessManager {
       if (Platform.isWindows) {
         // Windows: use Windows Terminal (wt) or cmd.exe
         if (terminal == 'wt') {
-          termArgs = ['wt', '--title', 'AiBridge ($agent)', '--', binary, '--port', '$port', '--', agent];
+          termArgs = ['wt', 'new-tab', '--title', 'AiBridge ($agent)', '--', binary, '--port', '$port', '--', agent];
         } else {
-          termArgs = ['cmd', '/c', 'start', 'AiBridge ($agent)', binary, '--port', '$port', '--', agent];
+          // cmd /k keeps window open; quote binary path for spaces
+          termArgs = ['cmd', '/k', '"$binary" --port $port -- $agent'];
         }
       } else {
         // Unix: use detected terminal
@@ -415,13 +416,14 @@ class ProcessManager {
       _bridgeProcess = null;
     }
 
-    // Also try to stop any externally running aibridge via its API
+    // Also try to stop any externally running aibridge
     try {
-      // AiBridge doesn't have a shutdown endpoint, so we find and kill the process
-      final result = Process.runSync('pkill', ['-f', 'aibridge.*--port']);
-      if (result.exitCode == 0) {
-        _logService.addLine('hub', 'AiBridge process terminated');
+      if (Platform.isWindows) {
+        Process.runSync('taskkill', ['/F', '/IM', 'aibridge.exe']);
+      } else {
+        Process.runSync('pkill', ['-f', 'aibridge.*--port']);
       }
+      _logService.addLine('hub', 'AiBridge process terminated');
     } catch (_) {}
 
     _bridgeStatus.add(const ProcessInfo(

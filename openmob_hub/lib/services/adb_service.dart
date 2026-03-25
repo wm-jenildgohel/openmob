@@ -10,7 +10,9 @@ class AdbService {
     final androidHome = Platform.environment['ANDROID_HOME'] ??
         Platform.environment['ANDROID_SDK_ROOT'];
     if (androidHome != null) {
-      final candidate = '$androidHome/platform-tools/adb';
+      final sep = Platform.pathSeparator;
+      final ext = Platform.isWindows ? '.exe' : '';
+      final candidate = '$androidHome${sep}platform-tools${sep}adb$ext';
       if (await File(candidate).exists()) {
         _adbPath = candidate;
         return _adbPath!;

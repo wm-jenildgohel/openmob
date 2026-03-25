@@ -477,7 +477,7 @@ class TestRunnerService {
   String? _resolveProjectRoot() {
     var dir = Directory.current;
     for (var i = 0; i < 5; i++) {
-      if (File('${dir.path}/pubspec.yaml').existsSync()) {
+      if (File('${dir.path}${Platform.pathSeparator}pubspec.yaml').existsSync()) {
         return dir.path;
       }
       final parent = dir.parent;

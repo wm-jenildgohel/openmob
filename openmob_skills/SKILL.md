@@ -208,6 +208,127 @@ Returns: structured pass/fail with timing and failure screenshots
 - **MCP Server** (stdio): Thin proxy — translates MCP tool calls to Hub HTTP API
 - **AiBridge** (port 9999): Optional — wraps terminal AI agents with context injection
 
+## ADB Knowledge Base
+
+### Common ADB Commands (for direct use or debugging)
+
+| Command | Purpose |
+|---------|---------|
+| `adb devices -l` | List connected devices with details |
+| `adb -s <serial> shell getprop ro.product.model` | Get device model |
+| `adb -s <serial> shell getprop ro.build.version.release` | Get Android version |
+| `adb -s <serial> shell wm size` | Get screen resolution |
+| `adb -s <serial> shell dumpsys battery` | Get battery info |
+| `adb -s <serial> shell screencap -p /sdcard/screen.png` | Take screenshot |
+| `adb -s <serial> exec-out screencap -p` | Screenshot to stdout (binary-safe) |
+| `adb -s <serial> shell uiautomator dump /dev/tty` | Dump UI tree to stdout |
+| `adb -s <serial> shell input tap <x> <y>` | Tap at coordinates |
+| `adb -s <serial> shell input swipe <x1> <y1> <x2> <y2> <ms>` | Swipe gesture |
+| `adb -s <serial> shell input text "<text>"` | Type text |
+| `adb -s <serial> shell input keyevent <code>` | Press key |
+| `adb -s <serial> shell am start -n <component>` | Start activity |
+| `adb -s <serial> shell am force-stop <package>` | Kill app |
+| `adb -s <serial> shell am start -a android.intent.action.VIEW -d <url>` | Open URL |
+| `adb -s <serial> shell pm list packages -3` | List installed 3rd-party apps |
+| `adb -s <serial> shell dumpsys window displays` | Get display info |
+| `adb -s <serial> shell settings get system screen_brightness` | Get brightness |
+| `adb -s <serial> shell settings get global airplane_mode_on` | Check airplane mode |
+| `adb -s <serial> shell cmd connectivity airplane-mode enable/disable` | Toggle airplane |
+| `adb -s <serial> shell svc wifi enable/disable` | Toggle WiFi |
+| `adb -s <serial> shell svc data enable/disable` | Toggle mobile data |
+| `adb -s <serial> shell input keyevent KEYCODE_WAKEUP` | Wake device |
+| `adb -s <serial> shell input keyevent KEYCODE_SLEEP` | Sleep device |
+| `adb tcpip 5555` | Enable WiFi ADB on device |
+| `adb connect <ip>:5555` | Connect via WiFi |
+| `adb disconnect <ip>:5555` | Disconnect WiFi device |
+| `adb install <apk>` | Install APK |
+| `adb uninstall <package>` | Uninstall app |
+| `adb push <local> <remote>` | Push file to device |
+| `adb pull <remote> <local>` | Pull file from device |
+| `adb logcat -d -t 100` | Last 100 logcat lines |
+| `adb logcat -d -s <tag>` | Logcat filtered by tag |
+| `adb shell dumpsys activity activities` | Current activity stack |
+| `adb shell dumpsys meminfo <package>` | Memory usage for app |
+
+### Complete Android Key Codes
+
+| Key | Code | Key | Code | Key | Code |
+|-----|------|-----|------|-----|------|
+| Home | 3 | Back | 4 | Call | 5 |
+| End Call | 6 | 0-9 | 7-16 | Star | 17 |
+| Pound | 18 | DPAD Up | 19 | DPAD Down | 20 |
+| DPAD Left | 21 | DPAD Right | 22 | DPAD Center | 23 |
+| Volume Up | 24 | Volume Down | 25 | Power | 26 |
+| Camera | 27 | Clear | 28 | A-Z | 29-54 |
+| Comma | 55 | Period | 56 | Alt Left | 57 |
+| Alt Right | 58 | Shift Left | 59 | Tab | 61 |
+| Space | 62 | Enter | 66 | Backspace | 67 |
+| Grave | 68 | Minus | 69 | Equals | 70 |
+| Left Bracket | 71 | Right Bracket | 72 | Backslash | 73 |
+| Semicolon | 74 | Apostrophe | 75 | Slash | 76 |
+| At | 77 | Menu | 82 | Search | 84 |
+| Media Play/Pause | 85 | Media Stop | 86 | Media Next | 87 |
+| Media Previous | 88 | Page Up | 92 | Page Down | 93 |
+| Escape | 111 | Delete | 112 | Scroll Lock | 116 |
+| F1-F12 | 131-142 | Mute | 164 | Recent Apps | 187 |
+| App Switch | 187 | Brightness Down | 220 | Brightness Up | 221 |
+| Screenshot | 120 | Notification | 83 | Settings | 176 |
+
+### iOS Simulator Commands (xcrun simctl)
+
+| Command | Purpose |
+|---------|---------|
+| `xcrun simctl list devices -j` | List all simulators as JSON |
+| `xcrun simctl boot <udid>` | Boot a simulator |
+| `xcrun simctl shutdown <udid>` | Shutdown a simulator |
+| `xcrun simctl io <udid> screenshot -` | Screenshot to stdout |
+| `xcrun simctl launch <udid> <bundleId>` | Launch app |
+| `xcrun simctl terminate <udid> <bundleId>` | Kill app |
+| `xcrun simctl openurl <udid> <url>` | Open URL |
+| `xcrun simctl install <udid> <path.app>` | Install app |
+| `xcrun simctl uninstall <udid> <bundleId>` | Uninstall app |
+| `xcrun simctl pbpaste <udid>` | Get clipboard content |
+| `xcrun simctl pbcopy <udid>` | Set clipboard content |
+| `xcrun simctl status_bar <udid> override --time "9:41"` | Override status bar |
+
+### iOS idb Commands (facebook/idb)
+
+| Command | Purpose |
+|---------|---------|
+| `idb list-targets` | List available devices/simulators |
+| `idb ui describe-all --udid <udid>` | Full accessibility tree (JSON) |
+| `idb ui tap --udid <udid> <x> <y>` | Tap at coordinates |
+| `idb ui swipe --udid <udid> <x1> <y1> <x2> <y2>` | Swipe gesture |
+| `idb ui text --udid <udid> "<text>"` | Type text |
+| `idb ui button --udid <udid> <button>` | Press button (HOME, LOCK, etc.) |
+
+## QA Testing Best Practices
+
+### Before Starting a Test
+1. Always call `list_devices` first to get the device ID
+2. Take a `screenshot` to verify the device is in the expected state
+3. Use `ui-tree?visible=true` to understand the current screen structure
+
+### During Testing
+1. **Always verify** — after every action, re-check the UI tree or screenshot
+2. **Wait for animations** — add a short delay (1-2 seconds) after navigation actions
+3. **Use text search** — `ui-tree?text=ButtonText` to find specific elements
+4. **Scroll to find** — if an element isn't visible, scroll and check again
+5. **Use element index** — more reliable than coordinates across devices
+
+### Handling Failures
+1. Take a screenshot on failure for debugging
+2. Check if a dialog/popup appeared (system dialog, permission request)
+3. Try pressing Back (keyCode: 4) to dismiss unexpected overlays
+4. Verify the app is still running with `list_devices`
+
+### Common Test Scenarios
+- **Login flow**: launch → find email field → type → find password field → type → tap login → verify
+- **Navigation**: tap menu item → verify new screen → tap back → verify original screen
+- **Settings**: open settings → toggle switch → verify change → toggle back
+- **Search**: tap search → type query → verify results → tap result → verify detail page
+- **Form validation**: submit empty form → verify error messages → fill correctly → submit → verify success
+
 ## Tips
 
 - Always use `ui-tree` with `?visible=true` to reduce noise and token usage
