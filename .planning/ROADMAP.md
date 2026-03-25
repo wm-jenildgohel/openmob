@@ -78,7 +78,10 @@ Plans:
   2. User can see a live screen preview for any connected device in the Hub (periodic screenshot polling)
   3. User can view device and bridge logs in a scrollable log viewer within the Hub
   4. The full loop works: AI agent (via AiBridge) receives device context (via MCP), decides on actions, executes them on device, and sees updated state -- all orchestrated through the Hub
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 04-01-PLAN.md -- ProcessManager, LogService, SystemCheckService, models, ResColors update, main.dart wiring
+- [ ] 04-02-PLAN.md -- Desktop UI overhaul: DashboardShell, sidebar, process controls, live preview, log viewer, system check screen
 **UI hint**: yes
 
 ### Phase 5: QA & Testing
@@ -100,8 +103,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Hub Core + Android Device Layer | 0/4 | Planning complete | - |
-| 2. MCP Server + iOS Simulator | 0/2 | Planning complete | - |
-| 3. AiBridge CLI | 1/4 | In Progress|  |
-| 4. End-to-End Integration + Hub Polish | 0/TBD | Not started | - |
+| 1. Hub Core + Android Device Layer | 4/4 | Complete | - |
+| 2. MCP Server + iOS Simulator | 2/2 | Complete | - |
+| 3. AiBridge CLI | 4/4 | Complete |  |
+| 4. End-to-End Integration + Hub Polish | 0/2 | Planning complete | - |
 | 5. QA & Testing | 0/TBD | Not started | - |
