@@ -15,16 +15,19 @@ class SystemCheckScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
-              Text(
-                'System Check',
-                style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('System Check', style: textTheme.headlineSmall),
+                  const SizedBox(height: 4),
+                  Text('Verify platform tools and AI integrations', style: textTheme.bodyMedium),
+                ],
               ),
               const Spacer(),
               ElevatedButton.icon(
@@ -32,19 +35,14 @@ class SystemCheckScreen extends StatelessWidget {
                   systemCheckService.checkAll();
                   aiToolSetupService.detectAll();
                 },
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: const Text('Re-check'),
               ),
             ],
           ),
           const SizedBox(height: 24),
-
-          // Platform Tools section
           _buildToolsSection(context),
-
           const SizedBox(height: 32),
-
-          // AI Tools section
           _buildAiToolsSection(context),
         ],
       ),
@@ -73,50 +71,54 @@ class SystemCheckScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  'Platform Tools',
-                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
+                const Icon(Icons.build_rounded, size: 18, color: ResColors.textSecondary),
+                const SizedBox(width: 8),
+                Text('Platform Tools', style: textTheme.titleMedium),
                 const SizedBox(width: 12),
-                Text(
-                  '$available/$total available',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: available == total ? ResColors.connected : ResColors.warning,
-                    fontWeight: FontWeight.w600,
-                  ),
+                _StatusBadge(
+                  text: '$available/$total available',
+                  color: available == total ? ResColors.accent : ResColors.warning,
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text('Required', style: textTheme.titleSmall?.copyWith(color: ResColors.muted)),
+            const SizedBox(height: 16),
+            Text('REQUIRED', style: textTheme.titleSmall?.copyWith(
+              letterSpacing: 1.0,
+              fontSize: 11,
+            )),
             const SizedBox(height: 8),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 2.5,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: required.length,
-              itemBuilder: (context, index) => ToolStatusCard(tool: required[index]),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = (constraints.maxWidth - 12) / 2;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: required.map((t) => SizedBox(
+                    width: cardWidth,
+                    child: ToolStatusCard(tool: t),
+                  )).toList(),
+                );
+              },
             ),
             if (optional.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text('Optional', style: textTheme.titleSmall?.copyWith(color: ResColors.muted)),
+              const SizedBox(height: 20),
+              Text('OPTIONAL', style: textTheme.titleSmall?.copyWith(
+                letterSpacing: 1.0,
+                fontSize: 11,
+              )),
               const SizedBox(height: 8),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 2.5,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: optional.length,
-                itemBuilder: (context, index) => ToolStatusCard(tool: optional[index]),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cardWidth = (constraints.maxWidth - 12) / 2;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: optional.map((t) => SizedBox(
+                      width: cardWidth,
+                      child: ToolStatusCard(tool: t),
+                    )).toList(),
+                  );
+                },
               ),
             ],
           ],
@@ -131,9 +133,7 @@ class SystemCheckScreen extends StatelessWidget {
     return ValueStreamBuilder<List<AiTool>>(
       stream: aiToolSetupService.tools$,
       builder: (context, tools, child) {
-        if (tools.isEmpty) {
-          return const SizedBox.shrink();
-        }
+        if (tools.isEmpty) return const SizedBox.shrink();
 
         final detected = tools.where((t) => t.detected).toList();
         final configured = tools.where((t) => t.configured).length;
@@ -144,45 +144,40 @@ class SystemCheckScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  'AI Tool Integration',
-                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
+                const Icon(Icons.smart_toy_rounded, size: 18, color: ResColors.textSecondary),
+                const SizedBox(width: 8),
+                Text('AI Tool Integration', style: textTheme.titleMedium),
                 const SizedBox(width: 12),
-                Text(
-                  '$configured/${detected.length} configured',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: configured == detected.length
-                        ? ResColors.connected
-                        : ResColors.warning,
-                    fontWeight: FontWeight.w600,
-                  ),
+                _StatusBadge(
+                  text: '$configured/${detected.length} configured',
+                  color: configured == detected.length ? ResColors.accent : ResColors.warning,
                 ),
                 const Spacer(),
                 if (unconfigured.isNotEmpty)
                   ElevatedButton.icon(
                     onPressed: () => aiToolSetupService.installAll(),
-                    icon: const Icon(Icons.auto_fix_high, size: 18),
+                    icon: const Icon(Icons.auto_fix_high_rounded, size: 16),
                     label: const Text('Setup All'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: ResColors.connected,
-                      foregroundColor: Colors.white,
+                      backgroundColor: ResColors.accent,
+                      foregroundColor: ResColors.textOnAccent,
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 3.0,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: tools.length,
-              itemBuilder: (context, index) => _AiToolCard(tool: tools[index]),
+            const SizedBox(height: 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = (constraints.maxWidth - 12) / 2;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: tools.map((t) => SizedBox(
+                    width: cardWidth,
+                    child: _AiToolCard(tool: t),
+                  )).toList(),
+                );
+              },
             ),
           ],
         );
@@ -191,93 +186,123 @@ class SystemCheckScreen extends StatelessWidget {
   }
 }
 
+class _StatusBadge extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _StatusBadge({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
 class _AiToolCard extends StatelessWidget {
   final AiTool tool;
-
   const _AiToolCard({required this.tool});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     final Color statusColor;
     final IconData statusIcon;
     final String statusText;
 
     if (!tool.detected) {
-      statusColor = ResColors.muted;
-      statusIcon = Icons.remove_circle_outline;
+      statusColor = ResColors.textMuted;
+      statusIcon = Icons.remove_circle_outline_rounded;
       statusText = 'Not installed';
     } else if (tool.configured) {
       statusColor = ResColors.connected;
-      statusIcon = Icons.check_circle;
+      statusIcon = Icons.check_circle_rounded;
       statusText = 'Configured';
     } else if (tool.installing) {
       statusColor = ResColors.warning;
-      statusIcon = Icons.downloading;
+      statusIcon = Icons.downloading_rounded;
       statusText = 'Configuring...';
     } else {
       statusColor = ResColors.warning;
-      statusIcon = Icons.warning_amber;
-      statusText = 'Detected — not configured';
+      statusIcon = Icons.warning_amber_rounded;
+      statusText = 'Detected \u2014 not configured';
     }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(statusIcon, color: statusColor, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    tool.name,
-                    style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: ResColors.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: tool.configured
+              ? ResColors.accent.withValues(alpha: 0.3)
+              : ResColors.cardBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(statusIcon, color: statusColor, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  tool.name,
+                  style: const TextStyle(
+                    color: ResColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (tool.detected && !tool.configured && !tool.installing)
-                  TextButton.icon(
-                    onPressed: () => _handleSetup(),
-                    icon: const Icon(Icons.settings, size: 16),
-                    label: const Text('Setup'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: ResColors.connected,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              if (tool.detected && !tool.configured && !tool.installing)
+                GestureDetector(
+                  onTap: () => _handleSetup(),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: ResColors.accent,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('Setup', style: TextStyle(
+                        color: ResColors.textOnAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      )),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              statusText,
-              style: textTheme.bodySmall?.copyWith(color: statusColor),
-            ),
-            if (tool.installing) ...[
-              const SizedBox(height: 4),
-              const LinearProgressIndicator(),
+                ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Text(statusText, style: TextStyle(color: statusColor, fontSize: 12)),
+          if (tool.installing) ...[
+            const SizedBox(height: 6),
+            const LinearProgressIndicator(),
           ],
-        ),
+        ],
       ),
     );
   }
 
   void _handleSetup() {
     switch (tool.name) {
-      case 'Cursor':
-        aiToolSetupService.installCursor();
-      case 'Claude Desktop':
-        aiToolSetupService.installClaudeDesktop();
-      case 'Claude Code':
-        aiToolSetupService.installClaudeCode();
-      case 'VS Code':
-        aiToolSetupService.installVSCode();
+      case 'Cursor': aiToolSetupService.installCursor();
+      case 'Claude Desktop': aiToolSetupService.installClaudeDesktop();
+      case 'Claude Code': aiToolSetupService.installClaudeCode();
+      case 'VS Code': aiToolSetupService.installVSCode();
     }
   }
 }
