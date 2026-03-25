@@ -13,6 +13,8 @@ class ProcessManager {
 
   ProcessManager(this._logService) {
     startBridgeMonitoring();
+    // Pre-cache lookups in background so startBridge() is instant
+    _warmCache();
   }
 
   // MCP Server state
@@ -27,6 +29,39 @@ class ProcessManager {
   );
   Process? _bridgeProcess;
   Timer? _bridgeHealthTimer;
+
+  // Cached lookups (populated at startup, used by startBridge instantly)
+  String? _cachedBridgeBinary;
+  String? _cachedTerminal;
+  List<String>? _cachedAgents;
+  bool _cacheReady = false;
+
+  Future<void> _warmCache() async {
+    // Run all lookups in parallel on a background isolate-like thread
+    final results = await Future.wait([
+      Future(() => _bridgeBinary),
+      Future(() => _terminalEmulator),
+      Future(() => _detectAgents()),
+    ]);
+    _cachedBridgeBinary = results[0] as String?;
+    _cachedTerminal = results[1] as String?;
+    _cachedAgents = results[2] as List<String>;
+    _cacheReady = true;
+  }
+
+  List<String> _detectAgents() {
+    final agents = <String>[];
+    for (final name in ['claude', 'codex', 'gemini']) {
+      try {
+        final result = Process.runSync(
+          Platform.isWindows ? 'where' : 'which',
+          [name],
+        );
+        if (result.exitCode == 0) agents.add(name);
+      } catch (_) {}
+    }
+    return agents;
+  }
 
   ValueStream<ProcessInfo> get mcpStatus$ => _mcpStatus.stream;
   ValueStream<ProcessInfo> get bridgeStatus$ => _bridgeStatus.stream;
@@ -235,19 +270,10 @@ class ProcessManager {
     return null;
   }
 
-  /// Returns list of available AI agents found on this computer
+  /// Returns list of available AI agents found on this computer (uses cache)
   List<String> get availableAgents {
-    final agents = <String>[];
-    for (final name in ['claude', 'codex', 'gemini']) {
-      try {
-        final result = Process.runSync(
-          Platform.isWindows ? 'where' : 'which',
-          [name],
-        );
-        if (result.exitCode == 0) agents.add(name);
-      } catch (_) {}
-    }
-    return agents;
+    if (_cachedAgents != null) return _cachedAgents!;
+    return _detectAgents();
   }
 
   /// Detect available terminal emulator on the system
@@ -279,7 +305,8 @@ class ProcessManager {
   Future<void> startBridge({String agent = 'claude', int port = 9999}) async {
     if (_bridgeStatus.value.status == ProcessStatus.running) return;
 
-    final binary = _bridgeBinary;
+    // Use cached values for instant startup (pre-warmed at construction)
+    final binary = _cacheReady ? _cachedBridgeBinary : _bridgeBinary;
     if (binary == null) {
       _bridgeStatus.add(const ProcessInfo(
         name: 'AiBridge',
@@ -290,24 +317,19 @@ class ProcessManager {
       return;
     }
 
-    // Validate the agent command exists
-    try {
-      final result = Process.runSync(
-        Platform.isWindows ? 'where' : 'which',
-        [agent],
-      );
-      if (result.exitCode != 0) {
-        _bridgeStatus.add(ProcessInfo(
-          name: 'AiBridge',
-          status: ProcessStatus.error,
-          errorMessage: '"$agent" not found on this computer',
-        ));
-        _logService.addLine('hub', 'Agent "$agent" not found', level: LogLevel.error);
-        return;
-      }
-    } catch (_) {}
+    // Check agent from cache (no slow `where` call)
+    final agents = availableAgents;
+    if (agents.isNotEmpty && !agents.contains(agent)) {
+      _bridgeStatus.add(ProcessInfo(
+        name: 'AiBridge',
+        status: ProcessStatus.error,
+        errorMessage: '"$agent" not found — available: ${agents.join(", ")}',
+      ));
+      _logService.addLine('hub', 'Agent "$agent" not found', level: LogLevel.error);
+      return;
+    }
 
-    final terminal = _terminalEmulator;
+    final terminal = _cacheReady ? _cachedTerminal : _terminalEmulator;
     if (terminal == null) {
       _bridgeStatus.add(const ProcessInfo(
         name: 'AiBridge',
@@ -368,8 +390,8 @@ class ProcessManager {
         _logService.addLine('hub', 'AiBridge terminal closed (code: $code)');
       });
 
-      // Give AiBridge a moment to start, then let health polling take over
-      await Future.delayed(const Duration(seconds: 2));
+      // Quick poll — don't block UI. Health timer handles ongoing detection.
+      await Future.delayed(const Duration(milliseconds: 500));
       await _pollBridgeHealth();
     } catch (e) {
       _bridgeStatus.add(ProcessInfo(
