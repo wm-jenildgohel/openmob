@@ -33,4 +33,10 @@ class ResColors {
 
   // Accent
   static const Color accent = Color(0xFF2196F3);
+
+  // Testing
+  static const Color testPassed = Color(0xFF4CAF50);
+  static const Color testFailed = Color(0xFFF44336);
+  static const Color testRunning = Color(0xFF2196F3);
+  static const Color testSkipped = Color(0xFF9E9E9E);
 }

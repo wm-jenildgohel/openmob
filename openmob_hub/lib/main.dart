@@ -9,6 +9,7 @@ import 'services/log_service.dart';
 import 'services/process_manager.dart';
 import 'services/screenshot_service.dart';
 import 'services/system_check_service.dart';
+import 'services/test_runner_service.dart';
 import 'services/ui_tree_service.dart';
 import 'services/simctl_service.dart';
 import 'services/idb_service.dart';
@@ -23,6 +24,7 @@ late final ScreenshotService screenshotService;
 late final UiTreeService uiTreeService;
 late final ActionService actionService;
 late final ApiServer apiServer;
+late final TestRunnerService testRunnerService;
 late final LogService logService;
 late final SystemCheckService systemCheckService;
 late final ProcessManager processManager;
@@ -77,12 +79,21 @@ Future<void> main() async {
     dm: deviceManager,
   );
 
-  // Start API server with all services wired in
-  apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService);
-  await apiServer.start();
-
-  // Initialize process management and system check services
+  // Initialize process management and logging services
   logService = LogService();
+
+  // Initialize test runner service
+  testRunnerService = TestRunnerService(
+    actionService,
+    screenshotService,
+    deviceManager,
+    logService,
+    uiTree: uiTreeService,
+  );
+
+  // Start API server with all services wired in
+  apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
+  await apiServer.start();
   systemCheckService = SystemCheckService();
   processManager = ProcessManager(logService);
   await systemCheckService.checkAll();
