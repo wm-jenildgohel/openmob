@@ -668,7 +668,8 @@ class TestingScreen extends StatelessWidget {
                       stream: selectedDeviceId.stream,
                       builder: (context, currentId, child) {
                         return DropdownButtonFormField<String>(
-                          initialValue: devices.any((d) => d.id == currentId)
+                          // ignore: deprecated_member_use
+                          value: devices.any((d) => d.id == currentId)
                               ? currentId
                               : devices.first.id,
                           decoration: const InputDecoration(

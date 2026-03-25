@@ -5,6 +5,12 @@ openmob_hub/.packages
 openmob_hub/.flutter-plugins
 openmob_hub/.flutter-plugins-dependencies
 openmob_hub/pubspec.lock
+openmob_hub/macos/Flutter/ephemeral/
+openmob_hub/windows/flutter/ephemeral/
+openmob_hub/linux/flutter/ephemeral/
+
+# Claude settings (contains local paths)
+.claude/settings.local.json
 
 # Rust
 openmob_bridge/target/
