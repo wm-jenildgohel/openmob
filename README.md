@@ -108,11 +108,38 @@ Double-click openmob.bat
 ### Option 2: Build from Source
 
 **Prerequisites:**
-- Flutter SDK 3.x (`flutter --version`)
+- **Flutter 3.29.3** (exact version required — see below)
 - Node.js 18+ (`node --version`)
 - Rust 1.70+ (`rustc --version`)
 - ADB (`adb devices`)
 
+> **Flutter Version:** OpenMob Hub requires **Flutter 3.29.3**. Using a different version may cause build errors. We recommend using [FVM (Flutter Version Management)](https://fvm.app) to manage Flutter versions without affecting your global install.
+
+**With FVM (recommended):**
+```bash
+# Install FVM if you don't have it
+dart pub global activate fvm
+
+git clone https://github.com/wm-jenildgohel/openmob.git
+cd openmob
+
+# Install correct Flutter version (reads .fvmrc automatically)
+cd openmob_hub && fvm install && fvm use
+
+# Build Hub
+fvm flutter pub get && fvm flutter build linux && cd ..
+
+# Build MCP Server
+cd openmob_mcp && npm install && npm run build && cd ..
+
+# Build AiBridge
+cd openmob_bridge && cargo build --release && cd ..
+
+# Run
+cd openmob_hub && fvm flutter run -d linux
+```
+
+**Without FVM (if you already have Flutter 3.29.x):**
 ```bash
 git clone https://github.com/wm-jenildgohel/openmob.git
 cd openmob
