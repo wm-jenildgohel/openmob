@@ -1,0 +1,63 @@
+#!/bin/bash
+# OpenMob Launcher — starts Hub + MCP Server in one command
+# Usage: ./openmob
+
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "  ___                   __  __       _     "
+echo " / _ \ _ __   ___ _ __ |  \/  | ___ | |__  "
+echo "| | | | '_ \ / _ \ '_ \| |\/| |/ _ \| '_ \ "
+echo "| |_| | |_) |  __/ | | | |  | | (_) | |_) |"
+echo " \___/| .__/ \___|_| |_|_|  |_|\___/|_.__/ "
+echo "      |_|                                    "
+echo ""
+echo "Free, self-hosted mobile device automation"
+echo "============================================"
+echo ""
+
+# Check ADB
+if ! command -v adb &>/dev/null; then
+  echo "[!] ADB not found. Install it:"
+  echo "    Ubuntu/Debian: sudo apt install adb"
+  echo "    macOS: brew install android-platform-tools"
+  echo "    Arch: sudo pacman -S android-tools"
+  echo ""
+fi
+
+# Show connected devices
+echo "[*] Connected devices:"
+adb devices -l 2>/dev/null | grep -v "List" | grep -v "^$" || echo "    (none)"
+echo ""
+
+# Start Hub
+echo "[*] Starting OpenMob Hub on http://127.0.0.1:8686 ..."
+cd "$SCRIPT_DIR"
+./openmob_hub &
+HUB_PID=$!
+echo "    Hub PID: $HUB_PID"
+
+# Wait for Hub to start
+sleep 2
+
+# Start MCP Server (background, for MCP clients to connect separately)
+# MCP uses stdio so it can't run in background here — users connect it via MCP config
+echo ""
+echo "[*] MCP server binary ready at: $SCRIPT_DIR/openmob-mcp-linux"
+echo "    Configure in your AI tool's MCP settings:"
+echo "    { \"command\": \"$SCRIPT_DIR/openmob-mcp-linux\" }"
+echo ""
+echo "[*] AiBridge binary ready at: $SCRIPT_DIR/aibridge"
+echo "    Usage: $SCRIPT_DIR/aibridge -- claude"
+echo ""
+echo "============================================"
+echo "[*] OpenMob Hub is running!"
+echo "    Dashboard: http://127.0.0.1:8686"
+echo "    API: http://127.0.0.1:8686/api/v1/devices/"
+echo ""
+echo "    Press Ctrl+C to stop."
+echo "============================================"
+
+# Wait for Hub to exit
+trap "kill $HUB_PID 2>/dev/null; echo ''; echo 'OpenMob stopped.'; exit 0" INT TERM
+wait $HUB_PID
