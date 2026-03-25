@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'ui/screens/home_screen.dart';
+import 'ui/screens/dashboard_shell.dart';
 import 'ui/screens/device_detail_screen.dart';
 
 class OpenMobApp extends StatelessWidget {
@@ -12,7 +12,7 @@ class OpenMobApp extends StatelessWidget {
       title: 'OpenMob Hub',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: const HomeScreen(),
+      home: const DashboardShell(),
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '');
 
