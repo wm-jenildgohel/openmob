@@ -93,7 +93,11 @@ Plans:
   2. User can define test scripts (sequence of actions + assertions) in the Hub and trigger them
   3. User can run Flutter tests (flutter test / flutter drive) from the Hub
   4. Test results are displayed in the Hub with pass/fail status, failure screenshots, and execution time
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 05-01-PLAN.md -- Hub backend: test models, TestRunnerService, test API routes, wiring
+- [ ] 05-02-PLAN.md -- MCP run_test tool: TypeScript tool + types + registration
+- [ ] 05-03-PLAN.md -- Hub UI: TestingScreen with script editor, runner, results dashboard
 **UI hint**: yes
 
 ## Progress
@@ -107,4 +111,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. MCP Server + iOS Simulator | 2/2 | Complete | - |
 | 3. AiBridge CLI | 4/4 | Complete |  |
 | 4. End-to-End Integration + Hub Polish | 0/2 | Planning complete | - |
-| 5. QA & Testing | 0/TBD | Not started | - |
+| 5. QA & Testing | 0/3 | Planning complete | - |
