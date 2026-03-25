@@ -5,10 +5,14 @@ import 'server/api_server.dart';
 import 'services/adb_service.dart';
 import 'services/action_service.dart';
 import 'services/device_manager.dart';
+import 'services/log_service.dart';
+import 'services/process_manager.dart';
 import 'services/screenshot_service.dart';
+import 'services/system_check_service.dart';
 import 'services/ui_tree_service.dart';
 import 'services/simctl_service.dart';
 import 'services/idb_service.dart';
+import 'core/constants.dart';
 import 'app.dart';
 
 late final AdbService adbService;
@@ -19,6 +23,9 @@ late final ScreenshotService screenshotService;
 late final UiTreeService uiTreeService;
 late final ActionService actionService;
 late final ApiServer apiServer;
+late final LogService logService;
+late final SystemCheckService systemCheckService;
+late final ProcessManager processManager;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,6 +80,13 @@ Future<void> main() async {
   // Start API server with all services wired in
   apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService);
   await apiServer.start();
+
+  // Initialize process management and system check services
+  logService = LogService();
+  systemCheckService = SystemCheckService();
+  processManager = ProcessManager(logService);
+  await systemCheckService.checkAll();
+  logService.addLine('hub', 'OpenMob Hub started on port ${ApiConstants.port}');
 
   // Initial device scan
   await deviceManager.refreshDevices();
