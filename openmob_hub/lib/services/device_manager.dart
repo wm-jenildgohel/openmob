@@ -17,6 +17,9 @@ class DeviceManager {
 
   final _devices = BehaviorSubject<List<Device>>.seeded([]);
 
+  // Track which devices have bridge enabled (survives refresh cycles)
+  final Set<String> _bridgedDeviceIds = {};
+
   ValueStream<List<Device>> get devices$ => _devices.stream;
 
   List<Device> get currentDevices => _devices.value;
@@ -55,7 +58,15 @@ class DeviceManager {
       }
     }
 
-    _devices.add(enriched);
+    // Preserve bridge state across refresh cycles
+    final merged = enriched.map((d) {
+      if (_bridgedDeviceIds.contains(d.id)) {
+        return d.copyWith(status: 'bridged', bridgeActive: true);
+      }
+      return d;
+    }).toList();
+
+    _devices.add(merged);
   }
 
   Future<Device> _enrichDevice(String serial) async {
@@ -176,6 +187,7 @@ class DeviceManager {
   }
 
   void startBridge(String deviceId) {
+    _bridgedDeviceIds.add(deviceId);
     final updated = currentDevices.map((d) {
       if (d.id == deviceId) {
         return d.copyWith(status: 'bridged', bridgeActive: true);
@@ -186,6 +198,7 @@ class DeviceManager {
   }
 
   void stopBridge(String deviceId) {
+    _bridgedDeviceIds.remove(deviceId);
     final updated = currentDevices.map((d) {
       if (d.id == deviceId) {
         return d.copyWith(status: 'connected', bridgeActive: false);
