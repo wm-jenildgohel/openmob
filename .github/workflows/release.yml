@@ -251,3 +251,48 @@ jobs:
             release/openmob-${{ steps.version.outputs.version }}-linux-x64.tar.gz
             release/openmob-${{ steps.version.outputs.version }}-windows-x64.zip
             release/openmob-${{ steps.version.outputs.version }}-macos-x64.tar.gz
+
+  # ─── Post-Release: Update version in code ───
+  bump-version:
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update pubspec.yaml version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Strip leading 'v' if present
+          VERSION="${VERSION#v}"
+          echo "Updating version to $VERSION"
+
+          # Update pubspec.yaml
+          sed -i "s/^version: .*/version: ${VERSION}+1/" openmob_hub/pubspec.yaml
+
+          # Update update_service.dart
+          sed -i "s/const _currentVersion = '.*'/const _currentVersion = '${VERSION}'/" openmob_hub/lib/services/update_service.dart
+
+          echo "Updated files:"
+          grep "^version:" openmob_hub/pubspec.yaml
+          grep "_currentVersion" openmob_hub/lib/services/update_service.dart
+
+      - name: Commit version bump
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add openmob_hub/pubspec.yaml openmob_hub/lib/services/update_service.dart
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: bump version to ${VERSION} [skip ci]"
+          git push
