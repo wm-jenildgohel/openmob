@@ -25,7 +25,7 @@ class ProcessControls extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(child: _ProcessCard(
           title: 'AiBridge',
-          subtitle: 'Terminal agent wrapper',
+          subtitle: 'AI Agent Bridge',
           icon: Icons.terminal_rounded,
           stream: processManager.bridgeStatus$,
           onStart: () => _showAgentPicker(context),
@@ -40,7 +40,7 @@ class ProcessControls extends StatelessWidget {
     final agents = processManager.availableAgents;
     if (agents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No AI agents found in PATH (claude, codex, gemini)')),
+        const SnackBar(content: Text('No supported AI agents found on this computer')),
       );
       return;
     }
@@ -182,7 +182,7 @@ class _ProcessCard extends StatelessWidget {
               // Status text
               Text(
                 switch (info.status) {
-                  ProcessStatus.running => 'Running${info.pid != null ? ' \u2022 PID ${info.pid}' : ''}',
+                  ProcessStatus.running => 'Running',
                   ProcessStatus.stopped => 'Stopped',
                   ProcessStatus.starting => 'Starting...',
                   ProcessStatus.error => info.errorMessage ?? 'Error',

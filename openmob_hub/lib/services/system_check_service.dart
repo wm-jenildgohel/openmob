@@ -81,11 +81,10 @@ class SystemCheckService {
         );
         final systemPath = (whichResult.stdout as String).trim().split('\n').first;
         _resolvedAdbPath = systemPath.isNotEmpty ? systemPath : 'adb';
-        final ver = (result.stdout as String).split('\n').first.trim();
         return ToolStatus(
           name: 'ADB',
           available: true,
-          version: ver,
+          version: 'Ready',
           path: _resolvedAdbPath,
           installHint: '',
           canAutoInstall: false,
@@ -105,20 +104,20 @@ class SystemCheckService {
   Future<ToolStatus> _verifyAdb(String path, String source) async {
     try {
       final result = await Process.run(path, ['version']);
-      final ver = (result.stdout as String).split('\n').first.trim();
+      if (result.exitCode != 0) throw Exception('non-zero exit');
       return ToolStatus(
         name: 'ADB',
         available: true,
-        version: '$ver ($source)',
+        version: 'Ready',
         path: path,
         installHint: '',
       );
     } catch (e) {
-      return ToolStatus(
+      _log('ADB found at $path but failed to run: $e', error: true);
+      return const ToolStatus(
         name: 'ADB',
         available: false,
-        path: path,
-        installHint: 'ADB found at $path but failed to run: $e',
+        installHint: 'Found but unable to start — click Install to fix',
         canAutoInstall: true,
       );
     }
@@ -335,24 +334,19 @@ class SystemCheckService {
     try {
       final result = await Process.run('scrcpy', ['--version']);
       if (result.exitCode == 0) {
-        final ver = (result.stdout as String).split('\n').first.trim();
-        return ToolStatus(
+        return const ToolStatus(
           name: 'scrcpy',
           available: true,
-          version: ver,
+          version: 'Ready',
           installHint: '',
         );
       }
     } catch (_) {}
 
-    return ToolStatus(
+    return const ToolStatus(
       name: 'scrcpy',
       available: false,
-      installHint: Platform.isLinux
-          ? 'Install: sudo apt install scrcpy'
-          : Platform.isMacOS
-              ? 'Install: brew install scrcpy'
-              : 'Download from https://github.com/Genymobile/scrcpy',
+      installHint: 'Optional — faster screen preview',
       canAutoInstall: false,
     );
   }
@@ -368,7 +362,7 @@ class SystemCheckService {
       return ToolStatus(
         name: 'MCP Server',
         available: true,
-        version: 'bundled',
+        version: 'Ready',
         path: bundledMcp,
         installHint: '',
       );
@@ -383,7 +377,7 @@ class SystemCheckService {
         return ToolStatus(
           name: 'MCP Server',
           available: true,
-          version: 'project build',
+          version: 'Ready',
           path: candidate,
           installHint: '',
         );
@@ -395,23 +389,20 @@ class SystemCheckService {
     try {
       final result = await Process.run('node', ['--version']);
       if (result.exitCode == 0) {
-        final nodeVer = (result.stdout as String).trim();
-        final hint = Platform.isWindows
-            ? 'Run in terminal:\n  cd openmob_mcp\n  npm install\n  npm run build'
-            : 'Run: cd openmob_mcp && npm install && npm run build';
-        return ToolStatus(
+        _log('Node.js ${(result.stdout as String).trim()} found — needs build');
+        return const ToolStatus(
           name: 'MCP Server',
           available: false,
-          version: 'Node.js $nodeVer found — needs build',
-          installHint: hint,
+          version: 'Needs setup',
+          installHint: 'Needs setup — click Install',
         );
       }
     } catch (_) {}
 
-    return ToolStatus(
+    return const ToolStatus(
       name: 'MCP Server',
       available: false,
-      installHint: 'Node.js required — will be installed automatically',
+      installHint: 'Required for AI tools — click Install',
       canAutoInstall: true,
     );
   }
@@ -427,7 +418,7 @@ class SystemCheckService {
       return ToolStatus(
         name: 'AiBridge',
         available: true,
-        version: 'bundled',
+        version: 'Ready',
         path: bundledBridge,
         installHint: '',
       );
@@ -444,6 +435,7 @@ class SystemCheckService {
         return ToolStatus(
           name: 'AiBridge',
           available: true,
+          version: 'Ready',
           path: path,
           installHint: '',
         );
@@ -461,7 +453,7 @@ class SystemCheckService {
         return ToolStatus(
           name: 'AiBridge',
           available: true,
-          version: 'project build',
+          version: 'Ready',
           path: candidate,
           installHint: '',
         );
@@ -477,7 +469,7 @@ class SystemCheckService {
       return ToolStatus(
         name: 'AiBridge',
         available: true,
-        version: 'downloaded',
+        version: 'Ready',
         path: downloadedBridge,
         installHint: '',
       );
@@ -486,7 +478,7 @@ class SystemCheckService {
     return const ToolStatus(
       name: 'AiBridge',
       available: false,
-      installHint: 'Optional — wraps terminal AI agents with context injection',
+      installHint: 'Optional — enables AI agent integration',
       canAutoInstall: true,
     );
   }
@@ -500,6 +492,7 @@ class SystemCheckService {
         return const ToolStatus(
           name: 'idb',
           available: true,
+          version: 'Ready',
           installHint: '',
         );
       }
@@ -507,7 +500,7 @@ class SystemCheckService {
     return const ToolStatus(
       name: 'idb',
       available: false,
-      installHint: 'Optional (iOS). Install: brew install idb-companion && pip3 install fb-idb',
+      installHint: 'Optional — needed for iOS Simulator testing',
     );
   }
 

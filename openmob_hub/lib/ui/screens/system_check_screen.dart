@@ -26,7 +26,7 @@ class SystemCheckScreen extends StatelessWidget {
                 children: [
                   Text('System Check', style: textTheme.headlineSmall),
                   const SizedBox(height: 4),
-                  Text('Verify platform tools and AI integrations', style: textTheme.bodyMedium),
+                  Text('Check if everything is set up correctly', style: textTheme.bodyMedium),
                 ],
               ),
               const Spacer(),
@@ -73,10 +73,10 @@ class SystemCheckScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.build_rounded, size: 18, color: ResColors.textSecondary),
                 const SizedBox(width: 8),
-                Text('Platform Tools', style: textTheme.titleMedium),
+                Text('Required Software', style: textTheme.titleMedium),
                 const SizedBox(width: 12),
                 _StatusBadge(
-                  text: '$available/$total available',
+                  text: '$available of $total ready',
                   color: available == total ? ResColors.accent : ResColors.warning,
                 ),
               ],
@@ -146,7 +146,7 @@ class SystemCheckScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.smart_toy_rounded, size: 18, color: ResColors.textSecondary),
                 const SizedBox(width: 8),
-                Text('AI Tool Integration', style: textTheme.titleMedium),
+                Text('AI Tools', style: textTheme.titleMedium),
                 const SizedBox(width: 12),
                 _StatusBadge(
                   text: '$configured/${detected.length} configured',

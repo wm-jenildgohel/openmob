@@ -69,42 +69,24 @@ class ToolStatusCard extends StatelessWidget {
                 style: textTheme.bodySmall?.copyWith(color: ResColors.warning),
               ),
             ],
-            if (tool.version != null && !tool.installing) ...[
+            if (tool.available && !tool.installing) ...[
               const SizedBox(height: 4),
               Text(
-                tool.version!,
-                style: textTheme.bodySmall?.copyWith(color: ResColors.muted),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            if (tool.path != null && !tool.installing) ...[
-              const SizedBox(height: 2),
-              Text(
-                tool.path!,
-                style: textTheme.bodySmall?.copyWith(
-                  color: ResColors.muted,
-                  fontSize: 11,
-                ),
+                tool.version ?? 'Ready',
+                style: textTheme.bodySmall?.copyWith(color: ResColors.connected),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
             if (!tool.available && !tool.installing && tool.installHint.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: ResColors.warning.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  tool.installHint,
-                  style: textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              const SizedBox(height: 4),
+              Text(
+                tool.canAutoInstall
+                    ? 'Not installed — click Install'
+                    : tool.installHint,
+                style: textTheme.bodySmall?.copyWith(color: ResColors.muted),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ],

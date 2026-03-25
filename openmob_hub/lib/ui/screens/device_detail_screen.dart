@@ -100,8 +100,6 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                             _buildMetadataCard(context, device),
                             const SizedBox(height: 16),
                             _buildBridgeCard(context, device),
-                            const SizedBox(height: 16),
-                            _buildApiInfoCard(context, device),
                           ],
                         ),
                       ),
@@ -123,8 +121,6 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                     _buildMetadataCard(context, device),
                     const SizedBox(height: 16),
                     _buildBridgeCard(context, device),
-                    const SizedBox(height: 16),
-                    _buildApiInfoCard(context, device),
                   ],
                 ),
               );
@@ -146,12 +142,12 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
           children: [
             Text('Device Information', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            _infoRow('Serial', device.serial),
-            _infoRow('Manufacturer', device.manufacturer),
-            _infoRow('OS Version', '${device.platform == 'ios' ? 'iOS' : 'Android'} ${device.osVersion}${device.sdkVersion > 0 ? ' (SDK ${device.sdkVersion})' : ''}'),
-            _infoRow('Screen', '${device.screenWidth}x${device.screenHeight}'),
+            _infoRow('Device ID', device.serial),
+            _infoRow('Brand', device.manufacturer),
+            _infoRow('Operating System', '${device.platform == 'ios' ? 'iOS' : 'Android'} ${device.osVersion}'),
+            _infoRow('Screen Size', '${device.screenWidth} x ${device.screenHeight}'),
             if (device.batteryLevel >= 0)
-              _infoRow('Battery', '${device.batteryLevel}% (${device.batteryStatus})'),
+              _infoRow('Battery', '${device.batteryLevel}%'),
             _infoRow('Connection', device.connectionType),
             _statusRow('Status', device.status),
           ],
@@ -215,37 +211,6 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                       : null,
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildApiInfoCard(BuildContext context, Device device) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('API Endpoints', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            SelectableText(
-              'curl localhost:8686/api/v1/devices/${device.id}/screenshot',
-              style: textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-            ),
-            const SizedBox(height: 8),
-            SelectableText(
-              'curl localhost:8686/api/v1/devices/${device.id}/ui-tree',
-              style: textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-            ),
-            const SizedBox(height: 8),
-            SelectableText(
-              'curl -X POST localhost:8686/api/v1/devices/${device.id}/tap -d \'{"x":540,"y":1200}\'',
-              style: textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
             ),
           ],
         ),

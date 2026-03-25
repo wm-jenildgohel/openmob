@@ -149,7 +149,7 @@ class DashboardShell extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Connect via USB, WiFi ADB, or start an emulator',
+                          'Connect a device via USB or start an emulator',
                           style: textTheme.bodySmall,
                         ),
                       ],
@@ -187,7 +187,7 @@ class DashboardShell extends StatelessWidget {
           Icon(Icons.circle, size: 8, color: ResColors.accent),
           SizedBox(width: 6),
           Text(
-            'API :8686',
+            'Hub Online',
             style: TextStyle(
               color: ResColors.accent,
               fontSize: 12,
