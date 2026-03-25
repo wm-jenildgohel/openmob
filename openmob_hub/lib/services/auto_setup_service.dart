@@ -117,16 +117,13 @@ class AutoSetupService {
       }
     }
 
-    // Phase 4: Configure AI tools
-    _emit(SetupPhase.configuringAiTools, 'Configuring AI tools...', 0.70);
+    // Phase 4: Configure AI tools + install skills
+    _emit(SetupPhase.configuringAiTools, 'Setting up AI tools...', 0.70);
     await _aiToolSetup.detectAll();
-    final unconfigured = _aiToolSetup.currentTools
-        .where((t) => t.detected && !t.configured)
-        .toList();
-    if (unconfigured.isNotEmpty) {
-      _log('Configuring ${unconfigured.length} AI tools...');
-      await _aiToolSetup.installAll();
-    }
+
+    // Always install — configures MCP + installs skill files for all detected tools
+    _log('Configuring AI tools and installing skills...');
+    await _aiToolSetup.installAll();
     await Future.delayed(const Duration(milliseconds: 300));
 
     // Phase 5: Start MCP server if available
