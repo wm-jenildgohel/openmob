@@ -225,6 +225,7 @@ impl Bridge {
         }
 
         // Wait for blocking tasks to finish
+        
         let _ = read_handle.await;
         let _ = stdin_handle.await;
 
