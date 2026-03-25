@@ -173,6 +173,27 @@ class ProcessManager {
     return agents;
   }
 
+  /// Detect available terminal emulator on the system
+  String? get _terminalEmulator {
+    final terminals = [
+      'gnome-terminal',
+      'konsole',
+      'xfce4-terminal',
+      'mate-terminal',
+      'tilix',
+      'alacritty',
+      'kitty',
+      'xterm',
+    ];
+    for (final term in terminals) {
+      try {
+        final result = Process.runSync('which', [term]);
+        if (result.exitCode == 0) return term;
+      } catch (_) {}
+    }
+    return null;
+  }
+
   Future<void> startBridge({String agent = 'claude', int port = 9999}) async {
     if (_bridgeStatus.value.status == ProcessStatus.running) return;
 
@@ -199,57 +220,66 @@ class ProcessManager {
         _logService.addLine('hub', 'Agent "$agent" not found in PATH', level: LogLevel.error);
         return;
       }
-    } catch (_) {
-      // `which` not available — try starting anyway
+    } catch (_) {}
+
+    final terminal = _terminalEmulator;
+    if (terminal == null) {
+      _bridgeStatus.add(const ProcessInfo(
+        name: 'AiBridge',
+        status: ProcessStatus.error,
+        errorMessage: 'No terminal emulator found.\nAiBridge needs a real terminal. Run manually:\naibridge -- claude',
+      ));
+      _logService.addLine('hub', 'No terminal emulator found', level: LogLevel.error);
+      return;
     }
 
     _bridgeStatus.add(_bridgeStatus.value.copyWith(status: ProcessStatus.starting));
 
     try {
+      final bridgeCmd = '$binary --port $port -- $agent';
+
+      // Launch in a real terminal emulator so AiBridge gets a proper PTY
+      final List<String> termArgs;
+      switch (terminal) {
+        case 'gnome-terminal':
+          termArgs = ['gnome-terminal', '--title', 'AiBridge ($agent)', '--', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+        case 'konsole':
+          termArgs = ['konsole', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+        case 'xfce4-terminal':
+          termArgs = ['xfce4-terminal', '--title', 'AiBridge ($agent)', '-e', 'bash -c "$bridgeCmd; echo AiBridge exited; read"'];
+        case 'alacritty':
+          termArgs = ['alacritty', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+        case 'kitty':
+          termArgs = ['kitty', '--title', 'AiBridge ($agent)', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
+        default:
+          termArgs = [terminal, '-e', 'bash -c "$bridgeCmd"'];
+      }
+
       _bridgeProcess = await Process.start(
-        binary,
-        ['--port', '$port', '--', agent],
+        termArgs.first,
+        termArgs.sublist(1),
         environment: {'TERM': 'xterm-256color'},
       );
 
-      _bridgeProcess!.stdout
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-        _logService.addLine('aibridge', line);
-      });
-
-      _bridgeProcess!.stderr
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-        _logService.addLine('aibridge', line, level: LogLevel.warning);
-      });
-
       _bridgeStatus.add(ProcessInfo(
         name: 'AiBridge',
-        status: ProcessStatus.running,
+        status: ProcessStatus.starting,
         pid: _bridgeProcess!.pid,
         startedAt: DateTime.now(),
       ));
 
-      _logService.addLine('hub', 'AiBridge started with $agent (PID: ${_bridgeProcess!.pid}, port: $port)');
+      _logService.addLine('hub', 'AiBridge launching in $terminal with $agent (port: $port)');
 
+      // Monitor the terminal process — when it exits, bridge is done
       _bridgeProcess!.exitCode.then((code) {
-        if (_bridgeStatus.value.status == ProcessStatus.running) {
-          _bridgeStatus.add(ProcessInfo(
-            name: 'AiBridge',
-            status: code == 0 ? ProcessStatus.stopped : ProcessStatus.error,
-            errorMessage: code != 0 ? 'Exited with code $code' : null,
-          ));
-          _logService.addLine(
-            'hub',
-            'AiBridge exited with code $code',
-            level: code != 0 ? LogLevel.error : LogLevel.info,
-          );
-        }
         _bridgeProcess = null;
+        // Health polling will detect the actual bridge state
+        _logService.addLine('hub', 'AiBridge terminal closed (code: $code)');
       });
+
+      // Give AiBridge a moment to start, then let health polling take over
+      await Future.delayed(const Duration(seconds: 2));
+      await _pollBridgeHealth();
     } catch (e) {
       _bridgeStatus.add(ProcessInfo(
         name: 'AiBridge',
@@ -261,6 +291,7 @@ class ProcessManager {
   }
 
   Future<void> stopBridge() async {
+    // If we launched the terminal, kill it
     if (_bridgeProcess != null) {
       _bridgeProcess!.kill();
       try {
@@ -270,6 +301,16 @@ class ProcessManager {
       }
       _bridgeProcess = null;
     }
+
+    // Also try to stop any externally running aibridge via its API
+    try {
+      // AiBridge doesn't have a shutdown endpoint, so we find and kill the process
+      final result = Process.runSync('pkill', ['-f', 'aibridge.*--port']);
+      if (result.exitCode == 0) {
+        _logService.addLine('hub', 'AiBridge process terminated');
+      }
+    } catch (_) {}
+
     _bridgeStatus.add(const ProcessInfo(
       name: 'AiBridge',
       status: ProcessStatus.stopped,
