@@ -15,6 +15,7 @@ class LivePreviewController {
 
   final _image = BehaviorSubject<Uint8List?>.seeded(null);
   final _loading = BehaviorSubject<bool>.seeded(false);
+  bool _disposed = false;
 
   ValueStream<Uint8List?> get image$ => _image.stream;
   ValueStream<bool> get loading$ => _loading.stream;
@@ -23,21 +24,22 @@ class LivePreviewController {
 
   void start() {
     _timer = Timer.periodic(const Duration(seconds: 2), (_) => _fetch());
-    // Fetch immediately on start
     _fetch();
   }
 
   Future<void> _fetch() async {
+    if (_disposed || _loading.isClosed) return;
     if (_loading.value) return;
     _loading.add(true);
     try {
       final result = await screenshotService.captureScreenshot(deviceId);
+      if (_disposed) return;
       final bytes = base64Decode(result.base64);
       _image.add(Uint8List.fromList(bytes));
     } catch (_) {
       // Device might be disconnected -- silently ignore
     } finally {
-      _loading.add(false);
+      if (!_disposed) _loading.add(false);
     }
   }
 
@@ -47,6 +49,7 @@ class LivePreviewController {
   }
 
   void dispose() {
+    _disposed = true;
     stop();
     _image.close();
     _loading.close();

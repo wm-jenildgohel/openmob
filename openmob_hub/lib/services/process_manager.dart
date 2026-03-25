@@ -25,6 +25,7 @@ class ProcessManager {
   final _bridgeStatus = BehaviorSubject<ProcessInfo>.seeded(
     const ProcessInfo(name: 'AiBridge', status: ProcessStatus.stopped),
   );
+  Process? _bridgeProcess;
   Timer? _bridgeHealthTimer;
 
   ValueStream<ProcessInfo> get mcpStatus$ => _mcpStatus.stream;
@@ -136,7 +137,125 @@ class ProcessManager {
     await startMcp();
   }
 
-  // --- AiBridge health polling ---
+  // --- AiBridge lifecycle ---
+
+  String? get _bridgeBinary {
+    // Check common locations for the aibridge binary
+    final candidates = [
+      '$_projectRoot/openmob_bridge/target/release/aibridge',
+      '$_projectRoot/openmob_bridge/target/debug/aibridge',
+    ];
+
+    // Also check PATH via `which`
+    try {
+      final result = Process.runSync('which', ['aibridge']);
+      if (result.exitCode == 0) {
+        final path = (result.stdout as String).trim();
+        if (path.isNotEmpty) return path;
+      }
+    } catch (_) {}
+
+    for (final path in candidates) {
+      if (File(path).existsSync()) return path;
+    }
+    return null;
+  }
+
+  Future<void> startBridge({String agent = 'claude', int port = 9999}) async {
+    if (_bridgeStatus.value.status == ProcessStatus.running) return;
+
+    final binary = _bridgeBinary;
+    if (binary == null) {
+      _bridgeStatus.add(const ProcessInfo(
+        name: 'AiBridge',
+        status: ProcessStatus.error,
+        errorMessage: 'aibridge binary not found. Build it: cd openmob_bridge && cargo build --release',
+      ));
+      _logService.addLine('hub', 'AiBridge binary not found', level: LogLevel.error);
+      return;
+    }
+
+    _bridgeStatus.add(_bridgeStatus.value.copyWith(status: ProcessStatus.starting));
+
+    try {
+      _bridgeProcess = await Process.start(
+        binary,
+        ['--port', '$port', '--', agent],
+        environment: {'TERM': 'xterm-256color'},
+      );
+
+      _bridgeProcess!.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        _logService.addLine('aibridge', line);
+      });
+
+      _bridgeProcess!.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        _logService.addLine('aibridge', line, level: LogLevel.warning);
+      });
+
+      _bridgeStatus.add(ProcessInfo(
+        name: 'AiBridge',
+        status: ProcessStatus.running,
+        pid: _bridgeProcess!.pid,
+        startedAt: DateTime.now(),
+      ));
+
+      _logService.addLine('hub', 'AiBridge started with $agent (PID: ${_bridgeProcess!.pid}, port: $port)');
+
+      _bridgeProcess!.exitCode.then((code) {
+        if (_bridgeStatus.value.status == ProcessStatus.running) {
+          _bridgeStatus.add(ProcessInfo(
+            name: 'AiBridge',
+            status: code == 0 ? ProcessStatus.stopped : ProcessStatus.error,
+            errorMessage: code != 0 ? 'Exited with code $code' : null,
+          ));
+          _logService.addLine(
+            'hub',
+            'AiBridge exited with code $code',
+            level: code != 0 ? LogLevel.error : LogLevel.info,
+          );
+        }
+        _bridgeProcess = null;
+      });
+    } catch (e) {
+      _bridgeStatus.add(ProcessInfo(
+        name: 'AiBridge',
+        status: ProcessStatus.error,
+        errorMessage: e.toString(),
+      ));
+      _logService.addLine('hub', 'Failed to start AiBridge: $e', level: LogLevel.error);
+    }
+  }
+
+  Future<void> stopBridge() async {
+    if (_bridgeProcess != null) {
+      _bridgeProcess!.kill();
+      try {
+        await _bridgeProcess!.exitCode.timeout(const Duration(seconds: 3));
+      } catch (_) {
+        _bridgeProcess!.kill(ProcessSignal.sigkill);
+      }
+      _bridgeProcess = null;
+    }
+    _bridgeStatus.add(const ProcessInfo(
+      name: 'AiBridge',
+      status: ProcessStatus.stopped,
+    ));
+    _logService.addLine('hub', 'AiBridge stopped');
+  }
+
+  Future<void> restartBridge({String agent = 'claude', int port = 9999}) async {
+    await stopBridge();
+    await Future.delayed(const Duration(seconds: 1));
+    await startBridge(agent: agent, port: port);
+  }
+
+  // --- AiBridge health polling (detects externally started bridges) ---
 
   void startBridgeMonitoring() {
     _bridgeHealthTimer?.cancel();
@@ -147,6 +266,9 @@ class ProcessManager {
   }
 
   Future<void> _pollBridgeHealth() async {
+    // Skip polling if we started the bridge ourselves
+    if (_bridgeProcess != null) return;
+
     try {
       final response = await http
           .get(Uri.parse('http://127.0.0.1:9999/health'))
@@ -161,13 +283,13 @@ class ProcessManager {
             status: ProcessStatus.running,
             startedAt: DateTime.now(),
           ));
-          _logService.addLine('hub', 'AiBridge detected');
+          _logService.addLine('hub', 'AiBridge detected (external)');
         }
       }
     } catch (_) {
       final wasRunning =
           _bridgeStatus.value.status == ProcessStatus.running;
-      if (wasRunning) {
+      if (wasRunning && _bridgeProcess == null) {
         _bridgeStatus.add(const ProcessInfo(
           name: 'AiBridge',
           status: ProcessStatus.stopped,
@@ -182,6 +304,7 @@ class ProcessManager {
 
   void dispose() {
     _mcpProcess?.kill();
+    _bridgeProcess?.kill();
     _bridgeHealthTimer?.cancel();
     _mcpStatus.close();
     _bridgeStatus.close();

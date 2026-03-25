@@ -101,9 +101,13 @@ class ProcessControls extends StatelessWidget {
           stream: processManager.bridgeStatus$,
           builder: (context, info, child) {
             final statusColor = _statusColor(info.status);
-            final statusText = info.status == ProcessStatus.running
-                ? 'Running'
-                : 'Not detected';
+
+            final statusLabel = switch (info.status) {
+              ProcessStatus.running => 'Running${info.pid != null ? ' (PID: ${info.pid})' : ''}',
+              ProcessStatus.stopped => 'Stopped',
+              ProcessStatus.starting => 'Starting...',
+              ProcessStatus.error => 'Error: ${info.errorMessage ?? "Unknown"}',
+            };
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,11 +130,30 @@ class ProcessControls extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(statusText, style: textTheme.bodyMedium?.copyWith(color: statusColor)),
+                Text(statusLabel, style: textTheme.bodyMedium?.copyWith(color: statusColor)),
                 const SizedBox(height: 12),
-                Text(
-                  'AiBridge runs in its own terminal. Start with: aibridge -- claude',
-                  style: textTheme.bodySmall?.copyWith(color: ResColors.muted),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: (info.status == ProcessStatus.running ||
+                              info.status == ProcessStatus.starting)
+                          ? null
+                          : () => processManager.startBridge(),
+                      child: const Text('Start'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: info.status == ProcessStatus.stopped
+                          ? null
+                          : () => processManager.stopBridge(),
+                      child: const Text('Stop'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => processManager.restartBridge(),
+                      child: const Text('Restart'),
+                    ),
+                  ],
                 ),
               ],
             );
