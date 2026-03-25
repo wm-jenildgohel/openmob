@@ -96,7 +96,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [ ] 05-01-PLAN.md -- Hub backend: test models, TestRunnerService, test API routes, wiring
-- [ ] 05-02-PLAN.md -- MCP run_test tool: TypeScript tool + types + registration
+- [x] 05-02-PLAN.md -- MCP run_test tool: TypeScript tool + types + registration
 - [ ] 05-03-PLAN.md -- Hub UI: TestingScreen with script editor, runner, results dashboard
 **UI hint**: yes
 
@@ -111,4 +111,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. MCP Server + iOS Simulator | 2/2 | Complete | - |
 | 3. AiBridge CLI | 4/4 | Complete |  |
 | 4. End-to-End Integration + Hub Polish | 0/2 | Planning complete | - |
-| 5. QA & Testing | 0/3 | Planning complete | - |
+| 5. QA & Testing | 1/3 | In Progress|  |
