@@ -265,6 +265,11 @@ class SystemCheckService {
       }
 
       _log('Node.js installed');
+      _updateToolStatus('MCP Server', installing: true, progress: 0.7);
+
+      // Now try to build MCP from source if project exists
+      await _buildMcpIfSourceExists();
+
       _updateToolStatus('MCP Server', installing: false, progress: 1.0);
       await checkAll();
       return true;
@@ -568,6 +573,37 @@ class SystemCheckService {
       return t;
     }).toList();
     _tools.add(updated);
+  }
+
+  Future<void> _buildMcpIfSourceExists() async {
+    final sep = Platform.pathSeparator;
+    var dir = Directory.current;
+    for (var i = 0; i < 5; i++) {
+      final packageJson = '${dir.path}${sep}openmob_mcp${sep}package.json';
+      if (File(packageJson).existsSync()) {
+        final mcpDir = '${dir.path}${sep}openmob_mcp';
+        _log('Found MCP source at $mcpDir — building...');
+        try {
+          final npm = Platform.isWindows ? 'npm.cmd' : 'npm';
+          final install = await Process.run(npm, ['install'], workingDirectory: mcpDir);
+          if (install.exitCode != 0) {
+            _log('npm install failed: ${install.stderr}', error: true);
+            return;
+          }
+          final build = await Process.run(npm, ['run', 'build'], workingDirectory: mcpDir);
+          if (build.exitCode != 0) {
+            _log('npm build failed: ${build.stderr}', error: true);
+            return;
+          }
+          _log('MCP Server built successfully');
+        } catch (e) {
+          _log('MCP build error: $e', error: true);
+        }
+        return;
+      }
+      dir = dir.parent;
+    }
+    _log('MCP source not found — skipping build');
   }
 
   void _log(String message, {bool error = false}) {

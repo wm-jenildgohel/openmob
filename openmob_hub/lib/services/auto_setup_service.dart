@@ -135,9 +135,12 @@ class AutoSetupService {
     if (mcpNow != null && mcpNow.available) {
       try {
         await _processManager.startMcp();
+        _log('MCP Server started');
       } catch (e) {
         _log('MCP auto-start failed: $e', error: true);
       }
+    } else {
+      _log('MCP Server not available — AI tools can still use the HTTP API directly');
     }
 
     // Done
