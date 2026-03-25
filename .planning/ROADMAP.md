@@ -81,7 +81,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 04-01-PLAN.md -- ProcessManager, LogService, SystemCheckService, models, ResColors update, main.dart wiring
-- [ ] 04-02-PLAN.md -- Desktop UI overhaul: DashboardShell, sidebar, process controls, live preview, log viewer, system check screen
+- [x] 04-02-PLAN.md -- Desktop UI overhaul: DashboardShell, sidebar, process controls, live preview, log viewer, system check screen
 **UI hint**: yes
 
 ### Phase 5: QA & Testing
