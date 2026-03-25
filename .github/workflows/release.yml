@@ -158,10 +158,10 @@ jobs:
         run: |
           npx esbuild build/app/index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/openmob-mcp-bundle.cjs
 
-      - name: Create standalone binary (pkg)
+      - name: Create standalone binary (yao-pkg)
         working-directory: openmob_mcp
         run: |
-          npx pkg dist/openmob-mcp-bundle.cjs --target ${{ matrix.target }} --output dist/${{ matrix.output }}
+          npx @yao-pkg/pkg dist/openmob-mcp-bundle.cjs --target ${{ matrix.target }} --output dist/${{ matrix.output }}
 
       - uses: actions/upload-artifact@v4
         with:
