@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/wm-jenildgohel/openmob/main/app-logo.png" alt="OpenMob" width="80" height="80">
+  <img src="https://raw.githubusercontent.com/wm-jenildgohel/openmob/main/app-logo.png" alt="OpenMob" height="220">
 </p>
 
 <h1 align="center">openmob-mcp</h1>
