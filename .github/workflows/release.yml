@@ -283,7 +283,7 @@ jobs:
             echo "CARGO_REGISTRY_TOKEN not set — skipping crates.io publish"
             exit 0
           fi
-          cargo publish --allow-dirty || echo "crates.io publish failed (may already exist)"
+          cargo publish --allow-dirty 2>&1 || true
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
@@ -354,6 +354,12 @@ jobs:
         run: |
           if [ -z "$NODE_AUTH_TOKEN" ]; then
             echo "NPM_TOKEN secret not set — skipping publish"
+            exit 0
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          # Check if this version already exists on npm
+          if npm view "openmob-mcp@${VERSION}" version 2>/dev/null; then
+            echo "openmob-mcp@${VERSION} already published — skipping"
             exit 0
           fi
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
