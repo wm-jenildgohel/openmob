@@ -15,7 +15,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: '3.29.3'
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
 
 jobs:
   # ─── Build Hub (Linux + Windows) ───

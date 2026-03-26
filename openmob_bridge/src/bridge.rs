@@ -2,6 +2,7 @@ use crate::ansi;
 use crate::busy_detector::BusyDetector;
 use crate::pty_handler::{PtyHandler, PtyReader, PtyWriter};
 use crate::queue::InjectionQueue;
+use std::io::IsTerminal;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -125,7 +126,7 @@ impl Bridge {
 
         // Task 2: Stdin Forward — uses writer lock only (never blocks reader)
         // Skip stdin forwarding if no terminal is attached (e.g., launched from Hub as child process)
-        let has_terminal = atty::is(atty::Stream::Stdin);
+        let has_terminal = std::io::stdin().is_terminal();
         let writer_stdin = self.writer.clone();
         let cancel_stdin = self.cancel.clone();
         let stdin_handle = tokio::task::spawn_blocking(move || {

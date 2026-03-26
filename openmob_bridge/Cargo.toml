@@ -2,6 +2,7 @@
 name = "aibridge"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.70"
 description = "PTY wrapper for terminal AI agents with HTTP injection API"
 
 [dependencies]
@@ -20,4 +21,9 @@ terminal_size = "0.4"
 crossterm = "0.28"
 tower-http = { version = "0.6", features = ["cors"] }
 which = "7"
-atty = "0.2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
