@@ -131,10 +131,18 @@ class ProcessManager {
     _mcpStatus.add(_mcpStatus.value.copyWith(status: ProcessStatus.starting));
 
     try {
-      // Try bundled binary
-      if (File(bundledMcp).existsSync() || File(bundledMcpAlt).existsSync()) {
-        final bin = File(bundledMcp).existsSync() ? bundledMcp : bundledMcpAlt;
-        _mcpProcess = await Process.start(bin, []);
+      // Try bundled binary (next to exe, in tools/ subdir, or ~/.openmob/tools/)
+      final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '.';
+      final downloadedMcp = Platform.isWindows
+          ? '$home$_sep.openmob${_sep}tools${_sep}openmob-mcp.exe'
+          : '$home$_sep.openmob${_sep}tools${_sep}openmob-mcp';
+
+      final mcpBin = [bundledMcpAlt, bundledMcp, downloadedMcp]
+          .where((p) => File(p).existsSync())
+          .firstOrNull;
+
+      if (mcpBin != null) {
+        _mcpProcess = await Process.start(mcpBin, []);
       } else if (mcpDir != null && Directory(mcpDir).existsSync()) {
         // Try project build — but check Node.js first
         final indexJs = '$mcpDir${_sep}build${_sep}app${_sep}index.js';
