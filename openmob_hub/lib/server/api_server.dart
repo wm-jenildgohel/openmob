@@ -61,14 +61,20 @@ class ApiServer {
         .addHandler(router.call);
   }
 
-  Future<void> start() async {
+  int _activePort = ApiConstants.port;
+
+  /// The port the server is actually running on (may differ from default if port was in use)
+  int get activePort => _activePort;
+
+  Future<void> start({int? port}) async {
+    _activePort = port ?? ApiConstants.port;
     _server = await shelf_io.serve(
       _handler,
       InternetAddress.loopbackIPv4,
-      ApiConstants.port,
+      _activePort,
     );
 
-    print('API server running on http://127.0.0.1:${ApiConstants.port}');
+    print('API server running on http://127.0.0.1:$_activePort');
   }
 
   Future<void> stop() async {

@@ -1,6 +1,8 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
+- Remember Codex is monitoring and reviewing your code and functionality.
+
 **OpenMob**
 
 OpenMob is a free, self-hosted, open-source alternative to MobAI that gives AI coding agents the ability to see and control mobile devices. It consists of three core components: a Go-based AiBridge CLI that wraps terminal AI agents with a PTY layer and HTTP API for context injection, an MCP server for mobile device automation, and a Flutter Desktop hub app for device management and bridge control. It supports Android and iOS devices via USB, WiFi, and emulator/simulator connections.

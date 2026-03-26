@@ -110,9 +110,10 @@ Future<void> main() async {
   apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
   bool serverStarted = false;
   for (int attempt = 0; attempt < 5; attempt++) {
+    final port = ApiConstants.port + attempt;
     try {
-      await apiServer.start();
-      logService.addLine('hub', 'Hub ready on port ${ApiConstants.port}');
+      await apiServer.start(port: port);
+      logService.addLine('hub', 'Hub ready on port $port');
       serverStarted = true;
       break;
     } catch (e) {
@@ -120,12 +121,12 @@ Future<void> main() async {
         logService.addLine('hub', 'Port ${ApiConstants.port} in use — trying alternatives...', level: LogLevel.warning);
       }
       if (attempt < 4) {
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 200));
       }
     }
   }
   if (!serverStarted) {
-    logService.addLine('hub', 'Could not bind to any port — close other OpenMob instances and restart', level: LogLevel.error);
+    logService.addLine('hub', 'Could not bind to any port (tried ${ApiConstants.port}-${ApiConstants.port + 4}) — close other OpenMob instances and restart', level: LogLevel.error);
   }
 
   // Run the UI immediately — don't block on device scan or system check

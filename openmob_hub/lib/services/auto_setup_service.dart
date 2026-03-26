@@ -126,27 +126,65 @@ class AutoSetupService {
     await _aiToolSetup.installAll();
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // Phase 5: Start MCP server if available
+    // Phase 5: Start MCP server if available and built
     _emit(SetupPhase.startingServices, 'Starting services...', 0.85);
     await _systemCheck.checkAll(); // refresh status after installs
     final mcpNow = _systemCheck.currentTools
         .where((t) => t.name == 'MCP Server')
         .firstOrNull;
     if (mcpNow != null && mcpNow.available) {
-      try {
-        await _processManager.startMcp();
-        _log('MCP Server started');
-      } catch (e) {
-        _log('MCP auto-start failed: $e', error: true);
+      // Double-check the MCP binary/index.js actually exists before starting
+      final mcpReady = await _isMcpReady();
+      if (mcpReady) {
+        try {
+          await _processManager.startMcp();
+          _log('MCP Server started');
+        } catch (e) {
+          _log('MCP auto-start failed: $e', error: true);
+        }
+      } else {
+        _log('MCP Server build not complete — skipping auto-start');
       }
     } else {
-      _log('MCP Server not available — AI tools can still use the HTTP API directly');
+      _log('Node.js not available — MCP Server cannot start. AI tools can use the HTTP API directly.');
     }
 
     // Done
     _emit(SetupPhase.complete, 'Ready', 1.0);
     _setupComplete = true;
     _log('Auto-setup complete');
+  }
+
+  Future<bool> _isMcpReady() async {
+    final sep = Platform.pathSeparator;
+
+    // Check bundled binary next to app
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
+    for (final sub in ['tools', '']) {
+      final bin = Platform.isWindows ? 'openmob-mcp.exe' : 'openmob-mcp';
+      final path = sub.isEmpty ? '$exeDir$sep$bin' : '$exeDir$sep$sub$sep$bin';
+      if (File(path).existsSync()) return true;
+    }
+
+    // Check project build output
+    final mcpDir = _findMcpDir();
+    if (mcpDir != null) {
+      final indexJs = '$mcpDir${sep}build${sep}app${sep}index.js';
+      if (File(indexJs).existsSync()) {
+        // Also verify Node.js exists
+        try {
+          final r = await Process.run(
+            Platform.isWindows ? 'where' : 'which',
+            ['node'],
+          );
+          return r.exitCode == 0;
+        } catch (_) {
+          return false;
+        }
+      }
+    }
+
+    return false;
   }
 
   String? _findMcpDir() {

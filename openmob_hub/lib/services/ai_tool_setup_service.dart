@@ -11,6 +11,8 @@ class AiToolSetupService {
 
   AiToolSetupService(this._logService);
 
+  bool _installRan = false;
+
   final _tools = BehaviorSubject<List<AiTool>>.seeded([]);
   ValueStream<List<AiTool>> get tools$ => _tools.stream;
   List<AiTool> get currentTools => _tools.value;
@@ -355,6 +357,8 @@ class AiToolSetupService {
   bool _skillsInstalled = false;
 
   Future<void> installAll() async {
+    if (_installRan) return; // Prevent duplicate install runs
+    _installRan = true;
     for (final tool in currentTools) {
       if (tool.detected && !tool.configured) {
         switch (tool.name) {
