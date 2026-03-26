@@ -17,8 +17,9 @@ class AiToolSetupService {
   ValueStream<List<AiTool>> get tools$ => _tools.stream;
   List<AiTool> get currentTools => _tools.value;
 
-  /// Resolve the MCP server binary/script path
-  String get _mcpCommand {
+  /// Resolve the MCP server binary/script path.
+  /// Returns null if no valid MCP binary or script can be found.
+  String? get _mcpCommand {
     final sep = Platform.pathSeparator;
     final exe = Platform.resolvedExecutable;
     final bundledDir = File(exe).parent.path;
@@ -32,6 +33,11 @@ class AiToolSetupService {
     final bundledTools = '$bundledDir${sep}tools$sep$binName';
     if (File(bundledTools).existsSync()) return bundledTools;
 
+    // Check ~/.openmob/tools/ (auto-downloaded)
+    final home = _homeDir;
+    final downloadedBin = '$home$sep.openmob${sep}tools$sep$binName';
+    if (File(downloadedBin).existsSync()) return downloadedBin;
+
     // Check project build (dev mode — Node.js)
     var dir = Directory.current;
     for (var i = 0; i < 5; i++) {
@@ -40,14 +46,30 @@ class AiToolSetupService {
       dir = dir.parent;
     }
 
-    return 'openmob-mcp';
+    // Check if npx openmob-mcp would work (npm global or npx download)
+    try {
+      final result = Process.runSync(
+        Platform.isWindows ? 'where' : 'which',
+        [Platform.isWindows ? 'openmob-mcp.exe' : 'openmob-mcp'],
+      );
+      if (result.exitCode == 0) {
+        return (result.stdout as String).trim().split('\n').first.trim();
+      }
+    } catch (_) {}
+
+    // Nothing found — return null so config isn't written with a broken path
+    return null;
   }
 
-  bool get _mcpIsBinary => !_mcpCommand.endsWith('.js');
+  bool get _mcpIsBinary {
+    final cmd = _mcpCommand;
+    return cmd != null && !cmd.endsWith('.js');
+  }
 
   String get _mcpCwd {
     if (_mcpIsBinary) return '';
     final jsPath = _mcpCommand;
+    if (jsPath == null) return '';
     // cwd is openmob_mcp/ (3 levels up from build/app/index.js)
     return File(jsPath).parent.parent.parent.path;
   }
@@ -567,6 +589,16 @@ Speak in plain English for non-technical QA testers:
     _logService.addLine(
         'hub', 'Installing OpenMob MCP config for $toolName...');
 
+    // Validate MCP binary/script exists before writing config
+    final mcpCmd = _mcpCommand;
+    if (mcpCmd == null) {
+      _logService.addLine('hub',
+          'Skipping $toolName config — MCP server not found. Install from System Check.',
+          level: LogLevel.warning);
+      _updateTool(toolName, installing: false);
+      return false;
+    }
+
     try {
       final file = File(configPath);
       await file.parent.create(recursive: true);
@@ -585,13 +617,13 @@ Speak in plain English for non-technical QA testers:
       final Map<String, dynamic> serverEntry;
       if (_mcpIsBinary) {
         serverEntry = {
-          'command': _mcpCommand,
+          'command': mcpCmd,
           'args': <String>[],
         };
       } else {
         serverEntry = {
           'command': 'node',
-          'args': [_mcpCommand],
+          'args': [mcpCmd],
         };
         if (_mcpCwd.isNotEmpty) {
           serverEntry['cwd'] = _mcpCwd;
