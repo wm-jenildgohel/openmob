@@ -62,8 +62,14 @@ impl Bridge {
             .take()
             .ok_or_else(|| anyhow::anyhow!("Bridge.run() can only be called once"))?;
 
-        crossterm::terminal::enable_raw_mode()?;
-        let _raw_guard = RawModeGuard;
+        // Raw mode may fail when launched without a console (e.g., from Hub as child process)
+        let _raw_guard = match crossterm::terminal::enable_raw_mode() {
+            Ok(()) => Some(RawModeGuard),
+            Err(e) => {
+                eprintln!("[warn] Could not enable raw mode: {} (no terminal attached?)", e);
+                None
+            }
+        };
 
         let cancel = self.cancel.clone();
 
@@ -118,9 +124,18 @@ impl Bridge {
         });
 
         // Task 2: Stdin Forward — uses writer lock only (never blocks reader)
+        // Skip stdin forwarding if no terminal is attached (e.g., launched from Hub as child process)
+        let has_terminal = atty::is(atty::Stream::Stdin);
         let writer_stdin = self.writer.clone();
         let cancel_stdin = self.cancel.clone();
         let stdin_handle = tokio::task::spawn_blocking(move || {
+            if !has_terminal {
+                // No terminal attached — just wait for cancellation
+                while !cancel_stdin.is_cancelled() {
+                    std::thread::sleep(Duration::from_millis(200));
+                }
+                return;
+            }
             use std::io::Read;
             let mut buf = [0u8; 1024];
             let stdin = std::io::stdin();

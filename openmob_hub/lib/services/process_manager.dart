@@ -207,11 +207,15 @@ class ProcessManager {
 
   Future<void> stopMcp() async {
     if (_mcpProcess != null) {
-      _mcpProcess!.kill();
+      _mcpProcess!.kill(); // On Windows, this already calls TerminateProcess (force kill)
       try {
         await _mcpProcess!.exitCode.timeout(const Duration(seconds: 3));
       } catch (_) {
-        _mcpProcess!.kill(ProcessSignal.sigkill);
+        // Fallback force kill — use platform-safe approach
+        if (!Platform.isWindows) {
+          _mcpProcess!.kill(ProcessSignal.sigkill);
+        }
+        // On Windows, .kill() already did TerminateProcess — nothing more to do
       }
       _mcpProcess = null;
     }
@@ -432,13 +436,14 @@ class ProcessManager {
   }
 
   Future<void> stopBridge() async {
-    // If we launched the terminal, kill it
     if (_bridgeProcess != null) {
-      _bridgeProcess!.kill();
+      _bridgeProcess!.kill(); // On Windows, this already calls TerminateProcess
       try {
         await _bridgeProcess!.exitCode.timeout(const Duration(seconds: 3));
       } catch (_) {
-        _bridgeProcess!.kill(ProcessSignal.sigkill);
+        if (!Platform.isWindows) {
+          _bridgeProcess!.kill(ProcessSignal.sigkill);
+        }
       }
       _bridgeProcess = null;
     }

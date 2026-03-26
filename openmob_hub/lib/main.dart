@@ -129,6 +129,9 @@ Future<void> main() async {
     logService.addLine('hub', 'Could not bind to any port (tried ${ApiConstants.port}-${ApiConstants.port + 4}) — close other OpenMob instances and restart', level: LogLevel.error);
   }
 
+  // Clean up child processes when the app window closes
+  windowManager.addListener(_AppWindowListener());
+
   // Run the UI immediately — don't block on device scan or system check
   runApp(const OpenMobApp());
 
@@ -162,4 +165,13 @@ Future<void> _initBackground() async {
   try {
     await updateService.checkForUpdate();
   } catch (_) {}
+}
+
+/// Kills child processes (MCP, AiBridge) when the app window closes.
+/// Without this, orphan processes keep running and block ports on restart.
+class _AppWindowListener extends WindowListener {
+  @override
+  void onWindowClose() {
+    processManager.dispose();
+  }
 }

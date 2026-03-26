@@ -66,8 +66,8 @@ class SystemCheckService {
 
     // 2. Check downloaded (~/.openmob/tools/)
     final downloadedAdb = Platform.isWindows
-        ? '$_toolsDir/platform-tools/adb.exe'
-        : '$_toolsDir/platform-tools/adb';
+        ? '$_toolsDir${_sep}platform-tools${_sep}adb.exe'
+        : '$_toolsDir${_sep}platform-tools${_sep}adb';
     if (File(downloadedAdb).existsSync()) {
       _resolvedAdbPath = downloadedAdb;
       return await _verifyAdb(downloadedAdb, 'downloaded');
@@ -81,7 +81,7 @@ class SystemCheckService {
           Platform.isWindows ? 'where' : 'which',
           ['adb'],
         );
-        final systemPath = (whichResult.stdout as String).trim().split('\n').first;
+        final systemPath = (whichResult.stdout as String).trim().split('\n').first.trim();
         _resolvedAdbPath = systemPath.isNotEmpty ? systemPath : 'adb';
         return ToolStatus(
           name: 'ADB',
@@ -150,9 +150,9 @@ class SystemCheckService {
       _updateToolStatus('ADB', installing: true, progress: 0.5);
 
       // Save zip
-      final dir = Directory('$_toolsDir/platform-tools');
+      final dir = Directory('$_toolsDir${_sep}platform-tools');
       await dir.create(recursive: true);
-      final zipFile = File('$_toolsDir/platform-tools.zip');
+      final zipFile = File('$_toolsDir${_sep}platform-tools.zip');
       await zipFile.writeAsBytes(response.bodyBytes);
 
       _updateToolStatus('ADB', installing: true, progress: 0.7);
@@ -182,15 +182,15 @@ class SystemCheckService {
 
       // Make executable on Unix
       if (!Platform.isWindows) {
-        await Process.run('chmod', ['+x', '$_toolsDir/platform-tools/adb']);
+        await Process.run('chmod', ['+x', '$_toolsDir${_sep}platform-tools${_sep}adb']);
       }
 
       _updateToolStatus('ADB', installing: true, progress: 0.9);
 
       // Verify
       final adbPath = Platform.isWindows
-          ? '$_toolsDir/platform-tools/adb.exe'
-          : '$_toolsDir/platform-tools/adb';
+          ? '$_toolsDir${_sep}platform-tools${_sep}adb.exe'
+          : '$_toolsDir${_sep}platform-tools${_sep}adb';
 
       if (!File(adbPath).existsSync()) {
         _log('ADB binary not found after extraction', error: true);
@@ -260,9 +260,9 @@ class SystemCheckService {
           return false;
         }
         _updateToolStatus('MCP Server', installing: true, progress: 0.6);
-        final nodeDir = Directory('$_toolsDir/node');
+        final nodeDir = Directory('$_toolsDir${_sep}node');
         await nodeDir.create(recursive: true);
-        final archive = File('$_toolsDir/node.tar.xz');
+        final archive = File('$_toolsDir${_sep}node.tar.xz');
         await archive.writeAsBytes(response.bodyBytes);
         await Process.run('tar', ['-xf', archive.path, '-C', nodeDir.path, '--strip-components=1']);
         await archive.delete();

@@ -25,7 +25,7 @@ class AdbService {
         ['adb'],
       );
       if (result.exitCode == 0) {
-        final path = (result.stdout as String).trim().split('\n').first;
+        final path = (result.stdout as String).trim().split('\n').first.trim();
         if (path.isNotEmpty) {
           _adbPath = path;
           return _adbPath!;
@@ -66,15 +66,16 @@ class AdbService {
   Future<List<({String serial, String status, bool isEmulator, bool isWifi})>>
       listRawDevices() async {
     final result = await runGlobal(['devices']);
-    final lines = (result.stdout as String).split('\n');
+    // Strip \r to handle Windows \r\n line endings from ADB
+    final lines = (result.stdout as String).replaceAll('\r', '').split('\n');
     return lines
         .skip(1)
         .where((l) => l.trim().isNotEmpty)
         .map((line) {
-          final parts = line.split(RegExp(r'\s+'));
+          final parts = line.trim().split(RegExp(r'\s+'));
           return (
-            serial: parts[0],
-            status: parts.length > 1 ? parts[1] : 'unknown',
+            serial: parts[0].trim(),
+            status: parts.length > 1 ? parts[1].trim() : 'unknown',
             isEmulator: parts[0].startsWith('emulator-'),
             isWifi: parts[0].contains(':'),
           );
