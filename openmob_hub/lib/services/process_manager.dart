@@ -317,9 +317,18 @@ class ProcessManager {
       return;
     }
 
-    // Check agent from cache (no slow `where` call)
+    // Check agent exists
     final agents = availableAgents;
-    if (agents.isNotEmpty && !agents.contains(agent)) {
+    if (agents.isEmpty) {
+      _bridgeStatus.add(const ProcessInfo(
+        name: 'AiBridge',
+        status: ProcessStatus.error,
+        errorMessage: 'No AI agents found — install Claude Code, Codex, or Gemini CLI first',
+      ));
+      _logService.addLine('hub', 'No AI agents (claude/codex/gemini) found in PATH', level: LogLevel.error);
+      return;
+    }
+    if (!agents.contains(agent)) {
       _bridgeStatus.add(ProcessInfo(
         name: 'AiBridge',
         status: ProcessStatus.error,
@@ -329,51 +338,57 @@ class ProcessManager {
       return;
     }
 
-    final terminal = _cacheReady ? _cachedTerminal : _terminalEmulator;
-    if (terminal == null) {
-      _bridgeStatus.add(const ProcessInfo(
-        name: 'AiBridge',
-        status: ProcessStatus.error,
-        errorMessage: 'No terminal found on this system',
-      ));
-      _logService.addLine('hub', 'No terminal emulator found', level: LogLevel.error);
-      return;
-    }
-
     _bridgeStatus.add(_bridgeStatus.value.copyWith(status: ProcessStatus.starting));
 
     try {
-      final List<String> termArgs;
-
       if (Platform.isWindows) {
-        // Windows: use Windows Terminal (wt) or cmd.exe
-        if (terminal == 'wt') {
-          termArgs = ['wt', 'new-tab', '--title', 'AiBridge ($agent)', '--', binary, '--port', '$port', '--', agent];
-        } else {
-          // cmd /k keeps window open; quote binary path for spaces
-          termArgs = ['cmd', '/k', '"$binary" --port $port -- $agent'];
-        }
+        // On Windows, run aibridge directly as a child process (no terminal window needed)
+        // and capture its output in the Hub log viewer
+        _bridgeProcess = await Process.start(
+          binary,
+          ['--port', '$port', '--', agent],
+          mode: ProcessStartMode.normal,
+        );
       } else {
-        // Unix: use detected terminal
+        // On Unix, try to open a terminal window so user can interact with the agent
+        final terminal = _cacheReady ? _cachedTerminal : _terminalEmulator;
         final bridgeCmd = '$binary --port $port -- $agent';
-        switch (terminal) {
-          case 'gnome-terminal':
-            termArgs = ['gnome-terminal', '--title', 'AiBridge ($agent)', '--', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-          case 'konsole':
-            termArgs = ['konsole', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-          case 'alacritty':
-            termArgs = ['alacritty', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-          case 'kitty':
-            termArgs = ['kitty', '--title', 'AiBridge ($agent)', 'bash', '-c', '$bridgeCmd; echo "\\nAiBridge exited. Press Enter to close."; read'];
-          default:
-            termArgs = [terminal, '-e', 'bash', '-c', bridgeCmd];
+
+        if (terminal != null) {
+          final List<String> termArgs;
+          final pauseCmd = 'echo "\\nAiBridge exited. Press Enter to close."; read';
+          switch (terminal) {
+            case 'gnome-terminal':
+              termArgs = ['gnome-terminal', '--title', 'AiBridge ($agent)', '--', 'bash', '-c', '$bridgeCmd; $pauseCmd'];
+            case 'konsole':
+              termArgs = ['konsole', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; $pauseCmd'];
+            case 'alacritty':
+              termArgs = ['alacritty', '--title', 'AiBridge ($agent)', '-e', 'bash', '-c', '$bridgeCmd; $pauseCmd'];
+            case 'kitty':
+              termArgs = ['kitty', '--title', 'AiBridge ($agent)', 'bash', '-c', '$bridgeCmd; $pauseCmd'];
+            default:
+              termArgs = [terminal, '-e', 'bash', '-c', bridgeCmd];
+          }
+          _bridgeProcess = await Process.start(termArgs.first, termArgs.sublist(1));
+        } else {
+          // No terminal found — run directly (output goes to Hub logs)
+          _bridgeProcess = await Process.start(binary, ['--port', '$port', '--', agent]);
         }
       }
 
-      _bridgeProcess = await Process.start(
-        termArgs.first,
-        termArgs.sublist(1),
-      );
+      // Capture stdout/stderr in Hub log viewer
+      _bridgeProcess!.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        _logService.addLine('bridge', line);
+      });
+      _bridgeProcess!.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        _logService.addLine('bridge', line, level: LogLevel.warning);
+      });
 
       _bridgeStatus.add(ProcessInfo(
         name: 'AiBridge',
@@ -382,17 +397,29 @@ class ProcessManager {
         startedAt: DateTime.now(),
       ));
 
-      _logService.addLine('hub', 'AiBridge launching in $terminal with $agent (port: $port)');
+      _logService.addLine('hub', 'AiBridge started with $agent on port $port (PID: ${_bridgeProcess!.pid})');
 
-      // Monitor the terminal process — when it exits, bridge is done
+      // Monitor exit — show error in UI with the actual reason
       _bridgeProcess!.exitCode.then((code) {
         _bridgeProcess = null;
-        // Health polling will detect the actual bridge state
-        _logService.addLine('hub', 'AiBridge terminal closed (code: $code)');
+        if (code != 0) {
+          _bridgeStatus.add(ProcessInfo(
+            name: 'AiBridge',
+            status: ProcessStatus.error,
+            errorMessage: 'Crashed (exit code $code) — check Logs for details',
+          ));
+          _logService.addLine('hub', 'AiBridge exited with code $code — check Logs tab', level: LogLevel.error);
+        } else {
+          _bridgeStatus.add(const ProcessInfo(
+            name: 'AiBridge',
+            status: ProcessStatus.stopped,
+          ));
+          _logService.addLine('hub', 'AiBridge stopped normally');
+        }
       });
 
-      // Quick poll — don't block UI. Health timer handles ongoing detection.
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Wait a moment then check health
+      await Future.delayed(const Duration(seconds: 1));
       await _pollBridgeHealth();
     } catch (e) {
       _bridgeStatus.add(ProcessInfo(
@@ -450,9 +477,6 @@ class ProcessManager {
   }
 
   Future<void> _pollBridgeHealth() async {
-    // Skip polling if we started the bridge ourselves
-    if (_bridgeProcess != null) return;
-
     try {
       final response = await http
           .get(Uri.parse('http://127.0.0.1:9999/health'))
