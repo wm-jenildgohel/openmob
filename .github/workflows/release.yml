@@ -18,7 +18,7 @@ env:
   NODE_VERSION: '24'
 
 jobs:
-  # ─── Step 1: Set version in source BEFORE building ───
+  # ─── Step 1: Resolve version + upload patched files ───
   set-version:
     runs-on: ubuntu-latest
     outputs:
@@ -29,7 +29,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get version
+      - name: Resolve version
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -42,42 +42,52 @@ jobs:
           echo "version_clean=$CLEAN" >> $GITHUB_OUTPUT
           echo "Version: $RAW (clean: $CLEAN)"
 
-      - name: Update version in source files
+      - name: Patch version in source files
         run: |
           VERSION="${{ steps.version.outputs.version_clean }}"
-
-          # Update pubspec.yaml
           sed -i "s/^version: .*/version: ${VERSION}+1/" openmob_hub/pubspec.yaml
-
-          # Update update_service.dart
           sed -i "s/const _currentVersion = '.*'/const _currentVersion = '${VERSION}'/" openmob_hub/lib/services/update_service.dart
-
-          echo "Updated files:"
+          echo "Patched:"
           grep "^version:" openmob_hub/pubspec.yaml
           grep "_currentVersion" openmob_hub/lib/services/update_service.dart
 
-      - name: Commit version bump
+      - name: Upload patched source files
+        uses: actions/upload-artifact@v4
+        with:
+          name: versioned-source
+          path: |
+            openmob_hub/pubspec.yaml
+            openmob_hub/lib/services/update_service.dart
+
+      - name: Commit version bump to main
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Checkout main (not the tag) to push the commit
+          git checkout main 2>/dev/null || git checkout -b main
+          git pull origin main || true
+          # Re-apply version patches on main
+          CLEAN="${{ steps.version.outputs.version_clean }}"
+          sed -i "s/^version: .*/version: ${CLEAN}+1/" openmob_hub/pubspec.yaml
+          sed -i "s/const _currentVersion = '.*'/const _currentVersion = '${CLEAN}'/" openmob_hub/lib/services/update_service.dart
           git add openmob_hub/pubspec.yaml openmob_hub/lib/services/update_service.dart
-          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "chore: bump version to ${VERSION} [skip ci]"
-          git push
+          git push origin main
 
-  # ─── Build Hub (Linux + Windows) ───
+  # ─── Build Hub (Linux) ───
   build-hub-linux:
     needs: [set-version]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 0
 
-      - name: Pull latest (includes version bump)
-        run: git pull origin ${{ github.ref_name }} || true
+      - name: Apply version patch
+        uses: actions/download-artifact@v4
+        with:
+          name: versioned-source
+          path: .
 
       - uses: subosito/flutter-action@v2
         with:
@@ -95,7 +105,7 @@ jobs:
           flutter pub get
           flutter build linux --release
 
-      - name: Package Hub (Linux)
+      - name: Package
         run: |
           mkdir -p artifacts/linux
           cp -r openmob_hub/build/linux/x64/release/bundle/* artifacts/linux/
@@ -105,17 +115,18 @@ jobs:
           name: hub-linux-x64
           path: artifacts/linux/
 
+  # ─── Build Hub (Windows) ───
   build-hub-windows:
     needs: [set-version]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 0
 
-      - name: Pull latest (includes version bump)
-        run: git pull origin ${{ github.ref_name }} || true
+      - name: Apply version patch
+        uses: actions/download-artifact@v4
+        with:
+          name: versioned-source
+          path: .
 
       - uses: subosito/flutter-action@v2
         with:
@@ -135,7 +146,7 @@ jobs:
           timeout /t 5 /nobreak >nul
           taskkill /F /IM openmob_hub.exe 2>nul || echo "Hub exited on its own"
 
-      - name: Package Hub (Windows)
+      - name: Package
         shell: bash
         run: |
           mkdir -p artifacts/windows
@@ -202,7 +213,7 @@ jobs:
           name: bridge-${{ matrix.name }}
           path: artifacts/
 
-  # ─── Build MCP Server (cross-platform Node.js bundle) ───
+  # ─── Build MCP Server ───
   build-mcp:
     needs: [set-version]
     strategy:
@@ -231,7 +242,7 @@ jobs:
           npm install
           npm run build
 
-      - name: Bundle into single file (esbuild)
+      - name: Bundle (esbuild)
         working-directory: openmob_mcp
         run: |
           npx esbuild build/app/index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/openmob-mcp-bundle.cjs
@@ -258,7 +269,7 @@ jobs:
         with:
           path: artifacts/
 
-      - name: Package Linux distribution
+      - name: Package Linux
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
           mkdir -p release/openmob-linux-x64
@@ -267,43 +278,35 @@ jobs:
           chmod +x release/openmob-linux-x64/aibridge
           cp artifacts/mcp-linux-x64/openmob-mcp release/openmob-linux-x64/
           chmod +x release/openmob-linux-x64/openmob-mcp
-          cp -r openmob_skills release/openmob-linux-x64/
+          cp -r openmob_skills release/openmob-linux-x64/ 2>/dev/null || true
           cp dist/openmob-linux-x64/openmob release/openmob-linux-x64/ 2>/dev/null || true
           chmod +x release/openmob-linux-x64/openmob 2>/dev/null || true
           cd release && tar -czf openmob-${VERSION}-linux-x64.tar.gz openmob-linux-x64/
 
-      - name: Package Windows distribution
+      - name: Package Windows
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
           mkdir -p release/openmob-windows-x64
           cp -r artifacts/hub-windows-x64/* release/openmob-windows-x64/
           cp artifacts/bridge-windows-x64/aibridge.exe release/openmob-windows-x64/
           cp artifacts/mcp-windows-x64/openmob-mcp.exe release/openmob-windows-x64/
-          cp -r openmob_skills release/openmob-windows-x64/
-          cat > release/openmob-windows-x64/INSTALL.txt << 'INSTALLEOF'
-          OpenMob - Installation Guide
-          ============================
+          cp -r openmob_skills release/openmob-windows-x64/ 2>/dev/null || true
+          cat > release/openmob-windows-x64/INSTALL.txt << 'EOF'
+          OpenMob - Quick Start
+          =====================
+          1. Double-click "openmob_hub.exe" to start
+          2. Connect your Android device via USB
+          3. OpenMob will detect it automatically
 
-          1. Extract this folder to any location (Desktop, Documents, etc.)
-          2. Double-click "openmob_hub.exe" to start
+          Windows SmartScreen Warning (first run only):
+          Click "More info" → "Run anyway"
 
-          IMPORTANT - Windows SmartScreen Warning:
-          Windows may show "Windows protected your PC" the first time you run OpenMob.
-          This is normal for new software that hasn't been widely downloaded yet.
-
-          To continue:
-          1. Click "More info"
-          2. Click "Run anyway"
-
-          This only happens once. OpenMob runs entirely on your computer
-          and never sends data to the internet.
-
-          Need help? Visit: https://github.com/wm-jenildgohel/openmob
-          INSTALLEOF
+          https://github.com/wm-jenildgohel/openmob
+          EOF
           cp dist/openmob-windows-x64/openmob.bat release/openmob-windows-x64/ 2>/dev/null || true
           cd release && zip -r openmob-${VERSION}-windows-x64.zip openmob-windows-x64/
 
-      - name: Package macOS distribution
+      - name: Package macOS
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
           mkdir -p release/openmob-macos-x64
@@ -311,7 +314,7 @@ jobs:
           cp artifacts/bridge-macos-arm64/aibridge release/openmob-macos-x64/aibridge-arm64
           cp artifacts/mcp-macos-x64/openmob-mcp release/openmob-macos-x64/
           chmod +x release/openmob-macos-x64/openmob-mcp
-          cp -r openmob_skills release/openmob-macos-x64/
+          cp -r openmob_skills release/openmob-macos-x64/ 2>/dev/null || true
           cd release && tar -czf openmob-${VERSION}-macos-x64.tar.gz openmob-macos-x64/
 
       - name: Create GitHub Release
