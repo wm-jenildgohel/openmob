@@ -36,23 +36,23 @@ AI coding agents (Claude Code, Cursor, Codex, Gemini) can write mobile app code 
 
 **OpenMob** gives your AI agents eyes and hands on mobile devices — completely free, self-hosted, and open source.
 
-```
-AI Agent (Claude Code / Cursor / Codex / Gemini)
-         |
-    ┌────┼────┐
-    |    |    |
-   MCP  HTTP  AiBridge
-    |    |    |
-    └────┼────┘
-         |
-   OpenMob Hub (Desktop App)
-         |
-    ┌────┼────┐
-    |         |
-  ADB      xcrun/idb
-    |         |
- Android    iOS
- Device   Simulator
+```mermaid
+graph TD
+    A[AI Agent<br/>Claude Code / Cursor / Codex / Gemini] --> B[MCP Server<br/>25 tools via stdio]
+    A --> C[HTTP API<br/>43 REST endpoints]
+    A --> D[AiBridge<br/>PTY context injection]
+    B --> E[OpenMob Hub<br/>Desktop App]
+    C --> E
+    D --> E
+    E --> F[ADB<br/>Android Debug Bridge]
+    E --> G[xcrun / idb<br/>iOS Tools]
+    F --> H[Android Device<br/>Physical / Emulator]
+    G --> I[iOS Simulator]
+
+    style A fill:#7c3aed,color:#fff
+    style E fill:#059669,color:#fff
+    style H fill:#2563eb,color:#fff
+    style I fill:#2563eb,color:#fff
 ```
 
 ### What AI Agents Can Do — 25 MCP Tools
