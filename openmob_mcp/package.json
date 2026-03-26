@@ -1,7 +1,7 @@
 {
   "name": "openmob-mcp",
   "version": "0.0.9",
-  "description": "MCP server for OpenMob - mobile device automation via AI agents",
+  "description": "MCP server for mobile device automation — control Android & iOS from AI agents. Free, open-source alternative to MobAI.",
   "type": "module",
   "main": "build/app/index.js",
   "bin": {
@@ -9,7 +9,9 @@
   },
   "files": [
     "build/**/*.js",
-    "build/**/*.d.ts"
+    "build/**/*.d.ts",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
@@ -17,6 +19,38 @@
     "bundle": "tsc && npx esbuild build/app/index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/openmob-mcp-bundle.cjs",
     "dev": "tsx src/app/index.ts",
     "start": "node build/app/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "mobile",
+    "automation",
+    "android",
+    "ios",
+    "testing",
+    "qa",
+    "adb",
+    "device-control",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "windsurf",
+    "model-context-protocol",
+    "openmob",
+    "mobai-alternative"
+  ],
+  "license": "MIT",
+  "author": "OpenMob Contributors",
+  "homepage": "https://github.com/wm-jenildgohel/openmob",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wm-jenildgohel/openmob.git",
+    "directory": "openmob_mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/wm-jenildgohel/openmob/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
