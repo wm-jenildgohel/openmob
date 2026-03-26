@@ -1,23 +1,21 @@
 # OpenMob — Mobile Device Automation for AI Agents
 
 > Free, self-hosted alternative to MobAI. See and control Android/iOS devices from any AI coding agent.
+> **26 MCP tools** — device control, app management, testing, debugging, and more.
 
-## Installation
+## Quick Start
 
 ### For Claude Code
-
 ```bash
-# Install skill globally (available in all projects)
+# Install skill globally
 claude skill add --global /path/to/openmob/.claude/skills/openmob
 
-# Or add to project
+# Or per-project
 claude skill add /path/to/openmob/.claude/skills/openmob
 ```
 
 ### For Cursor / Claude Desktop / Windsurf / VS Code (MCP)
-
-Add to your MCP settings (`~/.cursor/mcp.json`, `claude_desktop_config.json`, etc.):
-
+Add to MCP settings (`~/.cursor/mcp.json`, `claude_desktop_config.json`, etc.):
 ```json
 {
   "mcpServers": {
@@ -30,74 +28,111 @@ Add to your MCP settings (`~/.cursor/mcp.json`, `claude_desktop_config.json`, et
 }
 ```
 
-MCP tools available: `list_devices`, `get_screenshot`, `get_ui_tree`, `tap`, `type_text`, `swipe`, `launch_app`, `terminate_app`, `press_button`, `go_home`, `open_url`, `run_test`
+### For Codex / Gemini CLI / Any HTTP Agent
+Point to Hub API: `http://127.0.0.1:8686`
 
-### For Codex / Gemini CLI / Any HTTP-capable agent
-
-Point the agent to the Hub API at `http://127.0.0.1:8686`. Provide this skill file as context.
-
-### For OpenAI Agents SDK / Custom Agents
-
+### For OpenAI Agents SDK
 ```yaml
-# agents/openmob.yaml
 name: openmob-device-controller
-description: Controls mobile devices via OpenMob Hub API
 tools:
   - type: http
     base_url: http://127.0.0.1:8686/api/v1
-    endpoints:
-      - GET /devices/
-      - GET /devices/{id}/screenshot
-      - GET /devices/{id}/ui-tree
-      - POST /devices/{id}/tap
-      - POST /devices/{id}/type
-      - POST /devices/{id}/swipe
-      - POST /devices/{id}/keyevent
-      - POST /devices/{id}/launch
-      - POST /devices/{id}/terminate
-      - POST /devices/{id}/open-url
-      - POST /devices/{id}/gesture
 ```
 
 ## Prerequisites
 
-1. **OpenMob Hub** must be running: `cd openmob_hub && flutter run -d linux`
-2. **Android device** connected via USB or WiFi ADB, OR **iOS Simulator** on macOS
-3. **ADB** installed (for Android): `sudo apt install adb` / `brew install android-platform-tools`
-4. **Node.js 18+** (for MCP server only): `sudo apt install nodejs` / `brew install node`
+1. **OpenMob Hub** running (auto-starts on launch)
+2. **Android device** via USB/WiFi or emulator, OR **iOS Simulator** on macOS
+3. **ADB** installed (Hub auto-detects and guides installation)
+4. **Node.js 18+** (for MCP server — Hub can auto-install)
 
-## Hub API Reference
+## All 26 MCP Tools
+
+### Device Discovery (3 tools)
+
+| Tool | What it does | Key params |
+|------|-------------|------------|
+| `list_devices` | See all connected devices with model, OS, screen size, battery | — |
+| `get_screenshot` | Take a photo of what's on the device screen | `device_id` |
+| `get_ui_tree` | Read all buttons, text, fields on screen with index numbers | `device_id`, `text_filter?`, `visible_only?` |
+
+### Touch & Input (7 tools)
+
+| Tool | What it does | Key params |
+|------|-------------|------------|
+| `tap` | Tap a button or position on screen | `device_id`, `index` or `x,y` |
+| `type_text` | Type text into a focused input field | `device_id`, `text` |
+| `swipe` | Scroll or swipe in a direction | `device_id`, `direction` or `x1,y1,x2,y2` |
+| `press_button` | Press Home/Back/Volume/Power/Enter | `device_id`, `key_code` |
+| `go_home` | Go to the home screen | `device_id` |
+| `open_url` | Open a website or deep link | `device_id`, `url` |
+| `install_app` | Install an APK from a file path | `device_id`, `path` |
+
+### App Management (5 tools)
+
+| Tool | What it does | Key params |
+|------|-------------|------------|
+| `launch_app` | Open an app by package name | `device_id`, `package` |
+| `terminate_app` | Close/kill a running app | `device_id`, `package` |
+| `uninstall_app` | Remove an app from the device | `device_id`, `package` |
+| `list_apps` | List all installed apps | `device_id`, `third_party_only?` |
+| `clear_app_data` | Reset an app (like fresh install) | `device_id`, `package` |
+
+### Device Info & Settings (6 tools)
+
+| Tool | What it does | Key params |
+|------|-------------|------------|
+| `get_current_activity` | See which app/screen is open now | `device_id` |
+| `get_device_logs` | Read device logs (logcat) for debugging | `device_id`, `lines?`, `tag?`, `level?` |
+| `get_notifications` | Read the notification bar | `device_id` |
+| `set_rotation` | Rotate screen (portrait/landscape) | `device_id`, `rotation` (0-3) |
+| `toggle_wifi` | Turn WiFi on/off | `device_id`, `enabled` |
+| `toggle_airplane_mode` | Turn airplane mode on/off | `device_id`, `enabled` |
+
+### Testing & Verification (3 tools)
+
+| Tool | What it does | Key params |
+|------|-------------|------------|
+| `wait_for_element` | Wait until a button/text appears on screen | `device_id`, `text?`, `resource_id?`, `timeout_ms?` |
+| `grant_permissions` | Auto-grant all app permissions (skip popups) | `device_id`, `package` |
+| `run_test` | Run a multi-step test scenario with pass/fail | `device_id`, `name`, `steps[]` |
+
+## Hub HTTP API Reference
 
 Base URL: `http://127.0.0.1:8686`
 
-### Device Discovery
+### Device Endpoints
 
 | Method | Endpoint | Body | Returns |
 |--------|----------|------|---------|
-| GET | `/api/v1/devices/` | — | Array of connected devices with id, model, OS, screen size, battery, platform |
+| GET | `/api/v1/devices/` | — | Array of devices |
+| GET | `/api/v1/devices/{id}/screenshot` | — | `{ screenshot, width, height }` |
+| GET | `/api/v1/devices/{id}/ui-tree` | — | `{ nodes: [{ index, text, className, bounds, visible }] }` |
+| GET | `/api/v1/devices/{id}/apps` | — | `{ packages, count }` |
+| GET | `/api/v1/devices/{id}/current-activity` | — | `{ package, activity }` |
+| GET | `/api/v1/devices/{id}/logcat` | — | `{ lines, count }` |
+| GET | `/api/v1/devices/{id}/notifications` | — | `{ notifications, count }` |
 
-### Screen & UI
-
-| Method | Endpoint | Body | Returns |
-|--------|----------|------|---------|
-| GET | `/api/v1/devices/{id}/screenshot` | — | `{ screenshot: "<base64 PNG>", width, height }` |
-| GET | `/api/v1/devices/{id}/ui-tree` | — | `{ nodes: [{ index, text, className, resourceId, contentDesc, bounds, visible }] }` |
-| GET | `/api/v1/devices/{id}/ui-tree?visible=true` | — | Filtered to visible elements only |
-| GET | `/api/v1/devices/{id}/ui-tree?text=Settings` | — | Filtered by text regex |
-
-### Interactions
+### Action Endpoints
 
 | Method | Endpoint | Body | Returns |
 |--------|----------|------|---------|
-| POST | `/api/v1/devices/{id}/tap` | `{ "x": 720, "y": 1480 }` | `{ success: true }` |
-| POST | `/api/v1/devices/{id}/tap` | `{ "index": 8 }` | Tap element #8 from ui-tree |
-| POST | `/api/v1/devices/{id}/type` | `{ "text": "hello" }` | Type into focused field |
-| POST | `/api/v1/devices/{id}/swipe` | `{ "x1": 720, "y1": 1800, "x2": 720, "y2": 800, "duration": 300 }` | Swipe gesture |
-| POST | `/api/v1/devices/{id}/keyevent` | `{ "keyCode": 3 }` | Press hardware key |
-| POST | `/api/v1/devices/{id}/launch` | `{ "package": "com.android.settings" }` | Launch app |
-| POST | `/api/v1/devices/{id}/terminate` | `{ "package": "com.android.settings" }` | Kill app |
-| POST | `/api/v1/devices/{id}/open-url` | `{ "url": "https://google.com" }` | Open URL on device |
-| POST | `/api/v1/devices/{id}/gesture` | `{ "type": "longpress", "x": 720, "y": 1480, "duration": 1000 }` | Long press, pinch, etc. |
+| POST | `/api/v1/devices/{id}/tap` | `{ x, y }` or `{ index }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/type` | `{ text }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/swipe` | `{ direction }` or `{ x1, y1, x2, y2, duration }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/keyevent` | `{ keyCode }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/launch` | `{ package }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/terminate` | `{ package }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/open-url` | `{ url }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/install` | `{ path, replace?, grant_permissions? }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/uninstall` | `{ package }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/clear-data` | `{ package }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/rotation` | `{ rotation }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/wifi` | `{ enabled }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/airplane` | `{ enabled }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/grant-permissions` | `{ package }` | `{ success }` |
+| POST | `/api/v1/devices/{id}/wait-for-element` | `{ text?, resource_id?, timeout_ms }` | `{ found, index, waitedMs }` |
+| POST | `/api/v1/devices/{id}/gesture` | `{ type, x, y, duration }` | `{ success }` |
 | GET | `/health` | — | `{ status: "ok" }` |
 
 ### Key Codes
@@ -113,256 +148,178 @@ Base URL: `http://127.0.0.1:8686`
 
 ### Swipe Directions
 
-| Direction | Body |
-|-----------|------|
-| Scroll up | `{ "x1": 720, "y1": 1800, "x2": 720, "y2": 800 }` |
-| Scroll down | `{ "x1": 720, "y1": 800, "x2": 720, "y2": 1800 }` |
-| Swipe left | `{ "x1": 1200, "y1": 1480, "x2": 200, "y2": 1480 }` |
-| Swipe right | `{ "x1": 200, "y1": 1480, "x2": 1200, "y2": 1480 }` |
+Use `direction` parameter for simple swipes:
+| Direction | Effect |
+|-----------|--------|
+| `"up"` | Scroll down (reveals content below) |
+| `"down"` | Scroll up (reveals content above) |
+| `"left"` | Swipe left (next page) |
+| `"right"` | Swipe right (previous page) |
+
+Or use coordinates for precise control: `{ x1, y1, x2, y2, duration }`
 
 ## Workflow Patterns
 
 ### Pattern 1: See-Think-Act Loop (QA Testing)
-
 ```
-1. GET /api/v1/devices/              → discover device, get ID
-2. GET /api/v1/devices/{id}/screenshot   → see what's on screen
-3. GET /api/v1/devices/{id}/ui-tree?visible=true  → read all UI elements
-4. POST /api/v1/devices/{id}/tap     → interact based on what you see
-5. GET /api/v1/devices/{id}/ui-tree?visible=true  → verify result
-6. Repeat 2-5 for each test step
-```
-
-### Pattern 2: App Launch + Navigate + Assert
-
-```
-1. POST /launch  {"package":"com.myapp"}     → open the app
-2. GET /ui-tree?visible=true                  → read initial screen
-3. POST /tap  {"index": N}                    → tap target element
-4. GET /ui-tree?visible=true                  → verify navigation happened
-5. Assert: check that expected text/elements exist in the tree
+1. list_devices               → find the device
+2. get_screenshot              → see what's on screen
+3. get_ui_tree (visible=true)  → read UI elements
+4. tap / type_text / swipe     → interact
+5. get_ui_tree (visible=true)  → verify result
+6. Repeat 2-5 for each step
 ```
 
-### Pattern 3: Form Fill
-
+### Pattern 2: App Launch + Test
 ```
-1. GET /ui-tree?visible=true                  → find input fields
-2. POST /tap  {"index": N}                    → focus first input
-3. POST /type  {"text":"user@email.com"}      → type email
-4. POST /keyevent  {"keyCode": 61}            → Tab to next field
-5. POST /type  {"text":"password123"}         → type password
-6. POST /tap  {"index": M}                    → tap Submit button
-7. GET /ui-tree?visible=true                  → verify success screen
+1. launch_app → open the app
+2. wait_for_element → wait for main screen to load
+3. get_ui_tree → read the screen
+4. tap/type/swipe → perform test actions
+5. get_screenshot → capture result
 ```
 
-### Pattern 4: Scroll to Find Element
-
+### Pattern 3: Login Flow
 ```
-1. GET /ui-tree?text=TargetText               → search for element
-2. If not found:
-   POST /swipe  {"x1":720,"y1":1800,"x2":720,"y2":800}  → scroll up
-   GET /ui-tree?text=TargetText               → search again
-3. Repeat until found or max scrolls reached
-4. POST /tap  {"index": found_index}          → tap the element
-```
-
-### Pattern 5: Run Test Script (via MCP)
-
-```
-MCP tool: run_test
-Input: {
-  "device_id": "abc123",
-  "name": "Login flow test",
-  "steps": [
-    { "action": "launch_app", "params": {"package":"com.myapp"}, "description": "Open app" },
-    { "action": "tap", "params": {"index": 5}, "description": "Tap login button" },
-    { "action": "type_text", "params": {"text":"user@test.com"}, "description": "Enter email" },
-    { "action": "tap", "params": {"index": 8}, "assertion": {"type":"element_exists","text":"Welcome"} }
-  ]
-}
-Returns: structured pass/fail with timing and failure screenshots
+1. launch_app → open the app
+2. wait_for_element text="Email" → wait for login screen
+3. tap index=N → focus email field
+4. type_text "user@test.com" → enter email
+5. press_button 61 (Tab) → move to password
+6. type_text "password123" → enter password
+7. tap index=M → tap Login button
+8. wait_for_element text="Welcome" → verify success
 ```
 
-## Architecture
-
+### Pattern 4: Fresh Install Test
 ```
-                    AI Agent (Claude Code / Cursor / Codex / Gemini)
-                         │
-            ┌────────────┼────────────┐
-            │            │            │
-    MCP (stdio)   HTTP API (:8686)  AiBridge (:9999)
-            │            │            │
-            └────────────┼────────────┘
-                         │
-                   OpenMob Hub (Flutter Desktop)
-                         │
-              ┌──────────┼──────────┐
-              │                     │
-        ADB (Android)      xcrun/idb (iOS)
-              │                     │
-        Physical Device      iOS Simulator
-        / Emulator
+1. uninstall_app → remove old version
+2. install_app path="/path/to/app.apk" → install fresh
+3. grant_permissions → skip permission popups
+4. launch_app → open the app
+5. ... run test steps
 ```
 
-- **Hub** (port 8686): Core — device management, HTTP API, desktop UI
-- **MCP Server** (stdio): Thin proxy — translates MCP tool calls to Hub HTTP API
-- **AiBridge** (port 9999): Optional — wraps terminal AI agents with context injection
+### Pattern 5: Debug a Crash
+```
+1. launch_app → open the app
+2. ... reproduce the crash steps
+3. get_device_logs tag="AndroidRuntime" level="error" → get crash logs
+4. get_screenshot → capture error state
+```
 
-## ADB Knowledge Base
+### Pattern 6: Network Testing
+```
+1. toggle_wifi enabled=false → disconnect WiFi
+2. ... test offline behavior
+3. toggle_wifi enabled=true → reconnect
+4. ... verify reconnection handling
+```
 
-### Common ADB Commands (for direct use or debugging)
+### Pattern 7: Rotation Testing
+```
+1. set_rotation 0 → portrait
+2. get_screenshot → capture portrait layout
+3. set_rotation 1 → landscape
+4. get_screenshot → capture landscape layout
+5. Compare both screenshots for layout issues
+```
 
-| Command | Purpose |
-|---------|---------|
-| `adb devices -l` | List connected devices with details |
-| `adb -s <serial> shell getprop ro.product.model` | Get device model |
-| `adb -s <serial> shell getprop ro.build.version.release` | Get Android version |
-| `adb -s <serial> shell wm size` | Get screen resolution |
-| `adb -s <serial> shell dumpsys battery` | Get battery info |
-| `adb -s <serial> shell screencap -p /sdcard/screen.png` | Take screenshot |
-| `adb -s <serial> exec-out screencap -p` | Screenshot to stdout (binary-safe) |
-| `adb -s <serial> shell uiautomator dump /dev/tty` | Dump UI tree to stdout |
-| `adb -s <serial> shell input tap <x> <y>` | Tap at coordinates |
-| `adb -s <serial> shell input swipe <x1> <y1> <x2> <y2> <ms>` | Swipe gesture |
-| `adb -s <serial> shell input text "<text>"` | Type text |
-| `adb -s <serial> shell input keyevent <code>` | Press key |
-| `adb -s <serial> shell am start -n <component>` | Start activity |
-| `adb -s <serial> shell am force-stop <package>` | Kill app |
-| `adb -s <serial> shell am start -a android.intent.action.VIEW -d <url>` | Open URL |
-| `adb -s <serial> shell pm list packages -3` | List installed 3rd-party apps |
-| `adb -s <serial> shell dumpsys window displays` | Get display info |
-| `adb -s <serial> shell settings get system screen_brightness` | Get brightness |
-| `adb -s <serial> shell settings get global airplane_mode_on` | Check airplane mode |
-| `adb -s <serial> shell cmd connectivity airplane-mode enable/disable` | Toggle airplane |
-| `adb -s <serial> shell svc wifi enable/disable` | Toggle WiFi |
-| `adb -s <serial> shell svc data enable/disable` | Toggle mobile data |
-| `adb -s <serial> shell input keyevent KEYCODE_WAKEUP` | Wake device |
-| `adb -s <serial> shell input keyevent KEYCODE_SLEEP` | Sleep device |
-| `adb tcpip 5555` | Enable WiFi ADB on device |
-| `adb connect <ip>:5555` | Connect via WiFi |
-| `adb disconnect <ip>:5555` | Disconnect WiFi device |
-| `adb install <apk>` | Install APK |
-| `adb uninstall <package>` | Uninstall app |
-| `adb push <local> <remote>` | Push file to device |
-| `adb pull <remote> <local>` | Pull file from device |
-| `adb logcat -d -t 100` | Last 100 logcat lines |
-| `adb logcat -d -s <tag>` | Logcat filtered by tag |
-| `adb shell dumpsys activity activities` | Current activity stack |
-| `adb shell dumpsys meminfo <package>` | Memory usage for app |
-
-### Complete Android Key Codes
-
-| Key | Code | Key | Code | Key | Code |
-|-----|------|-----|------|-----|------|
-| Home | 3 | Back | 4 | Call | 5 |
-| End Call | 6 | 0-9 | 7-16 | Star | 17 |
-| Pound | 18 | DPAD Up | 19 | DPAD Down | 20 |
-| DPAD Left | 21 | DPAD Right | 22 | DPAD Center | 23 |
-| Volume Up | 24 | Volume Down | 25 | Power | 26 |
-| Camera | 27 | Clear | 28 | A-Z | 29-54 |
-| Comma | 55 | Period | 56 | Alt Left | 57 |
-| Alt Right | 58 | Shift Left | 59 | Tab | 61 |
-| Space | 62 | Enter | 66 | Backspace | 67 |
-| Grave | 68 | Minus | 69 | Equals | 70 |
-| Left Bracket | 71 | Right Bracket | 72 | Backslash | 73 |
-| Semicolon | 74 | Apostrophe | 75 | Slash | 76 |
-| At | 77 | Menu | 82 | Search | 84 |
-| Media Play/Pause | 85 | Media Stop | 86 | Media Next | 87 |
-| Media Previous | 88 | Page Up | 92 | Page Down | 93 |
-| Escape | 111 | Delete | 112 | Scroll Lock | 116 |
-| F1-F12 | 131-142 | Mute | 164 | Recent Apps | 187 |
-| App Switch | 187 | Brightness Down | 220 | Brightness Up | 221 |
-| Screenshot | 120 | Notification | 83 | Settings | 176 |
-
-### iOS Simulator Commands (xcrun simctl)
-
-| Command | Purpose |
-|---------|---------|
-| `xcrun simctl list devices -j` | List all simulators as JSON |
-| `xcrun simctl boot <udid>` | Boot a simulator |
-| `xcrun simctl shutdown <udid>` | Shutdown a simulator |
-| `xcrun simctl io <udid> screenshot -` | Screenshot to stdout |
-| `xcrun simctl launch <udid> <bundleId>` | Launch app |
-| `xcrun simctl terminate <udid> <bundleId>` | Kill app |
-| `xcrun simctl openurl <udid> <url>` | Open URL |
-| `xcrun simctl install <udid> <path.app>` | Install app |
-| `xcrun simctl uninstall <udid> <bundleId>` | Uninstall app |
-| `xcrun simctl pbpaste <udid>` | Get clipboard content |
-| `xcrun simctl pbcopy <udid>` | Set clipboard content |
-| `xcrun simctl status_bar <udid> override --time "9:41"` | Override status bar |
-
-### iOS idb Commands (facebook/idb)
-
-| Command | Purpose |
-|---------|---------|
-| `idb list-targets` | List available devices/simulators |
-| `idb ui describe-all --udid <udid>` | Full accessibility tree (JSON) |
-| `idb ui tap --udid <udid> <x> <y>` | Tap at coordinates |
-| `idb ui swipe --udid <udid> <x1> <y1> <x2> <y2>` | Swipe gesture |
-| `idb ui text --udid <udid> "<text>"` | Type text |
-| `idb ui button --udid <udid> <button>` | Press button (HOME, LOCK, etc.) |
+### Pattern 8: Run Automated Test
+```
+run_test with steps:
+  - launch_app
+  - wait_for_element text="Login"
+  - tap index=5
+  - type_text "test@email.com"
+  - tap index=8 + assertion: element_exists "Welcome"
+Returns: pass/fail with timing and failure screenshots
+```
 
 ## Communication Style (IMPORTANT)
 
-When using OpenMob tools, always communicate in **plain English** for non-technical QA testers:
+When using OpenMob, communicate in **plain English** for non-technical QA testers:
 
 ### DO:
 - "I tapped the Login button"
 - "I typed the email address into the input field"
 - "The screen now shows the Dashboard with 3 menu items"
-- "I scrolled down to find the Settings option"
-- "The login was successful — I can see the Welcome screen"
+- "Test passed — the user can successfully log in and see the Welcome screen"
 - "Test failed — the Submit button is not responding. The app might be frozen."
 
 ### DON'T:
 - "POST /api/v1/devices/abc123/tap {index: 5}"
-- "Response: {success: true, data: null}"
-- "Executed adb shell input tap 540 1200"
-- "UI tree contains 47 nodes with 12 visible elements"
+- "Response: {success: true}"
+- "UI tree contains 47 nodes"
 
 ### Every response should include:
 1. **What you did** in plain English
 2. **What happened** — what you see on screen now
 3. **What's next** — what you'll do next and why
 
-### When reporting test results:
-- Use pass/fail language, not technical codes
-- Include "what went wrong" in human terms for failures
-- Suggest what the QA tester should report to the developer
-
 ## QA Testing Best Practices
 
-### Before Starting a Test
-1. Always call `list_devices` first to get the device ID
-2. Take a `screenshot` to verify the device is in the expected state
-3. Use `ui-tree?visible=true` to understand the current screen structure
+### Before Starting
+1. Call `list_devices` to get the device ID
+2. Take a `screenshot` to verify device state
+3. Use `grant_permissions` for the app under test to avoid popup interruptions
 
 ### During Testing
-1. **Always verify** — after every action, re-check the UI tree or screenshot
-2. **Wait for animations** — add a short delay (1-2 seconds) after navigation actions
-3. **Use text search** — `ui-tree?text=ButtonText` to find specific elements
-4. **Scroll to find** — if an element isn't visible, scroll and check again
-5. **Use element index** — more reliable than coordinates across devices
+1. **Always verify** — after every action, check ui-tree or screenshot
+2. **Use `wait_for_element`** after navigation — don't assume instant transitions
+3. **Use element index** — more reliable than coordinates
+4. **Use `visible_only: true`** on ui-tree to reduce noise
+5. **Scroll to find** — if element isn't visible, swipe then check again
 
 ### Handling Failures
-1. Take a screenshot on failure for debugging
-2. Check if a dialog/popup appeared (system dialog, permission request)
-3. Try pressing Back (keyCode: 4) to dismiss unexpected overlays
-4. Verify the app is still running with `list_devices`
+1. Take a screenshot on failure
+2. Check `get_device_logs` for crash info
+3. Press Back (key 4) to dismiss unexpected dialogs
+4. Check `get_notifications` for system alerts
+5. Check `get_current_activity` to see if the right app is in foreground
 
-### Common Test Scenarios
-- **Login flow**: launch → find email field → type → find password field → type → tap login → verify
-- **Navigation**: tap menu item → verify new screen → tap back → verify original screen
-- **Settings**: open settings → toggle switch → verify change → toggle back
-- **Search**: tap search → type query → verify results → tap result → verify detail page
-- **Form validation**: submit empty form → verify error messages → fill correctly → submit → verify success
+### Common Scenarios
+- **Login flow**: launch → find email → type → find password → type → tap login → verify
+- **Navigation**: tap menu → verify screen → back → verify return
+- **Settings**: open settings → toggle → verify → toggle back
+- **Search**: tap search → type query → verify results → tap result → verify detail
+- **Form validation**: submit empty → verify errors → fill correctly → submit → verify success
+- **Offline mode**: disable WiFi → test behavior → enable WiFi → verify recovery
+- **Rotation**: test portrait → rotate → test landscape → verify no layout issues
+
+## Architecture
+
+```
+                AI Agent (Claude / Cursor / Codex / Gemini)
+                     │
+        ┌────────────┼────────────┐
+        │            │            │
+ MCP (stdio)   HTTP API      AiBridge
+   26 tools     (:8686)       (:9999)
+        │            │            │
+        └────────────┼────────────┘
+                     │
+               OpenMob Hub (Flutter Desktop)
+                     │
+          ┌──────────┼──────────┐
+          │                     │
+    ADB (Android)      xcrun/idb (iOS)
+          │                     │
+    Physical Device      iOS Simulator
+    / Emulator
+```
+
+- **Hub** (port 8686): Core — device management, HTTP API, desktop UI
+- **MCP Server** (stdio): 26 tools — translates MCP calls to Hub API
+- **AiBridge** (port 9999): Optional — wraps terminal AI agents with context injection
 
 ## Tips
 
-- Always use `ui-tree` with `?visible=true` to reduce noise and token usage
-- Prefer tapping by `index` over coordinates — more reliable across screen sizes
-- After any action, re-fetch ui-tree to verify state changed before proceeding
-- Use `keyCode: 4` (Back) to navigate back, `keyCode: 3` (Home) for home screen
-- Screenshots are base64 PNG — large on high-res devices, use ui-tree when text is enough
-- If an element isn't in the tree, it may be off-screen — scroll first
-- Device IDs persist across sessions as long as the device stays connected
+- Use `ui-tree` with `visible_only: true` to reduce noise and token usage
+- Prefer `index` over coordinates — works across screen sizes
+- Use `wait_for_element` instead of guessing delays after navigation
+- Use `clear_app_data` + `launch_app` for clean test states
+- Use `grant_permissions` before tests to avoid permission popup interruptions
+- Device IDs persist as long as the device stays connected
+- Screenshots are base64 PNG — use ui-tree when text is enough
+- Use `get_device_logs` to debug crashes instead of guessing
