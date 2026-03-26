@@ -55,20 +55,40 @@ AI Agent (Claude Code / Cursor / Codex / Gemini)
  Device   Simulator
 ```
 
-### What AI Agents Can Do
+### What AI Agents Can Do — 25 MCP Tools
 
-| Capability | How |
-|-----------|-----|
-| **See the screen** | Screenshot capture as base64 PNG |
-| **Read UI elements** | Accessibility tree with element indices |
-| **Tap buttons** | By element index or x,y coordinates |
-| **Type text** | Into any focused input field |
-| **Swipe/scroll** | Up, down, left, right with configurable speed |
-| **Press keys** | Home, Back, Enter, Volume, Power |
-| **Launch/kill apps** | By package name or bundle ID |
-| **Open URLs** | Deep links and web URLs |
-| **Unlock device** | Wake screen + swipe to dismiss lock |
-| **Run tests** | Structured test scripts with pass/fail results |
+| Category | Capability | How |
+|----------|-----------|-----|
+| **See** | Screenshot | Capture screen as base64 PNG |
+| **See** | UI tree | Accessibility tree with element indices |
+| **See** | Current activity | See foreground app + screen name |
+| **See** | Notifications | Read notification bar content |
+| **See** | Keyboard status | Detect if soft keyboard is showing |
+| **Touch** | Tap | By element index or x,y coordinates |
+| **Touch** | Type text | Into any focused input field |
+| **Touch** | Swipe/scroll | Direction-based (up/down/left/right) or coordinates |
+| **Touch** | Long press | Hold at position for configurable duration |
+| **Touch** | Drag and drop | From point A to point B |
+| **Touch** | Press keys | Home, Back, Enter, Volume, Power, etc. |
+| **Apps** | Launch app | By package name |
+| **Apps** | Kill app | Force-stop by package name |
+| **Apps** | Install APK | From local file path |
+| **Apps** | Uninstall app | By package name |
+| **Apps** | List installed apps | 3rd-party or all |
+| **Apps** | Clear app data | Reset to fresh install state |
+| **Apps** | Grant permissions | Auto-grant all runtime permissions |
+| **Navigate** | Open URL | Deep links and web URLs |
+| **Navigate** | Go home | Press home button |
+| **Navigate** | Unlock device | Wake screen + swipe to dismiss lock |
+| **Debug** | Device logs | Read logcat with tag/level/line filters |
+| **Debug** | Wait for element | Poll until UI element appears on screen |
+| **Files** | Push/pull files | Transfer files to/from device |
+| **Device** | WiFi/Airplane toggle | Control connectivity |
+| **Device** | Screen rotation | Portrait, landscape, reverse |
+| **Device** | Screen recording | Start/stop video recording |
+| **Testing** | Run test scripts | Structured multi-step tests with pass/fail |
+
+All tools return **NLP-friendly summaries** so non-technical QA testers see "Tapped the Login button" instead of raw JSON.
 
 ## Quick Start
 
@@ -86,56 +106,48 @@ cd openmob-linux-x64
 **Windows:**
 ```
 Extract openmob-windows-x64.zip
-Double-click openmob.bat
+Double-click openmob_hub.exe
 ```
+
+The app auto-detects missing tools and installs them. Connect an Android device via USB and it appears automatically.
 
 ### Option 2: Build from Source
 
 See [Build from Source](#build-from-source) section below.
 
-## Auto-Install
+## Auto-Setup
 
-OpenMob Hub **automatically detects missing tools** and offers one-click installation from the **System Check** screen.
+OpenMob Hub **automatically installs everything** on first launch:
 
-| Tool | Auto-Install Method | Manual Install |
-|------|-------------------|----------------|
-| **ADB** | Downloads from Google (~8MB) | See [Manual ADB Install](#adb) |
-| **Node.js** (for MCP) | `winget` (Windows), download (Linux), `brew` (macOS) | See [Manual Node.js Install](#nodejs) |
-| **AiBridge** | Downloads from GitHub Releases | See [Manual AiBridge Install](#aibridge) |
-| **AI Tool Configs** | One-click setup from System Check screen | See [Setup for AI Tools](#setup-for-ai-tools) |
+| Tool | Auto-Install Method | Fallback |
+|------|-------------------|----------|
+| **ADB** | Downloads from Google (~8MB) | [Manual ADB Install](#adb) |
+| **Node.js** | winget (Windows), download (Linux), brew (macOS) | [Manual Node.js Install](#nodejs) |
+| **MCP Server** | Builds from source automatically | [Manual MCP Build](#nodejs) |
+| **AI Tool Configs** | Auto-configures all detected AI tools | [Manual Setup](#setup-for-ai-tools) |
+| **OpenMob Skill** | Auto-installs to Claude Code, Cursor, etc. | [Manual Skill Install](#setup-for-ai-tools) |
 
-All tools are stored in `~/.openmob/tools/` — no admin/sudo required.
+All tools stored in `~/.openmob/tools/` — no admin/sudo required.
+
+### Auto-Update
+
+The Hub checks for updates on startup and can download + install new versions automatically from GitHub Releases. The app restarts itself after updating.
 
 ### If Auto-Install Fails
 
-If the auto-installer doesn't work (network issues, permissions, corporate proxy), install manually:
+<details>
+<summary>Manual installation instructions</summary>
 
 #### ADB
 
-ADB (Android Debug Bridge) is required for Android device control.
-
 **Windows:**
 ```powershell
-# Option 1: winget (recommended)
 winget install Google.PlatformTools
-
-# Option 2: Manual download
-# Download from https://developer.android.com/tools/releases/platform-tools
-# Extract to C:\platform-tools and add to PATH
 ```
 
 **Linux:**
 ```bash
-# Ubuntu/Debian
 sudo apt install adb
-
-# Arch
-sudo pacman -S android-tools
-
-# Fedora
-sudo dnf install android-tools
-
-# Manual: download from https://developer.android.com/tools/releases/platform-tools
 ```
 
 **macOS:**
@@ -145,23 +157,15 @@ brew install android-platform-tools
 
 #### Node.js
 
-Node.js is required to run the MCP server (unless using the bundled binary from Releases).
-
 **Windows:**
 ```powershell
-# Option 1: winget
 winget install OpenJS.NodeJS.LTS
-
-# Option 2: Download from https://nodejs.org
 ```
 
 **Linux:**
 ```bash
-# Ubuntu/Debian
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install nodejs
-
-# Or download directly from https://nodejs.org
 ```
 
 **macOS:**
@@ -169,55 +173,41 @@ sudo apt install nodejs
 brew install node@20
 ```
 
-After installing Node.js, build the MCP server:
+Then build the MCP server:
 ```bash
-cd openmob_mcp
-npm install
-npm run build
+cd openmob_mcp && npm install && npm run build
 ```
 
-#### AiBridge
+#### AiBridge (Optional)
 
-AiBridge is **optional** — only needed if you want to wrap terminal AI agents (Claude Code, Codex, Gemini CLI) with context injection.
+Only needed for terminal-based AI agents (Claude Code CLI, Codex CLI, Gemini CLI).
 
-**Pre-built binaries:** Download from [Releases](https://github.com/wm-jenildgohel/openmob/releases)
+**Pre-built:** Download from [Releases](https://github.com/wm-jenildgohel/openmob/releases)
 
-**Build from source (requires Rust):**
+**From source (requires Rust):**
 ```bash
-# Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Build
-cd openmob_bridge
-cargo build --release
-
-# Binary at: target/release/aibridge (or aibridge.exe on Windows)
+cd openmob_bridge && cargo build --release
 ```
 
-#### scrcpy (Optional)
-
-scrcpy enables faster screen mirroring. Not required but improves live preview performance.
-
-**Windows:** Download from https://github.com/Genymobile/scrcpy/releases
-
-**Linux:** `sudo apt install scrcpy`
-
-**macOS:** `brew install scrcpy`
-
-#### idb (Optional, macOS only)
-
-Facebook's iOS Development Bridge — needed for iOS Simulator UI tree and interactions.
-
-```bash
-brew install idb-companion
-pip3 install fb-idb
-```
+</details>
 
 ## Setup for AI Tools
 
-OpenMob Hub can **auto-configure your AI tools** from the System Check screen. Just click **"Setup"** or **"Setup All"**.
+OpenMob Hub **auto-configures your AI tools** from the System Check screen. Supports:
 
-If you prefer manual setup:
+| Tool | Method | Auto-Config |
+|------|--------|------------|
+| Cursor | MCP (stdio) | Yes |
+| Claude Desktop | MCP (stdio) | Yes |
+| Claude Code | MCP + Skill | Yes |
+| Windsurf | MCP rules | Yes |
+| VS Code (Copilot) | MCP (stdio) | Yes |
+| Codex CLI | AGENTS.md | Yes |
+| Gemini CLI | GEMINI.md | Yes |
+
+<details>
+<summary>Manual MCP configuration</summary>
 
 ### Cursor / Claude Desktop / Windsurf
 
@@ -261,11 +251,9 @@ Add to `.vscode/mcp.json`:
 Point to the Hub API directly:
 ```bash
 curl http://localhost:8686/api/v1/devices/
-curl http://localhost:8686/api/v1/devices/{id}/screenshot
-curl -X POST http://localhost:8686/api/v1/devices/{id}/tap -d '{"index": 5}'
 ```
 
-Full API reference in [`openmob_skills/SKILL.md`](openmob_skills/SKILL.md).
+</details>
 
 ## Components
 
@@ -273,21 +261,24 @@ Full API reference in [`openmob_skills/SKILL.md`](openmob_skills/SKILL.md).
 
 The brain. Manages devices, runs the HTTP API, provides the desktop UI.
 
-- **HTTP API** on `localhost:8686` — 16+ REST endpoints for device control
-- **Device management** — auto-discovers Android (USB/WiFi/emulator) and iOS Simulators
-- **Desktop UI** — device list, live screen preview, process controls, log viewer, test runner
+- **43 REST endpoints** for complete device control
+- **Auto-discovers** Android devices (USB/WiFi/emulator) and iOS Simulators
+- **Desktop UI** — device list, live screen preview, process controls, log viewer, test runner, system check
 - **Auto-installer** — detects and installs missing tools, configures AI integrations
-- **Tech**: Flutter, Dart, shelf HTTP server, rxdart for state management
+- **Auto-updater** — checks GitHub Releases, downloads + replaces + relaunches
+- **Tech**: Flutter, Dart, shelf HTTP server, rxdart state management
 
 ### 2. MCP Server — TypeScript (`openmob_mcp/`)
 
 The bridge to AI tools. Exposes device tools via [Model Context Protocol](https://modelcontextprotocol.io/).
 
-- **12 MCP tools** — list_devices, get_screenshot, get_ui_tree, tap, type_text, swipe, launch_app, terminate_app, press_button, go_home, open_url, run_test
+- **25 MCP tools** — device control, app management, debugging, testing, file transfer
+- **NLP-friendly responses** — every tool returns human-readable summaries
 - **Works with** — Cursor, Claude Desktop, Windsurf, VS Code, any MCP client
 - **Stateless** — all calls proxy to the Hub HTTP API
 - **Auto-detects Hub** — probes ports 8686-8690 automatically
-- **Tech**: TypeScript, @modelcontextprotocol/sdk, SOLID/SRP architecture
+- **SOLID/SRP architecture** — app/, mcp/common/, mcp/tools/device/, mcp/tools/action/
+- **Tech**: TypeScript, @modelcontextprotocol/sdk, zod
 
 ### 3. AiBridge — Rust CLI (`openmob_bridge/`)
 
@@ -296,43 +287,8 @@ Optional. Wraps terminal AI agents with context injection.
 - **PTY wrapper** — wraps Claude Code, Codex, Gemini CLI in a pseudo-terminal
 - **HTTP injection API** on `localhost:9999` — POST text into the agent when idle
 - **Idle detection** — regex-based, built-in patterns for 3 major agents
+- **Cross-platform** — works on Linux, macOS, Windows (ConPTY)
 - **Tech**: Rust, portable-pty, axum, tokio, clap
-
-## How It Works
-
-### The See-Think-Act Loop
-
-```
-1. AI asks: "What's on screen?"
-   → MCP: get_screenshot + get_ui_tree
-   → Returns: PNG image + 58 UI elements with indices
-
-2. AI decides: "I need to tap the Login button at index 15"
-   → MCP: tap(device_id, index=15)
-   → Hub: resolves index to coordinates, runs adb shell input tap
-
-3. AI verifies: "Did the login screen appear?"
-   → MCP: get_ui_tree(visible=true)
-   → Returns: new elements including "Enter Password" at index 12
-
-4. AI continues: types email, password, taps Submit
-   → Full login flow automated without human intervention
-```
-
-### Real Example: Testing a Login Flow
-
-Tested live on a real Android device:
-
-| Step | AI Action | Result |
-|------|-----------|--------|
-| 1 | `launch_app("com.example.myapp")` | App opened |
-| 2 | `get_ui_tree(visible=true)` → found "Profile" at index 25 | Read screen |
-| 3 | `tap(index=25)` | "Account required" dialog |
-| 4 | `tap(index=15)` → "Sign In" | Login screen |
-| 5 | `type_text("test@example.com")` | Email entered |
-| 6 | `tap(index=16)` → "Using Password" | Password screen |
-| 7 | `type_text("Test@1234")` | Password entered |
-| 8 | `tap(index=18)` → "Sign In" | "User not found" error caught |
 
 ## API Reference
 
@@ -340,21 +296,39 @@ Tested live on a real Android device:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/v1/devices/` | List all connected devices |
-| GET | `/api/v1/devices/{id}/screenshot` | Capture screenshot (base64 PNG) |
-| GET | `/api/v1/devices/{id}/ui-tree` | Get UI accessibility tree |
-| GET | `/api/v1/devices/{id}/ui-tree?visible=true` | Visible elements only |
+| GET | `.../screenshot` | Capture screenshot (base64 PNG) |
+| GET | `.../ui-tree?visible=true` | Get UI accessibility tree |
+| GET | `.../current-activity` | Get foreground app/screen |
+| GET | `.../apps?third_party=true` | List installed apps |
+| GET | `.../logcat?lines=100&tag=MyApp&level=error` | Get device logs |
+| GET | `.../keyboard` | Check if keyboard is showing |
+| GET | `.../notifications` | Read notification bar |
+| GET | `.../files?path=/sdcard/` | List files on device |
 
 ### Actions
 | Method | Endpoint | Body | Description |
 |--------|----------|------|-------------|
 | POST | `.../tap` | `{"index": N}` or `{"x": 720, "y": 1480}` | Tap element or coordinates |
 | POST | `.../type` | `{"text": "hello"}` | Type into focused field |
-| POST | `.../swipe` | `{"x1":720,"y1":1800,"x2":720,"y2":800}` | Swipe gesture |
+| POST | `.../swipe` | `{"direction": "up"}` or `{"x1":720,"y1":1800,"x2":720,"y2":800}` | Swipe/scroll |
 | POST | `.../keyevent` | `{"keyCode": 3}` | Press key (Home=3, Back=4) |
 | POST | `.../launch` | `{"package": "com.app"}` | Launch app |
 | POST | `.../terminate` | `{"package": "com.app"}` | Kill app |
+| POST | `.../install` | `{"path": "/path/to/app.apk"}` | Install APK |
+| POST | `.../uninstall` | `{"package": "com.app"}` | Uninstall app |
+| POST | `.../clear-data` | `{"package": "com.app"}` | Clear app data |
 | POST | `.../open-url` | `{"url": "https://..."}` | Open URL on device |
 | POST | `.../unlock` | — | Wake + swipe to unlock |
+| POST | `.../wait-for-element` | `{"text": "Login", "timeout_ms": 10000}` | Wait until element appears |
+| POST | `.../grant-permissions` | `{"package": "com.app"}` | Grant all permissions |
+| POST | `.../wifi` | `{"enabled": true}` | Toggle WiFi |
+| POST | `.../airplane` | `{"enabled": true}` | Toggle airplane mode |
+| POST | `.../rotation` | `{"rotation": 1}` | Set rotation (0=portrait, 1=landscape) |
+| POST | `.../file/push` | `{"local": "/path", "remote": "/sdcard/file"}` | Push file to device |
+| POST | `.../file/pull` | `{"remote": "/sdcard/file", "local": "/path"}` | Pull file from device |
+| POST | `.../record/start` | `{"max_duration": 180}` | Start screen recording |
+| POST | `.../record/stop` | — | Stop recording |
+| POST | `.../gesture` | `{"type": "long_press", "x": 540, "y": 960}` | Long press, drag, pinch |
 
 ### Health
 | Method | Endpoint | Description |
@@ -368,33 +342,40 @@ Tested live on a real Android device:
 | Devices | 1 | Unlimited | **Unlimited** |
 | Daily quota | 100 points | Unlimited | **Unlimited** |
 | Machines | 1 | 3 | **Unlimited** |
+| MCP tools | 12 | 12 | **25** |
 | Offline mode | No | 7 days | **Always offline** |
 | Source code | Closed | Closed | **MIT licensed** |
 | Telemetry | Yes | Yes | **None** |
 | Cloud dependency | Required | Required | **None** |
 | Auto-install tools | No | No | **Yes** |
 | AI tool auto-config | No | No | **Yes** |
+| Auto-update | No | No | **Yes** |
+| NLP responses | No | No | **Yes** |
+| App install/uninstall | Yes | Yes | **Yes** |
+| Device logs (logcat) | Yes | Yes | **Yes** |
+| Wait for element | No | No | **Yes** |
+| File push/pull | No | No | **Yes** |
+| Grant permissions | No | No | **Yes** |
+| Screen recording | No | No | **Yes** |
+| WiFi/Airplane toggle | No | No | **Yes** |
+| Screen rotation | No | No | **Yes** |
+| Notifications | No | No | **Yes** |
 | Price | Free (limited) | $99/year | **Free forever** |
 
 ## Build from Source
 
 **Prerequisites:**
-- **Flutter 3.29.3** — use [FVM](https://fvm.app) for version management
+- Flutter 3.29.3+ — `flutter --version`
 - Node.js 18+ — `node --version`
-- Rust 1.70+ — `rustc --version`
-- ADB — `adb devices`
+- Rust 1.70+ — `rustc --version` (optional, for AiBridge)
 
 ```bash
-# Install FVM if needed
-dart pub global activate fvm
-
 git clone https://github.com/wm-jenildgohel/openmob.git
 cd openmob
 
 # Hub (Flutter Desktop)
-cd openmob_hub && fvm install && fvm use
-fvm flutter pub get && fvm flutter build linux && cd ..
-# Windows: fvm flutter build windows
+cd openmob_hub && flutter pub get && flutter build linux --release && cd ..
+# Windows: flutter build windows --release
 
 # MCP Server (TypeScript)
 cd openmob_mcp && npm install && npm run build && cd ..
@@ -403,62 +384,61 @@ cd openmob_mcp && npm install && npm run build && cd ..
 cd openmob_bridge && cargo build --release && cd ..
 
 # Run
-cd openmob_hub && fvm flutter run -d linux
+cd openmob_hub && flutter run -d linux
 ```
 
 ## Supported Platforms
 
 ### Device Automation
-| Platform | Connection | Screenshot | UI Tree | Interactions |
-|----------|-----------|------------|---------|-------------|
-| Android (physical) | USB, WiFi ADB | Yes | Yes | Yes |
-| Android (emulator) | ADB auto-detect | Yes | Yes | Yes |
-| iOS (simulator) | xcrun simctl | Yes | Yes (idb) | Yes (idb) |
+| Platform | Connection | Screenshot | UI Tree | Interactions | Install APK |
+|----------|-----------|------------|---------|-------------|-------------|
+| Android (physical) | USB, WiFi ADB | Yes | Yes | Yes | Yes |
+| Android (emulator) | ADB auto-detect | Yes | Yes | Yes | Yes |
+| iOS (simulator) | xcrun simctl | Yes | Yes (idb) | Yes (idb) | No |
 
 ### Hub Desktop App
 | OS | Status |
 |----|--------|
 | Linux (x64) | Pre-built binary |
-| Windows (x64) | Pre-built binary (via CI) |
-| macOS (x64/arm64) | Build from source |
+| Windows (x64) | Pre-built binary |
+| macOS | Build from source |
 
 ### AI Tool Integration
-| Tool | Method | Auto-Config |
-|------|--------|------------|
-| Cursor | MCP (stdio) | Yes |
-| Claude Desktop | MCP (stdio) | Yes |
-| Claude Code | MCP + Skill | Yes |
-| Windsurf | MCP (stdio) | Yes |
-| VS Code (Copilot) | MCP (stdio) | Yes |
-| Codex CLI | HTTP API | — |
-| Gemini CLI | HTTP API | — |
-| OpenAI Agents SDK | HTTP tools | — |
+| Tool | Method | Auto-Config | Auto-Skill |
+|------|--------|------------|------------|
+| Cursor | MCP (stdio) | Yes | — |
+| Claude Desktop | MCP (stdio) | Yes | — |
+| Claude Code | MCP + Skill | Yes | Yes |
+| Windsurf | MCP rules | Yes | — |
+| VS Code (Copilot) | MCP (stdio) | Yes | — |
+| Codex CLI | AGENTS.md | Yes | Yes |
+| Gemini CLI | GEMINI.md | Yes | Yes |
 
 ## Project Structure
 
 ```
 openmob/
-├── openmob_hub/          # Flutter Desktop Hub
+├── openmob_hub/          # Flutter Desktop Hub (48 files, 9.7K lines)
 │   ├── lib/
-│   │   ├── core/         # Design system (ResColors, constants)
-│   │   ├── models/       # Device, UiNode, TestScript, AiTool
-│   │   ├── server/       # shelf HTTP API + routes
-│   │   ├── services/     # ADB, DeviceManager, ProcessManager, AiToolSetup
-│   │   └── ui/           # Screens + Widgets (rxdart, zero setState)
-│   └── assets/           # App logo and icons
-├── openmob_mcp/          # MCP Server (TypeScript, SOLID/SRP)
+│   │   ├── core/         # ResColors, constants
+│   │   ├── models/       # Device, UiNode, TestScript, AiTool, ProcessInfo
+│   │   ├── server/       # shelf HTTP API + 43 routes
+│   │   ├── services/     # ADB, DeviceManager, ProcessManager, AutoSetup, UpdateService
+│   │   └── ui/           # Screens + Widgets (rxdart, zero setState for data)
+│   └── assets/           # App logo
+├── openmob_mcp/          # MCP Server (29 files, 1.1K lines, SOLID/SRP)
 │   └── src/
-│       ├── app/          # Bootstrap, server factory
-│       ├── mcp/          # common/ + tools/ (device, action, testing)
+│       ├── app/          # Bootstrap, server factory, tool registration
+│       ├── mcp/          # common/ (schemas, response, hub-client) + tools/ (25 tools)
 │       └── types/        # TypeScript interfaces
-├── openmob_bridge/       # AiBridge CLI (Rust)
-│   └── src/              # PTY, bridge, detector, queue, HTTP server
+├── openmob_bridge/       # AiBridge CLI (9 files, 1K lines, Rust)
+│   └── src/              # PTY handler, bridge, detector, queue, HTTP server
 ├── openmob_skills/       # Skill package for AI tools
-│   ├── SKILL.md          # Full API reference
-│   ├── install.sh        # Auto-detect + install script
+│   ├── SKILL.md          # Full API reference + QA patterns
+│   ├── install.sh        # Auto-install script
 │   ├── agents/           # OpenAI Agents SDK definitions
 │   └── mcp-configs/      # Ready configs for each AI tool
-├── .github/workflows/    # CI/CD — builds all platforms on tag push
+├── .github/workflows/    # CI/CD — builds Linux + Windows + macOS on tag push
 └── LICENSE               # MIT
 ```
 
