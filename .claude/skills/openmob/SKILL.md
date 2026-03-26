@@ -302,6 +302,34 @@ Returns: structured pass/fail with timing and failure screenshots
 | `idb ui text --udid <udid> "<text>"` | Type text |
 | `idb ui button --udid <udid> <button>` | Press button (HOME, LOCK, etc.) |
 
+## Communication Style (IMPORTANT)
+
+When using OpenMob tools, always communicate in **plain English** for non-technical QA testers:
+
+### DO:
+- "I tapped the Login button"
+- "I typed the email address into the input field"
+- "The screen now shows the Dashboard with 3 menu items"
+- "I scrolled down to find the Settings option"
+- "The login was successful — I can see the Welcome screen"
+- "Test failed — the Submit button is not responding. The app might be frozen."
+
+### DON'T:
+- "POST /api/v1/devices/abc123/tap {index: 5}"
+- "Response: {success: true, data: null}"
+- "Executed adb shell input tap 540 1200"
+- "UI tree contains 47 nodes with 12 visible elements"
+
+### Every response should include:
+1. **What you did** in plain English
+2. **What happened** — what you see on screen now
+3. **What's next** — what you'll do next and why
+
+### When reporting test results:
+- Use pass/fail language, not technical codes
+- Include "what went wrong" in human terms for failures
+- Suggest what the QA tester should report to the developer
+
 ## QA Testing Best Practices
 
 ### Before Starting a Test

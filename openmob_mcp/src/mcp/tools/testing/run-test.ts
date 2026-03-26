@@ -10,43 +10,40 @@ export function registerRunTest(server: McpServer, hub: HubClient): void {
     "run_test",
     {
       description:
-        "Execute a test scenario on a device. Provide a sequence of actions " +
-        "(tap, swipe, type_text, press_key, launch_app, go_home, wait, etc.) " +
-        "with optional assertions. Returns structured pass/fail results with " +
-        "timing and failure screenshots.",
+        "Run a test on the device — provide a name and a sequence of steps (tap, type, swipe, etc.) with optional checks after each step. " +
+        "Returns whether the test passed or failed, with timing and screenshots of any failures. " +
+        "Great for verifying login flows, form submissions, navigation, or any user journey.",
       inputSchema: {
         device_id: deviceIdSchema,
-        name: z.string().describe("Test name for identification"),
+        name: z.string().describe("A descriptive name for this test (e.g., 'Login with valid credentials')"),
         steps: z
           .array(
             z.object({
               action: z
                 .string()
                 .describe(
-                  "Action: tap, swipe, type_text, press_key, launch_app, " +
-                  "terminate_app, open_url, go_home, gesture, wait"
+                  "What to do: tap, swipe, type_text, press_key, launch_app, " +
+                  "terminate_app, open_url, go_home, wait"
                 ),
               params: z
                 .record(z.unknown())
-                .describe("Action parameters (x, y, text, package, url, duration, etc.)"),
+                .describe("Settings for the action (x, y, text, package, url, duration, etc.)"),
               assertion: z
                 .object({
                   type: z
                     .string()
-                    .describe(
-                      "Assertion type: element_exists, element_text, screenshot_match, none"
-                    ),
+                    .describe("What to check: element_exists (look for an element), element_text (check text content), screenshot_match, none"),
                 })
                 .passthrough()
                 .optional()
-                .describe("Optional assertion to verify after action"),
+                .describe("Optional check to verify the action worked"),
               description: z
                 .string()
                 .optional()
-                .describe("Human-readable step description"),
+                .describe("What this step does in plain English (e.g., 'Tap the Login button')"),
             })
           )
-          .describe("Ordered list of test steps to execute"),
+          .describe("Steps to perform in order"),
       },
     },
     async ({ device_id, name, steps }) => {
@@ -57,9 +54,15 @@ export function registerRunTest(server: McpServer, hub: HubClient): void {
           steps,
         });
         const result = await hub.post<TestResult>(`/tests/${script.id}/run`, {});
-        return createTextResponse(result);
+
+        const passed = result.status === "passed";
+        const summary = passed
+          ? `Test "${name}" passed — all ${steps.length} steps completed successfully in ${result.duration || "?"}ms`
+          : `Test "${name}" failed at step ${result.failedStep || "?"}: ${result.failureReason || "Unknown error"}`;
+
+        return createTextResponse(result, summary);
       } catch (error) {
-        return createErrorResponse(error);
+        return createErrorResponse(error, `Could not run test "${name}" — check if the device is connected and the app is open`);
       }
     }
   );

@@ -9,7 +9,7 @@ export function registerLaunchApp(server: McpServer, hub: HubClient): void {
     "launch_app",
     {
       description:
-        "Launch an app on the device by package name (Android) or bundle ID (iOS).",
+        "Open an app on the device. Provide the app's package name (Android, e.g., 'com.example.myapp') or bundle ID (iOS, e.g., 'com.example.MyApp').",
       inputSchema: {
         device_id: deviceIdSchema,
         package: packageSchema,
@@ -20,9 +20,10 @@ export function registerLaunchApp(server: McpServer, hub: HubClient): void {
         const result = await hub.post<ActionResult>(`/devices/${device_id}/launch`, {
           package: pkg,
         });
-        return createTextResponse(result);
+        const appName = pkg.split(".").pop() || pkg;
+        return createTextResponse(result, `Opened the ${appName} app`);
       } catch (error) {
-        return createErrorResponse(error);
+        return createErrorResponse(error, "Could not open the app — it may not be installed on this device");
       }
     }
   );

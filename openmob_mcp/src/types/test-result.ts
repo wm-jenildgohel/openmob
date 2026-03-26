@@ -21,8 +21,11 @@ export interface TestResult {
   status: "passed" | "failed" | "running" | "error";
   steps: StepResult[];
   totalDurationMs: number;
+  duration?: number;
   passedCount: number;
   failedCount: number;
+  failedStep?: number;
+  failureReason?: string;
   startedAt: string;
   completedAt?: string;
 }

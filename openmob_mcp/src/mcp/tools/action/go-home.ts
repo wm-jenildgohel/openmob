@@ -8,7 +8,7 @@ export function registerGoHome(server: McpServer, hub: HubClient): void {
   server.registerTool(
     "go_home",
     {
-      description: "Navigate to the home screen on the device.",
+      description: "Go to the device's home screen — like pressing the Home button.",
       inputSchema: {
         device_id: deviceIdSchema,
       },
@@ -18,9 +18,9 @@ export function registerGoHome(server: McpServer, hub: HubClient): void {
         const result = await hub.post<ActionResult>(`/devices/${device_id}/keyevent`, {
           keyCode: 3,
         });
-        return createTextResponse(result);
+        return createTextResponse(result, "Navigated to the home screen");
       } catch (error) {
-        return createErrorResponse(error);
+        return createErrorResponse(error, "Could not go to home screen — check device connection");
       }
     }
   );

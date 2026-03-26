@@ -8,7 +8,7 @@ export function registerTerminateApp(server: McpServer, hub: HubClient): void {
   server.registerTool(
     "terminate_app",
     {
-      description: "Force-stop a running app on the device.",
+      description: "Close/kill a running app on the device. The app will be force-stopped.",
       inputSchema: {
         device_id: deviceIdSchema,
         package: packageSchema,
@@ -19,9 +19,10 @@ export function registerTerminateApp(server: McpServer, hub: HubClient): void {
         const result = await hub.post<ActionResult>(`/devices/${device_id}/terminate`, {
           package: pkg,
         });
-        return createTextResponse(result);
+        const appName = pkg.split(".").pop() || pkg;
+        return createTextResponse(result, `Closed the ${appName} app`);
       } catch (error) {
-        return createErrorResponse(error);
+        return createErrorResponse(error, "Could not close the app — it may not be running");
       }
     }
   );

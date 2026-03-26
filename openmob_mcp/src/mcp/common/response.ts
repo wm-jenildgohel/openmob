@@ -17,7 +17,10 @@ export function createTextResponse(data: unknown, summary?: string) {
 }
 
 export function createImageResponse(base64: string, mimeType: string, summary?: string) {
-  const content: Array<{ type: "image" | "text"; data?: string; mimeType?: string; text?: string }> = [
+  const content: Array<
+    | { type: "image"; data: string; mimeType: string }
+    | { type: "text"; text: string }
+  > = [
     {
       type: "image" as const,
       data: base64,

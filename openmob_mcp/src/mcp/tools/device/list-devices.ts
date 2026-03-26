@@ -8,14 +8,18 @@ export function registerListDevices(server: McpServer, hub: HubClient): void {
     "list_devices",
     {
       description:
-        "List all connected mobile devices (Android and iOS) with metadata including model, OS version, screen size, and connection status",
+        "See all connected mobile devices — shows each device's name, model, OS version, screen size, battery level, and how it's connected (USB/WiFi/emulator). Use the device ID from this list in all other tools.",
     },
     async () => {
       try {
         const devices = await hub.get<Device[]>("/devices");
-        return createTextResponse(devices);
+        const count = devices.length;
+        const summary = count === 0
+          ? "No devices connected — connect a device via USB or start an emulator"
+          : `Found ${count} device${count > 1 ? "s" : ""}: ${devices.map(d => `${d.model} (${d.platform}, ${d.connectionType})`).join(", ")}`;
+        return createTextResponse(devices, summary);
       } catch (error) {
-        return createErrorResponse(error);
+        return createErrorResponse(error, "Could not list devices — is OpenMob Hub running?");
       }
     }
   );

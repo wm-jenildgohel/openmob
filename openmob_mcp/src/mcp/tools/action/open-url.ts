@@ -10,18 +10,31 @@ export function registerOpenUrl(server: McpServer, hub: HubClient): void {
     "open_url",
     {
       description:
-        "Open a URL or deep link on the device in the default browser or app handler.",
+        "Open a website or deep link on the device — opens in the default browser or the app that handles that link.",
       inputSchema: {
         device_id: deviceIdSchema,
-        url: z.string().describe("URL or deep link to open"),
+        url: z.string().describe("Web URL (https://...) or deep link (myapp://...)"),
       },
     },
     async ({ device_id, url }) => {
       try {
         const result = await hub.post<ActionResult>(`/devices/${device_id}/open-url`, { url });
-        return createTextResponse(result);
+
+        let summary: string;
+        try {
+          const parsed = new URL(url);
+          if (parsed.protocol.startsWith("http")) {
+            summary = `Opened ${parsed.hostname} in the browser`;
+          } else {
+            summary = `Opened deep link: ${parsed.protocol}//${parsed.hostname || parsed.pathname}`;
+          }
+        } catch {
+          summary = `Opened: ${url}`;
+        }
+
+        return createTextResponse(result, summary);
       } catch (error) {
-        return createErrorResponse(error);
+        return createErrorResponse(error, "Could not open the link — check if the URL is valid");
       }
     }
   );
