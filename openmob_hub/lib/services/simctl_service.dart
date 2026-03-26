@@ -110,6 +110,17 @@ class SimctlService {
     }
   }
 
+  /// Uninstall an app from the simulator by bundle ID.
+  Future<void> uninstallApp(String udid, String bundleId) async {
+    final result = await Process.run(
+      'xcrun',
+      ['simctl', 'uninstall', udid, bundleId],
+    );
+    if (result.exitCode != 0) {
+      throw Exception('simctl uninstall failed: ${result.stderr}');
+    }
+  }
+
   /// Boot a simulator by UDID.
   Future<void> bootSimulator(String udid) async {
     final result = await Process.run(

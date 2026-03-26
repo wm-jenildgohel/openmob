@@ -8,6 +8,7 @@ import { registerGoHome } from "./go-home.js";
 import { registerLaunchApp } from "./launch-app.js";
 import { registerTerminateApp } from "./terminate-app.js";
 import { registerOpenUrl } from "./open-url.js";
+import { registerInstallApp, registerUninstallApp } from "./install-app.js";
 
 export function registerActionTools(server: McpServer, hub: HubClient): void {
   registerTap(server, hub);
@@ -18,4 +19,6 @@ export function registerActionTools(server: McpServer, hub: HubClient): void {
   registerLaunchApp(server, hub);
   registerTerminateApp(server, hub);
   registerOpenUrl(server, hub);
+  registerInstallApp(server, hub);
+  registerUninstallApp(server, hub);
 }

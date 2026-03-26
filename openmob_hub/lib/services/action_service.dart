@@ -421,8 +421,402 @@ class ActionService {
         if (!first.success) return first;
         await Future.delayed(const Duration(milliseconds: 100));
         return tap(serial, x, y);
+      case 'drag':
+        return drag(
+          serial,
+          (params['x1'] as num).toInt(),
+          (params['y1'] as num).toInt(),
+          (params['x2'] as num).toInt(),
+          (params['y2'] as num).toInt(),
+          durationMs: (params['duration'] as num?)?.toInt() ?? 1000,
+        );
       default:
         return ActionResult.fail('Unknown gesture type: $type');
+    }
+  }
+
+  // ─── P0: App Install / Uninstall ───
+
+  /// Install an APK on the device from a local file path.
+  Future<ActionResult> installApp(String serial, String apkPath, {bool replace = true, bool grantPermissions = true}) async {
+    if (_isIos(serial)) {
+      return ActionResult.fail('APK install not supported on iOS — use .ipa with Xcode');
+    }
+    try {
+      final args = ['install'];
+      if (replace) args.add('-r');
+      if (grantPermissions) args.add('-g');
+      args.add(apkPath);
+      final result = await _adb.runGlobal(['-s', serial, ...args]);
+      if (result.exitCode != 0 || (result.stdout as String).contains('Failure')) {
+        return ActionResult.fail('Install failed: ${result.stdout}');
+      }
+      return ActionResult.ok(data: {'message': 'App installed successfully'});
+    } catch (e) {
+      return ActionResult.fail('Install failed: $e');
+    }
+  }
+
+  /// Uninstall an app by package name.
+  Future<ActionResult> uninstallApp(String serial, String packageName) async {
+    if (_isIos(serial)) {
+      if (_simctl != null) {
+        try {
+          await _simctl.uninstallApp(serial, packageName);
+          return ActionResult.ok();
+        } catch (e) {
+          return ActionResult.fail('iOS uninstall failed: $e');
+        }
+      }
+      return ActionResult.fail('simctl not available');
+    }
+    try {
+      final result = await _adb.run(serial, ['shell', 'pm', 'uninstall', packageName]);
+      if ((result.stdout as String).contains('Success')) {
+        return ActionResult.ok(data: {'message': '$packageName uninstalled'});
+      }
+      return ActionResult.fail('Uninstall failed: ${result.stdout}');
+    } catch (e) {
+      return ActionResult.fail('Uninstall failed: $e');
+    }
+  }
+
+  // ─── P0: List Installed Apps ───
+
+  /// List installed apps (optionally filter to 3rd-party only).
+  Future<ActionResult> listApps(String serial, {bool thirdPartyOnly = true}) async {
+    if (_isIos(serial)) {
+      return ActionResult.fail('List apps not supported on iOS simulators via this API');
+    }
+    try {
+      final flag = thirdPartyOnly ? '-3' : '';
+      final result = await _adb.run(serial, ['shell', 'pm', 'list', 'packages', if (flag.isNotEmpty) flag]);
+      final packages = (result.stdout as String)
+          .replaceAll('\r', '')
+          .split('\n')
+          .where((l) => l.startsWith('package:'))
+          .map((l) => l.replaceFirst('package:', '').trim())
+          .where((p) => p.isNotEmpty)
+          .toList();
+      return ActionResult.ok(data: {'packages': packages, 'count': packages.length});
+    } catch (e) {
+      return ActionResult.fail('List apps failed: $e');
+    }
+  }
+
+  // ─── P0: Get Current Activity ───
+
+  /// Get the currently focused activity (foreground app + screen).
+  Future<ActionResult> getCurrentActivity(String serial) async {
+    if (_isIos(serial)) {
+      return ActionResult.fail('Get current activity not supported on iOS');
+    }
+    try {
+      final result = await _adb.run(serial, ['shell', 'dumpsys', 'activity', 'activities']);
+      final stdout = (result.stdout as String).replaceAll('\r', '');
+      // Parse "mResumedActivity" or "mFocusedActivity" line
+      final lines = stdout.split('\n');
+      for (final line in lines) {
+        if (line.contains('mResumedActivity') || line.contains('mFocusedActivity')) {
+          final match = RegExp(r'(\S+/\S+)').firstMatch(line);
+          if (match != null) {
+            final activity = match.group(1)!;
+            final parts = activity.split('/');
+            return ActionResult.ok(data: {
+              'package': parts[0],
+              'activity': parts.length > 1 ? parts[1] : '',
+              'full': activity,
+            });
+          }
+        }
+      }
+      return ActionResult.ok(data: {'package': 'unknown', 'activity': 'unknown'});
+    } catch (e) {
+      return ActionResult.fail('Get current activity failed: $e');
+    }
+  }
+
+  // ─── P0: Clear App Data ───
+
+  /// Clear all data for an app (like a fresh install).
+  Future<ActionResult> clearAppData(String serial, String packageName) async {
+    if (_isIos(serial)) {
+      return ActionResult.fail('Clear app data not supported on iOS simulators');
+    }
+    try {
+      final result = await _adb.run(serial, ['shell', 'pm', 'clear', packageName]);
+      if ((result.stdout as String).contains('Success')) {
+        return ActionResult.ok(data: {'message': '$packageName data cleared'});
+      }
+      return ActionResult.fail('Clear data failed: ${result.stdout}');
+    } catch (e) {
+      return ActionResult.fail('Clear data failed: $e');
+    }
+  }
+
+  // ─── P0: Logcat (Device Logs) ───
+
+  /// Get recent device logs filtered by tag, level, and line count.
+  Future<ActionResult> getLogcat(String serial, {int lines = 100, String? tag, String? level}) async {
+    if (_isIos(serial)) {
+      return ActionResult.fail('Logcat not available on iOS — use Console.app');
+    }
+    try {
+      final args = <String>['shell', 'logcat', '-d', '-t', '$lines'];
+      if (tag != null && level != null) {
+        args.addAll(['-s', '$tag:${level.toUpperCase().substring(0, 1)}']);
+      } else if (tag != null) {
+        args.addAll(['-s', '$tag:V']);
+      } else if (level != null) {
+        args.addAll(['*:${level.toUpperCase().substring(0, 1)}']);
+      }
+      final result = await _adb.run(serial, args, timeout: const Duration(seconds: 15));
+      final logLines = (result.stdout as String)
+          .replaceAll('\r', '')
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
+      return ActionResult.ok(data: {'logs': logLines, 'count': logLines.length});
+    } catch (e) {
+      return ActionResult.fail('Logcat failed: $e');
+    }
+  }
+
+  /// Clear the logcat buffer.
+  Future<ActionResult> clearLogcat(String serial) async {
+    try {
+      await _adb.run(serial, ['shell', 'logcat', '-c']);
+      return ActionResult.ok(data: {'message': 'Logcat buffer cleared'});
+    } catch (e) {
+      return ActionResult.fail('Clear logcat failed: $e');
+    }
+  }
+
+  // ─── P0: Wait for Element ───
+
+  /// Wait until a UI element matching the filter appears on screen.
+  Future<ActionResult> waitForElement(String serial, {String? text, String? resourceId, int timeoutMs = 10000, int pollMs = 500}) async {
+    final stopwatch = Stopwatch()..start();
+    while (stopwatch.elapsedMilliseconds < timeoutMs) {
+      try {
+        final nodes = await _uiTree.getUiTree(serial);
+        final match = nodes.where((n) {
+          if (text != null && n.text.contains(text)) return true;
+          if (resourceId != null && n.resourceId.contains(resourceId)) return true;
+          return false;
+        });
+        if (match.isNotEmpty) {
+          final found = match.first;
+          return ActionResult.ok(data: {
+            'found': true,
+            'index': found.index,
+            'text': found.text,
+            'resourceId': found.resourceId,
+            'bounds': {
+              'centerX': found.bounds.centerX,
+              'centerY': found.bounds.centerY,
+            },
+            'waitedMs': stopwatch.elapsedMilliseconds,
+          });
+        }
+      } catch (_) {
+        // UI tree fetch may fail during transitions — keep polling
+      }
+      await Future.delayed(Duration(milliseconds: pollMs));
+    }
+    return ActionResult.fail('Element not found after ${timeoutMs}ms${text != null ? ' (text: "$text")' : ''}${resourceId != null ? ' (resourceId: "$resourceId")' : ''}');
+  }
+
+  // ─── P1: File Push / Pull ───
+
+  /// Push a file from host to device.
+  Future<ActionResult> pushFile(String serial, String localPath, String remotePath) async {
+    try {
+      final result = await _adb.runGlobal(['-s', serial, 'push', localPath, remotePath]);
+      if (result.exitCode != 0) {
+        return ActionResult.fail('Push failed: ${result.stderr}');
+      }
+      return ActionResult.ok(data: {'message': 'Pushed $localPath to $remotePath'});
+    } catch (e) {
+      return ActionResult.fail('Push failed: $e');
+    }
+  }
+
+  /// Pull a file from device to host.
+  Future<ActionResult> pullFile(String serial, String remotePath, String localPath) async {
+    try {
+      final result = await _adb.runGlobal(['-s', serial, 'pull', remotePath, localPath]);
+      if (result.exitCode != 0) {
+        return ActionResult.fail('Pull failed: ${result.stderr}');
+      }
+      return ActionResult.ok(data: {'message': 'Pulled $remotePath to $localPath'});
+    } catch (e) {
+      return ActionResult.fail('Pull failed: $e');
+    }
+  }
+
+  /// List files on device at the given path.
+  Future<ActionResult> listFiles(String serial, String path) async {
+    try {
+      final result = await _adb.run(serial, ['shell', 'ls', '-la', path]);
+      final files = (result.stdout as String)
+          .replaceAll('\r', '')
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
+      return ActionResult.ok(data: {'path': path, 'files': files, 'count': files.length});
+    } catch (e) {
+      return ActionResult.fail('List files failed: $e');
+    }
+  }
+
+  // ─── P1: Connectivity Toggles ───
+
+  /// Toggle WiFi on/off.
+  Future<ActionResult> setWifi(String serial, bool enabled) async {
+    try {
+      await _adb.run(serial, ['shell', 'svc', 'wifi', enabled ? 'enable' : 'disable']);
+      return ActionResult.ok(data: {'wifi': enabled ? 'enabled' : 'disabled'});
+    } catch (e) {
+      return ActionResult.fail('WiFi toggle failed: $e');
+    }
+  }
+
+  /// Toggle airplane mode on/off.
+  Future<ActionResult> setAirplaneMode(String serial, bool enabled) async {
+    try {
+      await _adb.run(serial, ['shell', 'cmd', 'connectivity', 'airplane-mode', enabled ? 'enable' : 'disable']);
+      return ActionResult.ok(data: {'airplaneMode': enabled ? 'enabled' : 'disabled'});
+    } catch (e) {
+      return ActionResult.fail('Airplane mode toggle failed: $e');
+    }
+  }
+
+  // ─── P1: Screen Rotation ───
+
+  /// Set screen rotation. 0=natural, 1=90°, 2=180°, 3=270°.
+  Future<ActionResult> setRotation(String serial, int rotation) async {
+    try {
+      // Disable auto-rotation first
+      await _adb.run(serial, ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
+      // Set rotation
+      await _adb.run(serial, ['shell', 'settings', 'put', 'system', 'user_rotation', '$rotation']);
+      final names = {0: 'portrait', 1: 'landscape', 2: 'reverse portrait', 3: 'reverse landscape'};
+      return ActionResult.ok(data: {'rotation': rotation, 'orientation': names[rotation] ?? 'unknown'});
+    } catch (e) {
+      return ActionResult.fail('Set rotation failed: $e');
+    }
+  }
+
+  // ─── P1: Grant Permissions ───
+
+  /// Grant all runtime permissions to an app.
+  Future<ActionResult> grantAllPermissions(String serial, String packageName) async {
+    try {
+      final result = await _adb.run(serial, ['shell', 'dumpsys', 'package', packageName]);
+      final stdout = (result.stdout as String).replaceAll('\r', '');
+      final permissions = RegExp(r'android\.permission\.\w+')
+          .allMatches(stdout)
+          .map((m) => m.group(0)!)
+          .toSet()
+          .toList();
+      int granted = 0;
+      for (final perm in permissions) {
+        try {
+          final r = await _adb.run(serial, ['shell', 'pm', 'grant', packageName, perm]);
+          if (r.exitCode == 0) granted++;
+        } catch (_) {}
+      }
+      return ActionResult.ok(data: {
+        'message': 'Granted $granted/${permissions.length} permissions',
+        'granted': granted,
+        'total': permissions.length,
+      });
+    } catch (e) {
+      return ActionResult.fail('Grant permissions failed: $e');
+    }
+  }
+
+  // ─── P1: Drag and Drop ───
+
+  /// Drag from (x1,y1) to (x2,y2) with a long press at start.
+  Future<ActionResult> drag(String serial, int x1, int y1, int x2, int y2, {int durationMs = 1000}) async {
+    try {
+      // Drag = slow swipe (longer duration simulates drag)
+      await _adb.run(serial, [
+        'shell', 'input', 'swipe', '$x1', '$y1', '$x2', '$y2', '$durationMs',
+      ]);
+      return ActionResult.ok(data: {'message': 'Dragged from ($x1,$y1) to ($x2,$y2)'});
+    } catch (e) {
+      return ActionResult.fail('Drag failed: $e');
+    }
+  }
+
+  // ─── P2: Keyboard Detection ───
+
+  /// Check if the soft keyboard is currently showing.
+  Future<ActionResult> isKeyboardShowing(String serial) async {
+    try {
+      final result = await _adb.run(serial, ['shell', 'dumpsys', 'input_method']);
+      final stdout = (result.stdout as String).replaceAll('\r', '');
+      final showing = stdout.contains('mInputShown=true');
+      return ActionResult.ok(data: {'keyboardShowing': showing});
+    } catch (e) {
+      return ActionResult.fail('Keyboard check failed: $e');
+    }
+  }
+
+  // ─── P2: Screen Recording ───
+
+  /// Start screen recording on the device.
+  Future<ActionResult> startScreenRecording(String serial, {int maxDurationSec = 180}) async {
+    try {
+      // screenrecord runs in background, stops after duration or when killed
+      _adb.run(serial, [
+        'shell', 'screenrecord', '--time-limit', '$maxDurationSec', '/sdcard/openmob_recording.mp4',
+      ]); // Don't await — runs in background
+      return ActionResult.ok(data: {'message': 'Recording started (max ${maxDurationSec}s)', 'path': '/sdcard/openmob_recording.mp4'});
+    } catch (e) {
+      return ActionResult.fail('Screen recording failed: $e');
+    }
+  }
+
+  /// Stop screen recording and return the file path.
+  Future<ActionResult> stopScreenRecording(String serial) async {
+    try {
+      // Kill screenrecord process
+      await _adb.run(serial, ['shell', 'pkill', '-f', 'screenrecord']);
+      await Future.delayed(const Duration(seconds: 1));
+      return ActionResult.ok(data: {'message': 'Recording stopped', 'path': '/sdcard/openmob_recording.mp4'});
+    } catch (e) {
+      return ActionResult.fail('Stop recording failed: $e');
+    }
+  }
+
+  // ─── P2: Notifications ───
+
+  /// Get current notification bar content.
+  Future<ActionResult> getNotifications(String serial) async {
+    try {
+      final result = await _adb.run(serial, ['shell', 'dumpsys', 'notification', '--noredact']);
+      final stdout = (result.stdout as String).replaceAll('\r', '');
+      // Parse notification entries
+      final notifications = <Map<String, String>>[];
+      final titlePattern = RegExp(r'android\.title=String \((.+?)\)');
+      final textPattern = RegExp(r'android\.text=String \((.+?)\)');
+
+      final records = stdout.split('NotificationRecord{');
+      for (final record in records.skip(1)) {
+        final pkg = RegExp(r'pkg=(\S+)').firstMatch(record)?.group(1) ?? '';
+        final title = titlePattern.firstMatch(record)?.group(1) ?? '';
+        final text = textPattern.firstMatch(record)?.group(1) ?? '';
+        if (pkg.isNotEmpty) {
+          notifications.add({'package': pkg, 'title': title, 'text': text});
+        }
+      }
+      return ActionResult.ok(data: {'notifications': notifications, 'count': notifications.length});
+    } catch (e) {
+      return ActionResult.fail('Get notifications failed: $e');
     }
   }
 }
