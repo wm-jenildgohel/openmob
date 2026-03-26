@@ -57,7 +57,7 @@ class AutoSetupService {
     // Phase 1: Check what's installed
     _emit(SetupPhase.checking, 'Checking installed tools...', 0.05);
     await _systemCheck.checkAll();
-    await Future.delayed(const Duration(milliseconds: 300));
+    // no artificial delay
 
     final tools = _systemCheck.currentTools;
     final adb = tools.where((t) => t.name == 'ADB').firstOrNull;
@@ -71,7 +71,7 @@ class AutoSetupService {
       if (!success) {
         _log('ADB install failed — continuing without it', error: true);
       }
-      await Future.delayed(const Duration(milliseconds: 300));
+      // no artificial delay
     }
 
     // Phase 3: Install Node.js + build MCP if missing
@@ -105,7 +105,7 @@ class AutoSetupService {
             return;
           }
         }
-        await Future.delayed(const Duration(milliseconds: 500));
+        // no artificial delay
       }
 
       // Try to build MCP if project source exists
@@ -124,7 +124,7 @@ class AutoSetupService {
     // Always install — configures MCP + installs skill files for all detected tools
     _log('Configuring AI tools and installing skills...');
     await _aiToolSetup.installAll();
-    await Future.delayed(const Duration(milliseconds: 300));
+    // no artificial delay
 
     // Phase 5: Start MCP server if available and built
     _emit(SetupPhase.startingServices, 'Starting services...', 0.85);

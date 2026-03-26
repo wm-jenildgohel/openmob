@@ -140,19 +140,32 @@ Future<void> main() async {
 }
 
 Future<void> _initBackground() async {
-  // Auto-setup runs automatically — installs missing tools, configures AI tools
-  try {
-    await autoSetupService.runAutoSetup();
-  } catch (e) {
-    logService.addLine('hub', 'Auto-setup failed: $e', level: LogLevel.warning);
-  }
-
-  // Initial device scan
-  try {
-    await deviceManager.refreshDevices();
-  } catch (e) {
-    logService.addLine('hub', 'Initial device scan failed: $e', level: LogLevel.warning);
-  }
+  // Run device scan + auto-setup + update check ALL in parallel
+  // Device scan completes in ~1s, auto-setup in 2-30s — don't let setup block devices
+  await Future.wait([
+    // Device scan — users see their devices immediately
+    () async {
+      try {
+        await deviceManager.refreshDevices();
+      } catch (e) {
+        logService.addLine('hub', 'Initial device scan failed: $e', level: LogLevel.warning);
+      }
+    }(),
+    // Auto-setup — installs missing tools, configures AI tools
+    () async {
+      try {
+        await autoSetupService.runAutoSetup();
+      } catch (e) {
+        logService.addLine('hub', 'Auto-setup failed: $e', level: LogLevel.warning);
+      }
+    }(),
+    // Update check — non-blocking
+    () async {
+      try {
+        await updateService.checkForUpdate();
+      } catch (_) {}
+    }(),
+  ]);
 
   // Poll devices every 5 seconds
   Stream.periodic(const Duration(seconds: 5)).listen((_) {
@@ -160,11 +173,6 @@ Future<void> _initBackground() async {
       deviceManager.refreshDevices();
     } catch (_) {}
   });
-
-  // Check for updates (non-blocking, runs after everything else)
-  try {
-    await updateService.checkForUpdate();
-  } catch (_) {}
 }
 
 /// Kills child processes (MCP, AiBridge) when the app window closes.

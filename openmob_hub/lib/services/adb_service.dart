@@ -18,9 +18,9 @@ class AdbService {
         return _adbPath!;
       }
     }
-    // Fallback to PATH lookup
+    // Fallback to PATH lookup (async to avoid blocking UI thread)
     try {
-      final result = Process.runSync(
+      final result = await Process.run(
         Platform.isWindows ? 'where' : 'which',
         ['adb'],
       );

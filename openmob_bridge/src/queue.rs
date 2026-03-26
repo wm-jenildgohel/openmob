@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -6,15 +7,14 @@ const MAX_QUEUE_SIZE: usize = 100;
 
 /// An item queued for injection into the PTY.
 pub struct Injection {
-    #[allow(dead_code)] // used for logging/tracking in status endpoint
+    #[allow(dead_code)]
     pub id: String,
     pub text: String,
-    #[allow(dead_code)] // stored for queue introspection via /status
+    #[allow(dead_code)]
     pub priority: bool,
     pub sync_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
-/// Error returned when the queue is at capacity.
 #[derive(Debug)]
 pub enum QueueError {
     Full,
@@ -30,22 +30,20 @@ impl fmt::Display for QueueError {
 
 impl std::error::Error for QueueError {}
 
-/// FIFO injection queue with priority support and a max capacity of 100.
-/// Priority items are prepended to the front; normal items are appended.
+/// FIFO injection queue with priority support and max capacity of 100.
+/// Uses VecDeque for O(1) front removal instead of Vec's O(n).
 #[derive(Clone)]
 pub struct InjectionQueue {
-    items: Arc<Mutex<Vec<Injection>>>,
+    items: Arc<Mutex<VecDeque<Injection>>>,
 }
 
 impl InjectionQueue {
     pub fn new() -> Self {
         Self {
-            items: Arc::new(Mutex::new(Vec::new())),
+            items: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
-    /// Enqueue text for async injection.
-    /// Returns (id, position) on success or QueueError::Full.
     pub async fn enqueue(
         &self,
         text: String,
@@ -63,17 +61,15 @@ impl InjectionQueue {
             sync_tx: None,
         };
         if priority {
-            items.insert(0, injection);
+            items.push_front(injection);
             Ok((id, 0))
         } else {
             let pos = items.len();
-            items.push(injection);
+            items.push_back(injection);
             Ok((id, pos))
         }
     }
 
-    /// Enqueue text for synchronous injection.
-    /// Returns (id, oneshot::Receiver) so the caller can await completion.
     pub async fn enqueue_sync(
         &self,
         text: String,
@@ -92,24 +88,18 @@ impl InjectionQueue {
             sync_tx: Some(tx),
         };
         if priority {
-            items.insert(0, injection);
+            items.push_front(injection);
         } else {
-            items.push(injection);
+            items.push_back(injection);
         }
         Ok((id, rx))
     }
 
-    /// Remove and return the first item in the queue, or None if empty.
     pub async fn dequeue(&self) -> Option<Injection> {
         let mut items = self.items.lock().await;
-        if items.is_empty() {
-            None
-        } else {
-            Some(items.remove(0))
-        }
+        items.pop_front() // O(1) instead of Vec::remove(0) which is O(n)
     }
 
-    /// Clear all items from the queue. Returns how many were removed.
     pub async fn clear(&self) -> usize {
         let mut items = self.items.lock().await;
         let count = items.len();
@@ -117,7 +107,6 @@ impl InjectionQueue {
         count
     }
 
-    /// Returns the current number of items in the queue.
     pub async fn len(&self) -> usize {
         let items = self.items.lock().await;
         items.len()

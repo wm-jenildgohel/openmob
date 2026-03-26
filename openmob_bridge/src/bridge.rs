@@ -109,15 +109,17 @@ impl Bridge {
                     let _ = std::io::stdout().flush();
                 }
 
-                // Feed to detector
+                // Feed to detector — send via channel to avoid block_on in spawn_blocking
                 let cleaned = ansi::strip_ansi(&buf[..n]);
-                let det = detector_read.clone();
                 for line in cleaned.lines() {
                     if !line.trim().is_empty() {
-                        let det_inner = det.clone();
+                        let det = detector_read.clone();
                         let line_owned = line.to_string();
+                        // Use try_current + spawn to avoid blocking this thread
                         if let Ok(handle) = tokio::runtime::Handle::try_current() {
-                            handle.block_on(det_inner.process_line(&line_owned));
+                            let _ = handle.spawn(async move {
+                                det.process_line(&line_owned).await;
+                            });
                         }
                     }
                 }

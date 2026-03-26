@@ -20,56 +20,97 @@ class DeviceManager {
   // Track which devices have bridge enabled (survives refresh cycles)
   final Set<String> _bridgedDeviceIds = {};
 
+  // Cache enriched device data — only re-enrich when new serial appears
+  final Map<String, Device> _enrichmentCache = {};
+
+  // Prevent concurrent refreshDevices() calls
+  bool _refreshing = false;
+
   ValueStream<List<Device>> get devices$ => _devices.stream;
 
   List<Device> get currentDevices => _devices.value;
 
-  /// Expose simctl service so other services can check iOS tool availability.
   SimctlService? get simctl => _simctl;
-
-  /// Expose idb service so other services can check iOS tool availability.
   IdbService? get idb => _idb;
 
   Future<void> refreshDevices() async {
-    final rawDevices = await _adb.listRawDevices();
-    final enriched = <Device>[];
+    // Guard against concurrent refresh calls
+    if (_refreshing) return;
+    _refreshing = true;
 
-    for (final raw in rawDevices) {
-      if (raw.status == 'device') {
-        try {
-          final device = await _enrichDevice(raw.serial);
-          enriched.add(device);
-        } catch (_) {
-          // If enrichment fails, add a basic device entry
-          enriched.add(Device.fromAdb(serial: raw.serial, status: raw.status));
+    try {
+      final rawDevices = await _adb.listRawDevices();
+
+      // Separate new vs cached devices
+      final needsEnrichment = <({String serial, String status, bool isEmulator, bool isWifi})>[];
+      final fromCache = <Device>[];
+
+      for (final raw in rawDevices) {
+        if (raw.status == 'device') {
+          if (_enrichmentCache.containsKey(raw.serial)) {
+            fromCache.add(_enrichmentCache[raw.serial]!);
+          } else {
+            needsEnrichment.add(raw);
+          }
+        } else {
+          // Non-connected devices don't need enrichment
+          fromCache.add(Device.fromAdb(serial: raw.serial, status: raw.status));
         }
-      } else {
-        enriched.add(Device.fromAdb(serial: raw.serial, status: raw.status));
       }
+
+      // Enrich NEW devices in parallel (not sequentially)
+      final newlyEnriched = await Future.wait(
+        needsEnrichment.map((raw) async {
+          try {
+            final device = await _enrichDevice(raw.serial);
+            _enrichmentCache[raw.serial] = device;
+            return device;
+          } catch (_) {
+            final basic = Device.fromAdb(serial: raw.serial, status: raw.status);
+            _enrichmentCache[raw.serial] = basic;
+            return basic;
+          }
+        }),
+      );
+
+      final enriched = [...fromCache, ...newlyEnriched];
+
+      // Remove stale cache entries (device disconnected)
+      final currentSerials = rawDevices.map((r) => r.serial).toSet();
+      _enrichmentCache.removeWhere((serial, _) => !currentSerials.contains(serial));
+
+      // Merge iOS simulators if simctl is available
+      if (_simctl != null) {
+        try {
+          final simulators = await _simctl.listSimulators()
+              .timeout(const Duration(seconds: 5));
+          enriched.addAll(simulators);
+        } catch (_) {
+          // simctl timeout or error — skip iOS devices this cycle
+        }
+      }
+
+      // Preserve bridge state across refresh cycles
+      final merged = enriched.map((d) {
+        if (_bridgedDeviceIds.contains(d.id)) {
+          return d.copyWith(status: 'bridged', bridgeActive: true);
+        }
+        return d;
+      }).toList();
+
+      _devices.add(merged);
+    } finally {
+      _refreshing = false;
     }
+  }
 
-    // Merge iOS simulators if simctl is available
-    if (_simctl != null) {
-      try {
-        final simulators = await _simctl.listSimulators();
-        enriched.addAll(simulators);
-      } catch (_) {
-        // Silently ignore simctl errors
-      }
-    }
-
-    // Preserve bridge state across refresh cycles
-    final merged = enriched.map((d) {
-      if (_bridgedDeviceIds.contains(d.id)) {
-        return d.copyWith(status: 'bridged', bridgeActive: true);
-      }
-      return d;
-    }).toList();
-
-    _devices.add(merged);
+  /// Force re-enrichment for a specific device (e.g., after state change)
+  void invalidateCache(String serial) {
+    _enrichmentCache.remove(serial);
   }
 
   Future<Device> _enrichDevice(String serial) async {
+    // All 6 ADB calls run in parallel
     final results = await Future.wait([
       _adb.run(serial, ['shell', 'getprop', 'ro.product.model']),
       _adb.run(serial, ['shell', 'getprop', 'ro.product.manufacturer']),
@@ -86,46 +127,31 @@ class DeviceManager {
     final wmOutput = (results[4].stdout as String).trim();
     final batteryOutput = (results[5].stdout as String).trim();
 
-    // Parse SDK version
     final sdkVersion = int.tryParse(sdkStr) ?? 0;
 
-    // Parse screen size from "Physical size: 1080x1920"
-    int screenWidth = 0;
-    int screenHeight = 0;
+    int screenWidth = 0, screenHeight = 0;
     final sizeMatch = RegExp(r'(\d+)x(\d+)').firstMatch(wmOutput);
     if (sizeMatch != null) {
       screenWidth = int.parse(sizeMatch.group(1)!);
       screenHeight = int.parse(sizeMatch.group(2)!);
     }
 
-    // Parse battery level from "level: 85"
     int batteryLevel = -1;
     final levelMatch = RegExp(r'level: (\d+)').firstMatch(batteryOutput);
     if (levelMatch != null) {
       batteryLevel = int.parse(levelMatch.group(1)!);
     }
 
-    // Parse battery status from "status: 2"
-    // 2=charging, 3=discharging, 5=full
     String batteryStatus = 'unknown';
     final statusMatch = RegExp(r'status: (\d+)').firstMatch(batteryOutput);
     if (statusMatch != null) {
       switch (statusMatch.group(1)) {
-        case '2':
-          batteryStatus = 'charging';
-          break;
-        case '3':
-          batteryStatus = 'discharging';
-          break;
-        case '5':
-          batteryStatus = 'full';
-          break;
-        default:
-          batteryStatus = 'unknown';
+        case '2': batteryStatus = 'charging';
+        case '3': batteryStatus = 'discharging';
+        case '5': batteryStatus = 'full';
       }
     }
 
-    // Determine connection type
     final connectionType = serial.startsWith('emulator-')
         ? 'emulator'
         : serial.contains(':')

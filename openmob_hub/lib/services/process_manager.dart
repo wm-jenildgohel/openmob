@@ -37,19 +37,41 @@ class ProcessManager {
   bool _cacheReady = false;
 
   Future<void> _warmCache() async {
-    // Run all lookups in parallel on a background isolate-like thread
-    final results = await Future.wait([
-      Future(() => _bridgeBinary),
-      Future(() => _terminalEmulator),
-      Future(() => _detectAgents()),
-    ]);
+    // Run all lookups in parallel using async versions to avoid blocking UI
+    final agentsFuture = _detectAgentsAsync();
+    final binaryFuture = Future(() => _bridgeBinary);
+    final terminalFuture = Future(() => _terminalEmulator);
+
+    final results = await Future.wait([binaryFuture, terminalFuture, agentsFuture]);
     _cachedBridgeBinary = results[0] as String?;
     _cachedTerminal = results[1] as String?;
     _cachedAgents = results[2] as List<String>;
     _cacheReady = true;
   }
 
+  Future<List<String>> _detectAgentsAsync() async {
+    final agents = <String>[];
+    // Check all agents in parallel
+    final results = await Future.wait(
+      ['claude', 'codex', 'gemini'].map((name) async {
+        try {
+          final result = await Process.run(
+            Platform.isWindows ? 'where' : 'which',
+            [name],
+          );
+          return result.exitCode == 0 ? name : null;
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+    agents.addAll(results.whereType<String>());
+    return agents;
+  }
+
+  // Sync fallback for cached access
   List<String> _detectAgents() {
+    if (_cachedAgents != null) return _cachedAgents!;
     final agents = <String>[];
     for (final name in ['claude', 'codex', 'gemini']) {
       try {
