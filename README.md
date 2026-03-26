@@ -92,6 +92,20 @@ All tools return **NLP-friendly summaries** so non-technical QA testers see "Tap
 
 ## Quick Start
 
+### One-Command Skill Install (for AI tools only — no Hub)
+
+**Linux / macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/wm-jenildgohel/openmob/main/scripts/install-skill.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/wm-jenildgohel/openmob/main/scripts/install-skill.ps1 | iex
+```
+
+This auto-configures Claude Desktop, Cursor, VS Code, Windsurf, Claude Code, Codex CLI, and Gemini CLI.
+
 ### Option 1: Pre-built Binaries
 
 Download from [Releases](https://github.com/wm-jenildgohel/openmob/releases):
