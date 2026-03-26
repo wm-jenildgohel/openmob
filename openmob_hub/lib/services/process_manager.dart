@@ -425,16 +425,31 @@ class ProcessManager {
 
       _logService.addLine('hub', 'AiBridge started with $agent on port $port (PID: ${_bridgeProcess!.pid})');
 
-      // Monitor exit — show error in UI with the actual reason
+      // Monitor exit — detect immediate exits vs normal shutdown
+      final startTime = DateTime.now();
       _bridgeProcess!.exitCode.then((code) {
         _bridgeProcess = null;
-        if (code != 0) {
+        final elapsed = DateTime.now().difference(startTime);
+
+        if (elapsed.inSeconds < 3) {
+          // Exited within 3 seconds — the agent likely failed to start
+          final msg = code != 0
+              ? 'AiBridge crashed (exit $code) — "$agent" may not support headless mode'
+              : '"$agent" exited immediately — it may need a real terminal window.\n'
+                'Tip: Open a terminal and run: aibridge --port $port -- $agent';
+          _bridgeStatus.add(ProcessInfo(
+            name: 'AiBridge',
+            status: ProcessStatus.error,
+            errorMessage: msg,
+          ));
+          _logService.addLine('hub', msg, level: LogLevel.warning);
+        } else if (code != 0) {
           _bridgeStatus.add(ProcessInfo(
             name: 'AiBridge',
             status: ProcessStatus.error,
             errorMessage: 'Crashed (exit code $code) — check Logs for details',
           ));
-          _logService.addLine('hub', 'AiBridge exited with code $code — check Logs tab', level: LogLevel.error);
+          _logService.addLine('hub', 'AiBridge exited with code $code', level: LogLevel.error);
         } else {
           _bridgeStatus.add(const ProcessInfo(
             name: 'AiBridge',
