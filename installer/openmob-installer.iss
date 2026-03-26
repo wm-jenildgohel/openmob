@@ -33,8 +33,7 @@ ChangesEnvironment=yes
 SetupIconFile=..\openmob_hub\windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 LicenseFile=..\LICENSE
-WizardImageFile=compiler:WizModernImage-IS.bmp
-WizardSmallImageFile=compiler:WizModernSmallImage-IS.bmp
+; Use default wizard images (built into Inno Setup)
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 
