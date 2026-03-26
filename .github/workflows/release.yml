@@ -338,7 +338,9 @@ jobs:
       - name: Publish to npm
         if: matrix.name == 'linux-x64'
         working-directory: openmob_mcp
-        run: npm publish --access public || echo "npm publish skipped (may need NPM_TOKEN secret)"
+        run: |
+          # Build is already done, skip prepublishOnly to avoid needing src/
+          npm publish --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
