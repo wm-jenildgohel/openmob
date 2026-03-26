@@ -15,7 +15,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: '3.29.3'
-  NODE_VERSION: '24'
+  NODE_VERSION: '22'
 
 jobs:
   # ─── Step 1: Resolve version + upload patched files ───
@@ -291,18 +291,18 @@ jobs:
           cp artifacts/bridge-windows-x64/aibridge.exe release/openmob-windows-x64/
           cp artifacts/mcp-windows-x64/openmob-mcp.exe release/openmob-windows-x64/
           cp -r openmob_skills release/openmob-windows-x64/ 2>/dev/null || true
-          cat > release/openmob-windows-x64/INSTALL.txt << 'EOF'
-          OpenMob - Quick Start
-          =====================
-          1. Double-click "openmob_hub.exe" to start
-          2. Connect your Android device via USB
-          3. OpenMob will detect it automatically
+          cat > release/openmob-windows-x64/INSTALL.txt << 'INSTALLEOF'
+OpenMob - Quick Start
+=====================
+1. Double-click "openmob_hub.exe" to start
+2. Connect your Android device via USB
+3. OpenMob will detect it automatically
 
-          Windows SmartScreen Warning (first run only):
-          Click "More info" → "Run anyway"
+Windows SmartScreen Warning (first run only):
+Click "More info" then "Run anyway"
 
-          https://github.com/wm-jenildgohel/openmob
-          EOF
+https://github.com/wm-jenildgohel/openmob
+INSTALLEOF
           cp dist/openmob-windows-x64/openmob.bat release/openmob-windows-x64/ 2>/dev/null || true
           cd release && zip -r openmob-${VERSION}-windows-x64.zip openmob-windows-x64/
 
