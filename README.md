@@ -100,7 +100,7 @@ Download from [Releases](https://github.com/wm-jenildgohel/openmob/releases):
 ```bash
 tar xzf openmob-linux-x64.tar.gz
 cd openmob-linux-x64
-./openmob
+./openmob_hub
 ```
 
 **Windows:**

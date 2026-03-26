@@ -1,6 +1,6 @@
 [package]
 name = "aibridge"
-version = "0.1.0"
+version = "0.0.8"
 edition = "2021"
 rust-version = "1.70"
 description = "PTY wrapper for terminal AI agents with HTTP injection API"

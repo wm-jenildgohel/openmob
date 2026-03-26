@@ -1,6 +1,6 @@
 {
   "name": "openmob-mcp",
-  "version": "1.0.0",
+  "version": "0.0.8",
   "description": "MCP server for OpenMob - mobile device automation via AI agents",
   "type": "module",
   "main": "build/app/index.js",

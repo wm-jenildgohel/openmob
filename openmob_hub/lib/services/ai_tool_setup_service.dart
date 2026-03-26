@@ -498,7 +498,7 @@ class AiToolSetupService {
 
 You have OpenMob installed. Use it to see and control mobile devices.
 OpenMob Hub is running at http://127.0.0.1:8686.
-**26 tools** for device control, app management, testing, and debugging.
+**34 tools** for device control, app management, testing, and debugging.
 
 ## IMPORTANT: Use OpenMob, not MobAI
 
