@@ -366,9 +366,85 @@ jobs:
           name: mcp-${{ matrix.name }}
           path: openmob_mcp/dist/${{ matrix.output }}
 
+  # ─── Windows Installer (Inno Setup) ───
+  build-installer-windows:
+    needs: [build-hub-windows, build-bridge, build-mcp, set-version]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Hub
+        uses: actions/download-artifact@v4
+        with:
+          name: hub-windows-x64
+          path: build/hub-windows/
+
+      - name: Download Bridge
+        uses: actions/download-artifact@v4
+        with:
+          name: bridge-windows-x64
+          path: build/bridge-windows/
+
+      - name: Download MCP
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-windows-x64
+          path: build/mcp-windows/
+
+      - name: Build Installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/openmob-installer.iss
+          options: /DMyAppVersion=${{ needs.set-version.outputs.version_clean }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-windows-x64
+          path: installer-output/OpenMob-Setup-*.exe
+
+  # ─── Linux AppImage ───
+  build-appimage-linux:
+    needs: [build-hub-linux, build-bridge, build-mcp, set-version]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Hub
+        uses: actions/download-artifact@v4
+        with:
+          name: hub-linux-x64
+          path: artifacts/hub-linux/
+
+      - name: Download Bridge
+        uses: actions/download-artifact@v4
+        with:
+          name: bridge-linux-x64
+          path: artifacts/bridge-linux/
+
+      - name: Download MCP
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-linux-x64
+          path: artifacts/mcp-linux/
+
+      - name: Build AppImage
+        run: |
+          VERSION="${{ needs.set-version.outputs.version_clean }}"
+          cd installer
+          chmod +x build-appimage.sh
+          ./build-appimage.sh "$VERSION" \
+            "../artifacts/hub-linux" \
+            "../artifacts/mcp-linux/openmob-mcp" \
+            "../artifacts/bridge-linux/aibridge"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage-linux-x64
+          path: installer/OpenMob-*.AppImage
+
   # ─── Package & Release ───
   release:
-    needs: [build-hub-linux, build-hub-windows, build-hub-macos, build-bridge, build-mcp, set-version]
+    needs: [build-hub-linux, build-hub-windows, build-hub-macos, build-bridge, build-mcp, build-installer-windows, build-appimage-linux, set-version]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -378,7 +454,7 @@ jobs:
         with:
           path: artifacts/
 
-      - name: Package Linux
+      - name: Package Linux (tar.gz — portable)
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
           mkdir -p release/openmob-linux-x64
@@ -389,29 +465,16 @@ jobs:
           chmod +x release/openmob-linux-x64/openmob-mcp
           cd release && tar -czf openmob-${VERSION}-linux-x64.tar.gz openmob-linux-x64/
 
-      - name: Create Windows INSTALL.txt
-        run: |
-          mkdir -p release/openmob-windows-x64
-          echo "OpenMob - Quick Start" > release/openmob-windows-x64/INSTALL.txt
-          echo "=====================" >> release/openmob-windows-x64/INSTALL.txt
-          echo "1. Double-click openmob_hub.exe to start" >> release/openmob-windows-x64/INSTALL.txt
-          echo "2. Connect your Android device via USB" >> release/openmob-windows-x64/INSTALL.txt
-          echo "3. OpenMob will detect it automatically" >> release/openmob-windows-x64/INSTALL.txt
-          echo "" >> release/openmob-windows-x64/INSTALL.txt
-          echo "Windows SmartScreen Warning (first run only):" >> release/openmob-windows-x64/INSTALL.txt
-          echo "Click More info then Run anyway" >> release/openmob-windows-x64/INSTALL.txt
-          echo "" >> release/openmob-windows-x64/INSTALL.txt
-          echo "https://github.com/wm-jenildgohel/openmob" >> release/openmob-windows-x64/INSTALL.txt
-
-      - name: Package Windows
+      - name: Package Windows (zip — portable)
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
+          mkdir -p release/openmob-windows-x64
           cp -r artifacts/hub-windows-x64/* release/openmob-windows-x64/
           cp artifacts/bridge-windows-x64/aibridge.exe release/openmob-windows-x64/
           cp artifacts/mcp-windows-x64/openmob-mcp.exe release/openmob-windows-x64/
           cd release && zip -r openmob-${VERSION}-windows-x64.zip openmob-windows-x64/
 
-      - name: Package macOS
+      - name: Package macOS (tar.gz)
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
           mkdir -p release/openmob-macos-x64
@@ -422,6 +485,16 @@ jobs:
           chmod +x release/openmob-macos-x64/openmob-mcp release/openmob-macos-x64/aibridge release/openmob-macos-x64/aibridge-arm64
           cd release && tar -czf openmob-${VERSION}-macos-x64.tar.gz openmob-macos-x64/
 
+      - name: Collect installer artifacts
+        run: |
+          VERSION="${{ needs.set-version.outputs.version }}"
+          mkdir -p release
+          # Windows installer
+          cp artifacts/installer-windows-x64/OpenMob-Setup-*.exe release/ 2>/dev/null || true
+          # Linux AppImage
+          cp artifacts/appimage-linux-x64/OpenMob-*.AppImage release/ 2>/dev/null || true
+          chmod +x release/*.AppImage 2>/dev/null || true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -431,6 +504,8 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
+            release/OpenMob-Setup-*-x64.exe
+            release/OpenMob-*-x86_64.AppImage
             release/openmob-${{ needs.set-version.outputs.version }}-linux-x64.tar.gz
             release/openmob-${{ needs.set-version.outputs.version }}-windows-x64.zip
             release/openmob-${{ needs.set-version.outputs.version }}-macos-x64.tar.gz
