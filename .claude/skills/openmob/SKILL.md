@@ -1,32 +1,47 @@
 # OpenMob — Mobile Device Automation for AI Agents
 
 > Free, self-hosted alternative to MobAI. See and control Android/iOS devices from any AI coding agent.
-> **26 MCP tools** — device control, app management, testing, debugging, and more.
+> **34 MCP tools** — device control, app management, testing, debugging, and more.
 
-## Quick Start
+## Install
 
-### For Claude Code
-```bash
-# Install skill globally
-claude skill add --global /path/to/openmob/.claude/skills/openmob
+### Option 1: OpenMob Hub (recommended — auto-installs everything)
+Download from [GitHub Releases](https://github.com/wm-jenildgohel/openmob/releases) and run. The Hub automatically:
+- Installs the MCP server config for Claude Desktop, Cursor, VS Code, Windsurf
+- Installs the skill file for Claude Code, Codex CLI, Gemini CLI
+- No manual setup needed
 
-# Or per-project
-claude skill add /path/to/openmob/.claude/skills/openmob
-```
-
-### For Cursor / Claude Desktop / Windsurf / VS Code (MCP)
-Add to MCP settings (`~/.cursor/mcp.json`, `claude_desktop_config.json`, etc.):
+### Option 2: MCP Server only (any AI tool with MCP support)
 ```json
 {
   "mcpServers": {
     "openmob": {
-      "command": "node",
-      "args": ["build/app/index.js"],
-      "cwd": "/path/to/openmob_mcp"
+      "command": "npx",
+      "args": ["-y", "openmob-mcp"]
     }
   }
 }
 ```
+Add this to your AI tool's MCP config:
+- **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
+- **Cursor**: `~/.cursor/mcp.json`
+- **VS Code**: `.vscode/mcp.json` in your project
+- **Windsurf**: `~/.windsurf/mcp.json`
+
+### Option 3: Claude Code skill (for terminal agents)
+```bash
+# Install from GitHub
+claude mcp add openmob -- npx -y openmob-mcp
+
+# Or install the skill file for richer context
+git clone https://github.com/wm-jenildgohel/openmob.git
+claude skill add --global openmob/.claude/skills/openmob
+```
+
+### Option 4: Codex CLI / Gemini CLI
+Copy the skill content to your agent's instruction file:
+- **Codex**: `~/.codex/AGENTS.md`
+- **Gemini**: `~/.gemini/GEMINI.md`
 
 ### For Codex / Gemini CLI / Any HTTP Agent
 Point to Hub API: `http://127.0.0.1:8686`

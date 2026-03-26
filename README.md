@@ -38,7 +38,7 @@ AI coding agents (Claude Code, Cursor, Codex, Gemini) can write mobile app code 
 
 ```mermaid
 graph TD
-    A[AI Agent<br/>Claude Code / Cursor / Codex / Gemini] --> B[MCP Server<br/>25 tools via stdio]
+    A[AI Agent<br/>Claude Code / Cursor / Codex / Gemini] --> B[MCP Server<br/>34 tools via stdio]
     A --> C[HTTP API<br/>43 REST endpoints]
     A --> D[AiBridge<br/>PTY context injection]
     B --> E[OpenMob Hub<br/>Desktop App]
@@ -272,7 +272,7 @@ The brain. Manages devices, runs the HTTP API, provides the desktop UI.
 
 The bridge to AI tools. Exposes device tools via [Model Context Protocol](https://modelcontextprotocol.io/).
 
-- **25 MCP tools** — device control, app management, debugging, testing, file transfer
+- **34 MCP tools** — device control, app management, debugging, testing, file transfer
 - **NLP-friendly responses** — every tool returns human-readable summaries
 - **Works with** — Cursor, Claude Desktop, Windsurf, VS Code, any MCP client
 - **Stateless** — all calls proxy to the Hub HTTP API
@@ -362,6 +362,61 @@ Optional. Wraps terminal AI agents with context injection.
 | Notifications | No | No | **Yes** |
 | Price | Free (limited) | $99/year | **Free forever** |
 
+## AI Tool Integration
+
+### Automatic (via OpenMob Hub)
+Just run the Hub — it auto-configures all detected AI tools and installs the skill files.
+
+### MCP Server (Claude Desktop / Cursor / VS Code / Windsurf)
+Add to your AI tool's MCP config file:
+```json
+{
+  "mcpServers": {
+    "openmob": {
+      "command": "npx",
+      "args": ["-y", "openmob-mcp"]
+    }
+  }
+}
+```
+
+Config file locations:
+| Tool | Config Path |
+|------|------------|
+| Claude Desktop (Mac) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop (Win) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Cursor | `~/.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` (per project) |
+| Windsurf | `~/.windsurf/mcp.json` |
+
+### Claude Code (skill + MCP)
+```bash
+# Add MCP server
+claude mcp add openmob -- npx -y openmob-mcp
+
+# Install skill for richer context (optional)
+git clone https://github.com/wm-jenildgohel/openmob.git
+claude skill add --global openmob/.claude/skills/openmob
+```
+
+### Codex CLI / Gemini CLI
+The Hub auto-installs instruction files to:
+- **Codex**: `~/.codex/AGENTS.md`
+- **Gemini**: `~/.gemini/GEMINI.md`
+
+Or manually copy the [skill content](https://github.com/wm-jenildgohel/openmob/blob/main/.claude/skills/openmob/SKILL.md) to your agent's instruction file.
+
+### AiBridge (optional — for terminal AI agents)
+```bash
+# Via cargo (Rust)
+cargo install openmob-bridge
+
+# Then wrap your AI agent
+aibridge -- claude    # or codex, gemini
+```
+
+---
+
 ## Build from Source
 
 **Prerequisites:**
@@ -429,7 +484,7 @@ openmob/
 ├── openmob_mcp/          # MCP Server (29 files, 1.1K lines, SOLID/SRP)
 │   └── src/
 │       ├── app/          # Bootstrap, server factory, tool registration
-│       ├── mcp/          # common/ (schemas, response, hub-client) + tools/ (25 tools)
+│       ├── mcp/          # common/ (schemas, response, hub-client) + tools/ (34 tools)
 │       └── types/        # TypeScript interfaces
 ├── openmob_bridge/       # AiBridge CLI (9 files, 1K lines, Rust)
 │   └── src/              # PTY handler, bridge, detector, queue, HTTP server
