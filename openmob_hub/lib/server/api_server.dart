@@ -8,6 +8,7 @@ import '../core/constants.dart';
 import '../services/action_service.dart';
 import '../services/device_manager.dart';
 import '../services/screenshot_service.dart';
+import '../services/recording_service.dart';
 import '../services/test_runner_service.dart';
 import '../services/ui_tree_service.dart';
 import 'middleware/cors_middleware.dart';
@@ -15,6 +16,7 @@ import 'middleware/json_middleware.dart';
 import 'routes/action_routes.dart';
 import 'routes/device_routes.dart';
 import 'routes/health_routes.dart';
+import 'routes/recording_routes.dart';
 import 'routes/test_routes.dart';
 
 class ApiServer {
@@ -27,13 +29,12 @@ class ApiServer {
     UiTreeService uts,
     ActionService action,
     TestRunnerService testRunner,
+    RecordingService recordingSvc,
   ) {
-    // Build a top-level router that delegates to sub-routers.
-    // Device routes (GET endpoints) and action routes (POST endpoints)
-    // are under the same prefix, so we use Cascade to try both.
     final deviceRouter = deviceRoutes(dm, ss, uts);
     final actionRouter = actionRoutes(action, dm);
     final testRouter = testRoutes(testRunner);
+    final recRouter = recordingRoutes(recordingSvc);
 
     final router = Router();
     router.mount('/', healthRoutes().call);
@@ -42,6 +43,12 @@ class ApiServer {
     router.mount(
       '${ApiConstants.apiPrefix}/tests/',
       testRouter.call,
+    );
+
+    // Mount recording routes at /api/v1/recordings/
+    router.mount(
+      '${ApiConstants.apiPrefix}/recordings/',
+      recRouter.call,
     );
 
     // Cascade tries device routes first, then action routes on 404

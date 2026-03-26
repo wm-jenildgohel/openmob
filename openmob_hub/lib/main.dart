@@ -11,6 +11,7 @@ import 'services/screenshot_service.dart';
 import 'services/ai_tool_setup_service.dart';
 import 'services/auto_setup_service.dart';
 import 'services/system_check_service.dart';
+import 'services/recording_service.dart';
 import 'services/test_runner_service.dart';
 import 'services/ui_tree_service.dart';
 import 'services/update_service.dart';
@@ -26,6 +27,7 @@ late final UiTreeService uiTreeService;
 late final ActionService actionService;
 late final ApiServer apiServer;
 late final TestRunnerService testRunnerService;
+late final RecordingService recordingService;
 late final LogService logService;
 late final SystemCheckService systemCheckService;
 late final ProcessManager processManager;
@@ -95,6 +97,7 @@ Future<void> main() async {
     logService,
     uiTree: uiTreeService,
   );
+  recordingService = RecordingService(adbService, logService: logService);
   systemCheckService = SystemCheckService(logService: logService);
   processManager = ProcessManager(logService);
   aiToolSetupService = AiToolSetupService(logService);
@@ -107,7 +110,7 @@ Future<void> main() async {
   updateService = UpdateService(logService);
 
   // Start API server — try the configured port, then try next 4 ports
-  apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService);
+  apiServer = ApiServer(deviceManager, screenshotService, uiTreeService, actionService, testRunnerService, recordingService);
   bool serverStarted = false;
   for (int attempt = 0; attempt < 5; attempt++) {
     final port = ApiConstants.port + attempt;

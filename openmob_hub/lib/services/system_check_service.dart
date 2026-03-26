@@ -423,16 +423,35 @@ class SystemCheckService {
     return null;
   }
 
-  // ─── scrcpy (screen mirroring) ───
+  // ─── scrcpy (screen mirroring + recording) ───
 
   Future<ToolStatus> _checkScrcpy() async {
+    // Check ~/.openmob/tools/scrcpy/
+    final ext = Platform.isWindows ? '.exe' : '';
+    final localBin = '$_toolsDir${_sep}scrcpy${_sep}scrcpy$ext';
+    if (File(localBin).existsSync()) {
+      return ToolStatus(
+        name: 'scrcpy',
+        available: true,
+        version: 'Ready',
+        path: localBin,
+        installHint: '',
+      );
+    }
+
+    // Check PATH
     try {
-      final result = await Process.run('scrcpy', ['--version']);
+      final result = await Process.run(
+        Platform.isWindows ? 'where' : 'which',
+        ['scrcpy'],
+      );
       if (result.exitCode == 0) {
-        return const ToolStatus(
+        final path = (result.stdout as String).trim().split('\n').first.trim();
+        return ToolStatus(
           name: 'scrcpy',
           available: true,
           version: 'Ready',
+          path: path,
           installHint: '',
         );
       }
@@ -441,9 +460,75 @@ class SystemCheckService {
     return const ToolStatus(
       name: 'scrcpy',
       available: false,
-      installHint: 'Optional — faster screen preview',
-      canAutoInstall: false,
+      installHint: 'Optional — enables screen recording & live mirror',
+      canAutoInstall: true,
     );
+  }
+
+  /// Auto-install scrcpy by downloading portable release
+  Future<bool> installScrcpy() async {
+    try {
+      _log('Downloading scrcpy...');
+      final scrcpyDir = '$_toolsDir${_sep}scrcpy';
+      await Directory(scrcpyDir).create(recursive: true);
+
+      const version = '3.1';
+      String url;
+      String archiveName;
+
+      if (Platform.isWindows) {
+        archiveName = 'scrcpy-win64-v$version.zip';
+        url = 'https://github.com/Genymobile/scrcpy/releases/download/v$version/$archiveName';
+      } else if (Platform.isMacOS) {
+        // macOS: try brew first
+        final brewResult = await Process.run('brew', ['install', 'scrcpy']);
+        if (brewResult.exitCode == 0) {
+          _log('scrcpy installed via Homebrew');
+          await checkAll();
+          return true;
+        }
+        _log('Homebrew install failed, trying direct download...');
+        return false;
+      } else {
+        archiveName = 'scrcpy-linux-x86_64-v$version.tar.gz';
+        url = 'https://github.com/Genymobile/scrcpy/releases/download/v$version/$archiveName';
+      }
+
+      // Download
+      final downloadPath = '$scrcpyDir$_sep$archiveName';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        _log('Download failed: HTTP ${response.statusCode}');
+        return false;
+      }
+      await File(downloadPath).writeAsBytes(response.bodyBytes);
+      _log('Downloaded scrcpy ($archiveName)');
+
+      // Extract
+      if (Platform.isWindows) {
+        await Process.run('powershell', [
+          '-Command',
+          'Expand-Archive -Path "$downloadPath" -DestinationPath "$scrcpyDir" -Force',
+        ]);
+      } else {
+        await Process.run('tar', ['xzf', downloadPath, '-C', scrcpyDir, '--strip-components=1']);
+      }
+
+      // Cleanup archive
+      await File(downloadPath).delete();
+
+      // Make executable on Unix
+      if (!Platform.isWindows) {
+        await Process.run('chmod', ['+x', '$scrcpyDir${_sep}scrcpy']);
+      }
+
+      _log('scrcpy installed to $scrcpyDir');
+      await checkAll();
+      return true;
+    } catch (e) {
+      _log('scrcpy install failed: $e');
+      return false;
+    }
   }
 
   // ─── MCP Server ───
