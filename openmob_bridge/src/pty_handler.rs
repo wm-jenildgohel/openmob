@@ -71,10 +71,37 @@ impl PtyHandler {
 
         let pair = pty_system.openpty(pty_size)?;
 
-        let mut cmd = CommandBuilder::new(&command[0]);
-        if command.len() > 1 {
-            cmd.args(&command[1..]);
-        }
+        // On Windows, .cmd/.bat scripts can't be executed directly by PTY.
+        // Wrap them with cmd.exe /c so the script runs properly.
+        let cmd = if cfg!(target_os = "windows") {
+            let resolved = which::which(&command[0]);
+            let needs_cmd_wrapper = resolved
+                .as_ref()
+                .map(|p| {
+                    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
+                    matches!(ext.to_lowercase().as_str(), "cmd" | "bat" | "ps1")
+                })
+                .unwrap_or(false);
+
+            if needs_cmd_wrapper {
+                let mut c = CommandBuilder::new("cmd.exe");
+                c.arg("/c");
+                c.args(&command[..]);
+                c
+            } else {
+                let mut c = CommandBuilder::new(&command[0]);
+                if command.len() > 1 {
+                    c.args(&command[1..]);
+                }
+                c
+            }
+        } else {
+            let mut c = CommandBuilder::new(&command[0]);
+            if command.len() > 1 {
+                c.args(&command[1..]);
+            }
+            c
+        };
 
         let child = pair.slave.spawn_command(cmd)?;
 
