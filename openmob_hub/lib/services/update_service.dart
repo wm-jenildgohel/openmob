@@ -74,10 +74,9 @@ class UpdateService {
 
       if (_isNewerVersion(latestVersion, _currentVersion)) {
         final assetName = _getAssetName();
-        final asset = assets.firstWhere(
+        final asset = assets.cast<dynamic>().where(
           (a) => (a['name'] as String).contains(assetName),
-          orElse: () => null,
-        );
+        ).firstOrNull;
 
         _status.add(UpdateInfo(
           status: UpdateStatus.available,

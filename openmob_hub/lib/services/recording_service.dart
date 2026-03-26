@@ -231,8 +231,8 @@ class RecordingService {
       if (recording.backend == 'scrcpy') {
         // Send SIGINT for clean MKV finalization
         if (Platform.isWindows) {
-          // Windows: kill the process (MKV survives unclean kill)
-          process.kill(ProcessSignal.sigterm);
+          // Windows only supports kill() (TerminateProcess) — MKV survives unclean kill
+          process.kill();
         } else {
           process.kill(ProcessSignal.sigint);
         }
@@ -249,7 +249,7 @@ class RecordingService {
       try {
         await process.exitCode.timeout(const Duration(seconds: 10));
       } catch (_) {
-        process.kill(ProcessSignal.sigkill);
+        process.kill(); // kill() works cross-platform (SIGKILL on Unix, TerminateProcess on Windows)
       }
     }
 

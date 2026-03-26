@@ -372,6 +372,7 @@ class ProcessManager {
       return;
     }
 
+    _activeBridgePort = port;
     _bridgeStatus.add(_bridgeStatus.value.copyWith(status: ProcessStatus.starting));
 
     try {
@@ -516,6 +517,8 @@ class ProcessManager {
     await startBridge(agent: agent, port: port);
   }
 
+  int _activeBridgePort = 9999;
+
   // --- AiBridge health polling (detects externally started bridges) ---
 
   void startBridgeMonitoring() {
@@ -529,7 +532,7 @@ class ProcessManager {
   Future<void> _pollBridgeHealth() async {
     try {
       final response = await http
-          .get(Uri.parse('http://127.0.0.1:9999/health'))
+          .get(Uri.parse('http://127.0.0.1:$_activeBridgePort/health'))
           .timeout(const Duration(seconds: 2));
 
       if (response.statusCode == 200) {

@@ -143,8 +143,13 @@ jobs:
         shell: cmd
         run: |
           start /B openmob_hub\build\windows\x64\runner\Release\openmob_hub.exe
-          timeout /t 5 /nobreak >nul
-          taskkill /F /IM openmob_hub.exe 2>nul || echo "Hub exited on its own"
+          timeout /t 3 /nobreak >nul
+          tasklist /FI "IMAGENAME eq openmob_hub.exe" | find "openmob_hub.exe" >nul
+          if errorlevel 1 (
+            echo FAIL: Hub crashed on startup
+            exit /b 1
+          )
+          taskkill /F /IM openmob_hub.exe 2>nul
 
       - name: Package
         shell: bash
@@ -156,6 +161,40 @@ jobs:
         with:
           name: hub-windows-x64
           path: artifacts/windows/
+
+  # ─── Build Hub (macOS) ───
+  build-hub-macos:
+    needs: [set-version]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply version patch
+        uses: actions/download-artifact@v4
+        with:
+          name: versioned-source
+          path: .
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Build Hub (macOS)
+        working-directory: openmob_hub
+        run: |
+          flutter pub get
+          flutter build macos --release
+
+      - name: Package
+        run: |
+          mkdir -p artifacts/macos
+          cp -r openmob_hub/build/macos/Build/Products/Release/*.app artifacts/macos/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hub-macos-x64
+          path: artifacts/macos/
 
   # ─── Build AiBridge (Linux + Windows + macOS) ───
   build-bridge:
@@ -228,6 +267,9 @@ jobs:
           - target: node20-macos-x64
             output: openmob-mcp
             name: macos-x64
+          - target: node20-macos-arm64
+            output: openmob-mcp
+            name: macos-arm64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -259,7 +301,7 @@ jobs:
 
   # ─── Package & Release ───
   release:
-    needs: [build-hub-linux, build-hub-windows, build-bridge, build-mcp, set-version]
+    needs: [build-hub-linux, build-hub-windows, build-hub-macos, build-bridge, build-mcp, set-version]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -278,9 +320,6 @@ jobs:
           chmod +x release/openmob-linux-x64/aibridge
           cp artifacts/mcp-linux-x64/openmob-mcp release/openmob-linux-x64/
           chmod +x release/openmob-linux-x64/openmob-mcp
-          cp -r openmob_skills release/openmob-linux-x64/ 2>/dev/null || true
-          cp dist/openmob-linux-x64/openmob release/openmob-linux-x64/ 2>/dev/null || true
-          chmod +x release/openmob-linux-x64/openmob 2>/dev/null || true
           cd release && tar -czf openmob-${VERSION}-linux-x64.tar.gz openmob-linux-x64/
 
       - name: Create Windows INSTALL.txt
@@ -303,19 +342,19 @@ jobs:
           cp -r artifacts/hub-windows-x64/* release/openmob-windows-x64/
           cp artifacts/bridge-windows-x64/aibridge.exe release/openmob-windows-x64/
           cp artifacts/mcp-windows-x64/openmob-mcp.exe release/openmob-windows-x64/
-          cp -r openmob_skills release/openmob-windows-x64/ 2>/dev/null || true
-          cp dist/openmob-windows-x64/openmob.bat release/openmob-windows-x64/ 2>/dev/null || true
           cd release && zip -r openmob-${VERSION}-windows-x64.zip openmob-windows-x64/
 
       - name: Package macOS
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
           mkdir -p release/openmob-macos-x64
+          cp -r artifacts/hub-macos-x64/* release/openmob-macos-x64/
           cp artifacts/bridge-macos-x64/aibridge release/openmob-macos-x64/aibridge
           cp artifacts/bridge-macos-arm64/aibridge release/openmob-macos-x64/aibridge-arm64
           cp artifacts/mcp-macos-x64/openmob-mcp release/openmob-macos-x64/
-          chmod +x release/openmob-macos-x64/openmob-mcp
-          cp -r openmob_skills release/openmob-macos-x64/ 2>/dev/null || true
+          cp artifacts/mcp-macos-arm64/openmob-mcp release/openmob-macos-x64/openmob-mcp-arm64 2>/dev/null || true
+          chmod +x release/openmob-macos-x64/openmob-mcp release/openmob-macos-x64/aibridge release/openmob-macos-x64/aibridge-arm64
+          chmod +x release/openmob-macos-x64/openmob-mcp-arm64 2>/dev/null || true
           cd release && tar -czf openmob-${VERSION}-macos-x64.tar.gz openmob-macos-x64/
 
       - name: Create GitHub Release
