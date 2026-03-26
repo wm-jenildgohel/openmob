@@ -12,27 +12,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aibridge"
-version = "0.0.8"
-dependencies = [
- "anyhow",
- "axum",
- "clap",
- "crossterm",
- "portable-pty",
- "regex",
- "serde",
- "serde_json",
- "strip-ansi-escapes",
- "terminal_size",
- "tokio",
- "tokio-util",
- "tower-http",
- "uuid",
- "which",
-]
-
-[[package]]
 name = "anstream"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -637,6 +616,27 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "openmob-bridge"
+version = "0.0.9"
+dependencies = [
+ "anyhow",
+ "axum",
+ "clap",
+ "crossterm",
+ "portable-pty",
+ "regex",
+ "serde",
+ "serde_json",
+ "strip-ansi-escapes",
+ "terminal_size",
+ "tokio",
+ "tokio-util",
+ "tower-http",
+ "uuid",
+ "which",
+]
 
 [[package]]
 name = "parking_lot"
