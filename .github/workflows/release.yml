@@ -336,10 +336,13 @@ jobs:
           npx @yao-pkg/pkg dist/openmob-mcp-bundle.cjs --target ${{ matrix.target }} --output dist/${{ matrix.output }}
 
       - name: Publish to npm
-        if: matrix.name == 'linux-x64' && secrets.NPM_TOKEN != ''
+        if: matrix.name == 'linux-x64'
         working-directory: openmob_mcp
         run: |
-          # Write .npmrc directly as belt-and-suspenders auth
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN secret not set — skipping publish"
+            exit 0
+          fi
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
           npm publish --access public --ignore-scripts
         env:
