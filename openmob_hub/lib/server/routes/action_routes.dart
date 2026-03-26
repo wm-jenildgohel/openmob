@@ -41,11 +41,43 @@ Router actionRoutes(ActionService action, DeviceManager dm) {
     }
     try {
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final x1 = (body['x1'] as num).toInt();
-      final y1 = (body['y1'] as num).toInt();
-      final x2 = (body['x2'] as num).toInt();
-      final y2 = (body['y2'] as num).toInt();
       final duration = (body['duration'] as num?)?.toInt() ?? 300;
+
+      int x1, y1, x2, y2;
+
+      if (body.containsKey('direction')) {
+        // Convert direction to coordinates using device screen center
+        final screenW = device.screenWidth > 0 ? device.screenWidth : 1080;
+        final screenH = device.screenHeight > 0 ? device.screenHeight : 1920;
+        final centerX = screenW ~/ 2;
+        final centerY = screenH ~/ 2;
+        final swipeDistance = screenH ~/ 3;
+
+        switch (body['direction'] as String) {
+          case 'up':
+            x1 = centerX; y1 = centerY + swipeDistance ~/ 2;
+            x2 = centerX; y2 = centerY - swipeDistance ~/ 2;
+          case 'down':
+            x1 = centerX; y1 = centerY - swipeDistance ~/ 2;
+            x2 = centerX; y2 = centerY + swipeDistance ~/ 2;
+          case 'left':
+            x1 = centerX + swipeDistance ~/ 2; y1 = centerY;
+            x2 = centerX - swipeDistance ~/ 2; y2 = centerY;
+          case 'right':
+            x1 = centerX - swipeDistance ~/ 2; y1 = centerY;
+            x2 = centerX + swipeDistance ~/ 2; y2 = centerY;
+          default:
+            return Response.badRequest(
+              body: jsonEncode({'error': 'Invalid direction. Use: up, down, left, right'}),
+            );
+        }
+      } else {
+        x1 = (body['x1'] as num).toInt();
+        y1 = (body['y1'] as num).toInt();
+        x2 = (body['x2'] as num).toInt();
+        y2 = (body['y2'] as num).toInt();
+      }
+
       final result = await action.swipe(device.serial, x1, y1, x2, y2, durationMs: duration);
       return Response.ok(jsonEncode(result.toJson()));
     } catch (e) {

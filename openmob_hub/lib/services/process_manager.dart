@@ -385,13 +385,13 @@ class ProcessManager {
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen((line) {
-        _logService.addLine('bridge', line);
+        _logService.addLine('aibridge', line);
       });
       _bridgeProcess!.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen((line) {
-        _logService.addLine('bridge', line, level: LogLevel.warning);
+        _logService.addLine('aibridge', line, level: LogLevel.warning);
       });
 
       _bridgeStatus.add(ProcessInfo(

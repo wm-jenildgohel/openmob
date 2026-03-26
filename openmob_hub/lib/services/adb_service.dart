@@ -42,7 +42,8 @@ class AdbService {
   }) async {
     final adb = await adbPath;
     final fullArgs = ['-s', serial, ...args];
-    return Process.run(adb, fullArgs, stdoutEncoding: utf8);
+    return Process.run(adb, fullArgs, stdoutEncoding: utf8)
+        .timeout(timeout);
   }
 
   Future<List<int>> runBinary(String serial, List<String> args) async {
@@ -53,7 +54,14 @@ class AdbService {
       [],
       (prev, chunk) => prev..addAll(chunk),
     );
-    await process.exitCode;
+    final exitCode = await process.exitCode;
+    if (exitCode != 0) {
+      final stderr = await process.stderr.transform(utf8.decoder).join();
+      throw Exception('ADB binary command failed (exit $exitCode): $stderr');
+    }
+    if (bytes.isEmpty) {
+      throw Exception('ADB returned empty output for: ${args.join(' ')}');
+    }
     return bytes;
   }
 

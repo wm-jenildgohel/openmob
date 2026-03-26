@@ -460,6 +460,9 @@ class _AiToolCard extends StatelessWidget {
       case 'Claude Desktop': aiToolSetupService.installClaudeDesktop();
       case 'Claude Code': aiToolSetupService.installClaudeCode();
       case 'VS Code': aiToolSetupService.installVSCode();
+      case 'Windsurf': aiToolSetupService.installWindsurf();
+      case 'Codex CLI': aiToolSetupService.installCodexCli();
+      case 'Gemini CLI': aiToolSetupService.installGeminiCli();
     }
   }
 }
