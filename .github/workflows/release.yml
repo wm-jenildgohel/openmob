@@ -283,15 +283,27 @@ jobs:
           chmod +x release/openmob-linux-x64/openmob 2>/dev/null || true
           cd release && tar -czf openmob-${VERSION}-linux-x64.tar.gz openmob-linux-x64/
 
+      - name: Create Windows INSTALL.txt
+        run: |
+          mkdir -p release/openmob-windows-x64
+          echo "OpenMob - Quick Start" > release/openmob-windows-x64/INSTALL.txt
+          echo "=====================" >> release/openmob-windows-x64/INSTALL.txt
+          echo "1. Double-click openmob_hub.exe to start" >> release/openmob-windows-x64/INSTALL.txt
+          echo "2. Connect your Android device via USB" >> release/openmob-windows-x64/INSTALL.txt
+          echo "3. OpenMob will detect it automatically" >> release/openmob-windows-x64/INSTALL.txt
+          echo "" >> release/openmob-windows-x64/INSTALL.txt
+          echo "Windows SmartScreen Warning (first run only):" >> release/openmob-windows-x64/INSTALL.txt
+          echo "Click More info then Run anyway" >> release/openmob-windows-x64/INSTALL.txt
+          echo "" >> release/openmob-windows-x64/INSTALL.txt
+          echo "https://github.com/wm-jenildgohel/openmob" >> release/openmob-windows-x64/INSTALL.txt
+
       - name: Package Windows
         run: |
           VERSION="${{ needs.set-version.outputs.version }}"
-          mkdir -p release/openmob-windows-x64
           cp -r artifacts/hub-windows-x64/* release/openmob-windows-x64/
           cp artifacts/bridge-windows-x64/aibridge.exe release/openmob-windows-x64/
           cp artifacts/mcp-windows-x64/openmob-mcp.exe release/openmob-windows-x64/
           cp -r openmob_skills release/openmob-windows-x64/ 2>/dev/null || true
-          printf 'OpenMob - Quick Start\n=====================\n1. Double-click "openmob_hub.exe" to start\n2. Connect your Android device via USB\n3. OpenMob will detect it automatically\n\nWindows SmartScreen Warning (first run only):\nClick "More info" then "Run anyway"\n\nhttps://github.com/wm-jenildgohel/openmob\n' > release/openmob-windows-x64/INSTALL.txt
           cp dist/openmob-windows-x64/openmob.bat release/openmob-windows-x64/ 2>/dev/null || true
           cd release && zip -r openmob-${VERSION}-windows-x64.zip openmob-windows-x64/
 
