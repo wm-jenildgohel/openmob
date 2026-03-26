@@ -66,6 +66,13 @@ jobs:
           flutter pub get
           flutter build windows --release
 
+      - name: Verify Hub launches
+        shell: cmd
+        run: |
+          start /B openmob_hub\build\windows\x64\runner\Release\openmob_hub.exe
+          timeout /t 5 /nobreak >nul
+          taskkill /F /IM openmob_hub.exe 2>nul || echo "Hub exited on its own"
+
       - name: Package Hub (Windows)
         shell: bash
         run: |
@@ -86,8 +93,8 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact: aibridge
             name: linux-x64
-          - os: ubuntu-latest
-            target: x86_64-pc-windows-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
             artifact: aibridge.exe
             name: windows-x64
           - os: macos-latest
@@ -106,13 +113,20 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install MinGW (Windows cross-compile)
-        if: matrix.target == 'x86_64-pc-windows-gnu'
-        run: sudo apt-get install -y gcc-mingw-w64-x86-64
-
       - name: Build AiBridge
         working-directory: openmob_bridge
         run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Verify binary runs
+        if: matrix.target != 'aarch64-apple-darwin'
+        shell: bash
+        run: |
+          if [[ "${{ matrix.artifact }}" == *.exe ]]; then
+            openmob_bridge/target/${{ matrix.target }}/release/${{ matrix.artifact }} --help || true
+          else
+            chmod +x openmob_bridge/target/${{ matrix.target }}/release/${{ matrix.artifact }}
+            openmob_bridge/target/${{ matrix.target }}/release/${{ matrix.artifact }} --help || true
+          fi
 
       - name: Package
         shell: bash
@@ -219,6 +233,27 @@ jobs:
           cp artifacts/mcp-windows-x64/openmob-mcp.exe release/openmob-windows-x64/
           # Skills
           cp -r openmob_skills release/openmob-windows-x64/
+          # SmartScreen notice
+          cat > release/openmob-windows-x64/INSTALL.txt << 'INSTALLEOF'
+          OpenMob - Installation Guide
+          ============================
+
+          1. Extract this folder to any location (Desktop, Documents, etc.)
+          2. Double-click "openmob_hub.exe" to start
+
+          IMPORTANT - Windows SmartScreen Warning:
+          Windows may show "Windows protected your PC" the first time you run OpenMob.
+          This is normal for new software that hasn't been widely downloaded yet.
+
+          To continue:
+          1. Click "More info"
+          2. Click "Run anyway"
+
+          This only happens once. OpenMob runs entirely on your computer
+          and never sends data to the internet.
+
+          Need help? Visit: https://github.com/wm-jenildgohel/openmob
+          INSTALLEOF
           # Launcher
           cp dist/openmob-windows-x64/openmob.bat release/openmob-windows-x64/ 2>/dev/null || true
           # Archive

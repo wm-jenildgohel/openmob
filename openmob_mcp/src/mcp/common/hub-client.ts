@@ -1,3 +1,15 @@
+// Polyfill fetch for yao-pkg bundled binaries where native fetch may be missing
+if (typeof globalThis.fetch === "undefined") {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nodeFetch = require("node-fetch");
+    globalThis.fetch = nodeFetch.default || nodeFetch;
+    console.error("[openmob-mcp] Using node-fetch polyfill");
+  } catch {
+    console.error("[openmob-mcp] WARNING: fetch() not available and node-fetch not found");
+  }
+}
+
 const DEFAULT_PORTS = [8686, 8687, 8688, 8689, 8690];
 const HEALTH_TIMEOUT_MS = 1500;
 

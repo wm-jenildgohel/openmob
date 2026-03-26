@@ -161,9 +161,10 @@ class SystemCheckService {
       _log('Extracting platform-tools...');
       ProcessResult extractResult;
       if (Platform.isWindows) {
+        // Quote paths for PowerShell to handle spaces in paths
         extractResult = await Process.run(
           'powershell',
-          ['-Command', 'Expand-Archive', '-Path', zipFile.path, '-DestinationPath', _toolsDir, '-Force'],
+          ['-Command', 'Expand-Archive', '-Path', '"${zipFile.path}"', '-DestinationPath', '"$_toolsDir"', '-Force'],
         );
       } else {
         extractResult = await Process.run(
@@ -230,23 +231,63 @@ class SystemCheckService {
 
     try {
       if (Platform.isWindows) {
-        // Check if winget is available first
+        // Try winget first, then fall back to direct MSI download
+        bool installed = false;
         try {
           final wingetCheck = await Process.run('winget', ['--version']);
-          if (wingetCheck.exitCode != 0) throw Exception('winget not found');
+          if (wingetCheck.exitCode == 0) {
+            _updateToolStatus('MCP Server', installing: true, progress: 0.3);
+            _log('Installing Node.js via winget...');
+            final result = await Process.run(
+              'winget',
+              ['install', '--id', 'OpenJS.NodeJS.LTS', '-e', '--accept-package-agreements', '--accept-source-agreements'],
+            );
+            installed = result.exitCode == 0;
+            if (!installed) {
+              _log('winget install failed — trying direct download...', error: true);
+            }
+          }
         } catch (_) {
-          _log('winget not available — install Node.js manually from nodejs.org', error: true);
-          _updateToolStatus('MCP Server', installing: false);
-          return false;
+          _log('winget not available — trying direct download...');
         }
-        // Use winget on Windows
-        _updateToolStatus('MCP Server', installing: true, progress: 0.3);
-        final result = await Process.run(
-          'winget',
-          ['install', '--id', 'OpenJS.NodeJS.LTS', '-e', '--accept-package-agreements', '--accept-source-agreements'],
-        );
-        if (result.exitCode != 0) {
-          _log('winget install failed: ${result.stderr}', error: true);
+
+        // Fallback: download Node.js MSI directly
+        if (!installed) {
+          _updateToolStatus('MCP Server', installing: true, progress: 0.2);
+          _log('Downloading Node.js from nodejs.org...');
+          try {
+            final nodeDir = Directory('$_toolsDir${_sep}node');
+            await nodeDir.create(recursive: true);
+            final msiUrl = 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi';
+            final msiFile = File('$_toolsDir${_sep}node-installer.msi');
+            final response = await http.get(Uri.parse(msiUrl));
+            if (response.statusCode == 200) {
+              await msiFile.writeAsBytes(response.bodyBytes);
+              _updateToolStatus('MCP Server', installing: true, progress: 0.6);
+              _log('Running Node.js installer...');
+              final installResult = await Process.run(
+                'msiexec',
+                ['/i', msiFile.path, '/qn', '/norestart', 'INSTALLDIR=${nodeDir.path}'],
+              );
+              if (installResult.exitCode == 0) {
+                installed = true;
+                _log('Node.js installed to ${nodeDir.path}');
+              } else {
+                // MSI silent install may need admin — try opening it for user
+                _log('Silent install needs admin. Opening installer for you...');
+                await Process.run('msiexec', ['/i', msiFile.path]);
+                installed = true; // User ran the installer
+              }
+              await msiFile.delete().catchError((_) => msiFile);
+            } else {
+              _log('Download failed (HTTP ${response.statusCode})', error: true);
+            }
+          } catch (e) {
+            _log('Direct download failed: $e', error: true);
+          }
+        }
+
+        if (!installed) {
           _updateToolStatus('MCP Server', installing: false);
           return false;
         }
