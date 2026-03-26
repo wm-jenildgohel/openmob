@@ -17,62 +17,8 @@ class AiToolSetupService {
   ValueStream<List<AiTool>> get tools$ => _tools.stream;
   List<AiTool> get currentTools => _tools.value;
 
-  /// Resolve the MCP server binary/script path.
-  /// Returns null if no valid MCP binary or script can be found.
-  String? get _mcpCommand {
-    final sep = Platform.pathSeparator;
-    final exe = Platform.resolvedExecutable;
-    final bundledDir = File(exe).parent.path;
-    final binName = Platform.isWindows ? 'openmob-mcp.exe' : 'openmob-mcp';
-
-    // Check bundled binary — right next to hub exe (CMake copies here)
-    final bundledFlat = '$bundledDir$sep$binName';
-    if (File(bundledFlat).existsSync()) return bundledFlat;
-
-    // Check bundled binary — in tools/ subdir
-    final bundledTools = '$bundledDir${sep}tools$sep$binName';
-    if (File(bundledTools).existsSync()) return bundledTools;
-
-    // Check ~/.openmob/tools/ (auto-downloaded)
-    final home = _homeDir;
-    final downloadedBin = '$home$sep.openmob${sep}tools$sep$binName';
-    if (File(downloadedBin).existsSync()) return downloadedBin;
-
-    // Check project build (dev mode — Node.js)
-    var dir = Directory.current;
-    for (var i = 0; i < 5; i++) {
-      final candidate = '${dir.path}${sep}openmob_mcp${sep}build${sep}app${sep}index.js';
-      if (File(candidate).existsSync()) return candidate;
-      dir = dir.parent;
-    }
-
-    // Check if npx openmob-mcp would work (npm global or npx download)
-    try {
-      final result = Process.runSync(
-        Platform.isWindows ? 'where' : 'which',
-        [Platform.isWindows ? 'openmob-mcp.exe' : 'openmob-mcp'],
-      );
-      if (result.exitCode == 0) {
-        return (result.stdout as String).trim().split('\n').first.trim();
-      }
-    } catch (_) {}
-
-    // Nothing found — return null so config isn't written with a broken path
-    return null;
-  }
-
-  bool get _mcpIsBinary {
-    final cmd = _mcpCommand;
-    return cmd != null && !cmd.endsWith('.js');
-  }
-
-  String get _mcpCwd {
-    if (_mcpIsBinary) return '';
-    final jsPath = _mcpCommand;
-    if (jsPath == null) return '';
-    // cwd is openmob_mcp/ (3 levels up from build/app/index.js)
-    return File(jsPath).parent.parent.parent.path;
-  }
+  // MCP binary resolution is handled by ProcessManager for internal Hub use.
+  // External AI tool configs always use `npx -y openmob-mcp` (see _installMcpConfig).
 
   /// Detect all AI tools and their config status
   Future<void> detectAll() async {
@@ -603,33 +549,13 @@ Speak in plain English for non-technical QA testers:
         }
       }
 
-      // Build the OpenMob server entry — prefer local binary, fall back to npx
-      final mcpCmd = _mcpCommand;
-      final Map<String, dynamic> serverEntry;
-      if (mcpCmd != null && _mcpIsBinary) {
-        // Local bundled binary
-        serverEntry = {
-          'command': mcpCmd,
-          'args': <String>[],
-        };
-      } else if (mcpCmd != null) {
-        // Local Node.js build
-        serverEntry = {
-          'command': 'node',
-          'args': [mcpCmd],
-        };
-        if (_mcpCwd.isNotEmpty) {
-          serverEntry['cwd'] = _mcpCwd;
-        }
-      } else {
-        // No local binary — use npx (works if npm package is published)
-        serverEntry = {
-          'command': 'npx',
-          'args': ['-y', 'openmob-mcp'],
-        };
-        _logService.addLine('hub',
-            'Using npx openmob-mcp (no local binary found)');
-      }
+      // Always use npx for external AI tool configs — most reliable across machines.
+      // Local binaries are only used by Hub's internal ProcessManager.
+      // npx auto-downloads the package if not installed, and auto-updates on new versions.
+      final Map<String, dynamic> serverEntry = {
+        'command': 'npx',
+        'args': ['-y', 'openmob-mcp'],
+      };
 
       if (vscodeMode) {
         // VS Code mcp.json: "servers" → "openmob" → {type, command, args}
