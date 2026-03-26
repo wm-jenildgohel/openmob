@@ -42,14 +42,29 @@ jobs:
           echo "version_clean=$CLEAN" >> $GITHUB_OUTPUT
           echo "Version: $RAW (clean: $CLEAN)"
 
-      - name: Patch version in source files
+      - name: Patch version in ALL components
         run: |
           VERSION="${{ steps.version.outputs.version_clean }}"
+          echo "Patching all components to v${VERSION}..."
+
+          # Flutter Hub
           sed -i "s/^version: .*/version: ${VERSION}+1/" openmob_hub/pubspec.yaml
           sed -i "s/const _currentVersion = '.*'/const _currentVersion = '${VERSION}'/" openmob_hub/lib/services/update_service.dart
-          echo "Patched:"
+
+          # MCP Server (npm)
+          cd openmob_mcp
+          npm version "${VERSION}" --no-git-tag-version --allow-same-version 2>/dev/null || \
+            sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+          cd ..
+
+          # AiBridge (Cargo)
+          sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" openmob_bridge/Cargo.toml
+
+          echo "Patched versions:"
           grep "^version:" openmob_hub/pubspec.yaml
           grep "_currentVersion" openmob_hub/lib/services/update_service.dart
+          grep '"version"' openmob_mcp/package.json
+          grep '^version' openmob_bridge/Cargo.toml
 
       - name: Upload patched source files
         uses: actions/upload-artifact@v4
@@ -58,20 +73,27 @@ jobs:
           path: |
             openmob_hub/pubspec.yaml
             openmob_hub/lib/services/update_service.dart
+            openmob_mcp/package.json
+            openmob_bridge/Cargo.toml
 
       - name: Commit version bump to main
         run: |
           VERSION="${{ steps.version.outputs.version }}"
+          CLEAN="${{ steps.version.outputs.version_clean }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Checkout main (not the tag) to push the commit
           git checkout main 2>/dev/null || git checkout -b main
           git pull origin main || true
+
           # Re-apply version patches on main
-          CLEAN="${{ steps.version.outputs.version_clean }}"
           sed -i "s/^version: .*/version: ${CLEAN}+1/" openmob_hub/pubspec.yaml
           sed -i "s/const _currentVersion = '.*'/const _currentVersion = '${CLEAN}'/" openmob_hub/lib/services/update_service.dart
-          git add openmob_hub/pubspec.yaml openmob_hub/lib/services/update_service.dart
+          cd openmob_mcp && npm version "${CLEAN}" --no-git-tag-version --allow-same-version 2>/dev/null || \
+            sed -i "s/\"version\": \".*\"/\"version\": \"${CLEAN}\"/" package.json && cd ..
+          sed -i "s/^version = \".*\"/version = \"${CLEAN}\"/" openmob_bridge/Cargo.toml
+
+          git add openmob_hub/pubspec.yaml openmob_hub/lib/services/update_service.dart \
+                  openmob_mcp/package.json openmob_bridge/Cargo.toml
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "chore: bump version to ${VERSION} [skip ci]"
           git push origin main
@@ -222,6 +244,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Apply version patch
+        uses: actions/download-artifact@v4
+        with:
+          name: versioned-source
+          path: .
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -274,6 +302,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Apply version patch
+        uses: actions/download-artifact@v4
+        with:
+          name: versioned-source
+          path: .
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -293,6 +327,13 @@ jobs:
         working-directory: openmob_mcp
         run: |
           npx @yao-pkg/pkg dist/openmob-mcp-bundle.cjs --target ${{ matrix.target }} --output dist/${{ matrix.output }}
+
+      - name: Publish to npm
+        if: matrix.name == 'linux-x64'
+        working-directory: openmob_mcp
+        run: npm publish --access public || echo "npm publish skipped (may need NPM_TOKEN secret)"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - uses: actions/upload-artifact@v4
         with:

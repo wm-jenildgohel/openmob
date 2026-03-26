@@ -589,16 +589,6 @@ Speak in plain English for non-technical QA testers:
     _logService.addLine(
         'hub', 'Installing OpenMob MCP config for $toolName...');
 
-    // Validate MCP binary/script exists before writing config
-    final mcpCmd = _mcpCommand;
-    if (mcpCmd == null) {
-      _logService.addLine('hub',
-          'Skipping $toolName config — MCP server not found. Install from System Check.',
-          level: LogLevel.warning);
-      _updateTool(toolName, installing: false);
-      return false;
-    }
-
     try {
       final file = File(configPath);
       await file.parent.create(recursive: true);
@@ -613,14 +603,17 @@ Speak in plain English for non-technical QA testers:
         }
       }
 
-      // Build the OpenMob server entry
+      // Build the OpenMob server entry — prefer local binary, fall back to npx
+      final mcpCmd = _mcpCommand;
       final Map<String, dynamic> serverEntry;
-      if (_mcpIsBinary) {
+      if (mcpCmd != null && _mcpIsBinary) {
+        // Local bundled binary
         serverEntry = {
           'command': mcpCmd,
           'args': <String>[],
         };
-      } else {
+      } else if (mcpCmd != null) {
+        // Local Node.js build
         serverEntry = {
           'command': 'node',
           'args': [mcpCmd],
@@ -628,6 +621,14 @@ Speak in plain English for non-technical QA testers:
         if (_mcpCwd.isNotEmpty) {
           serverEntry['cwd'] = _mcpCwd;
         }
+      } else {
+        // No local binary — use npx (works if npm package is published)
+        serverEntry = {
+          'command': 'npx',
+          'args': ['-y', 'openmob-mcp'],
+        };
+        _logService.addLine('hub',
+            'Using npx openmob-mcp (no local binary found)');
       }
 
       if (vscodeMode) {
