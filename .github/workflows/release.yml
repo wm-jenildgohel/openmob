@@ -275,6 +275,18 @@ jobs:
             openmob_bridge/target/${{ matrix.target }}/release/${{ matrix.artifact }} --help || true
           fi
 
+      - name: Publish to crates.io
+        if: matrix.name == 'linux-x64'
+        working-directory: openmob_bridge
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "CARGO_REGISTRY_TOKEN not set — skipping crates.io publish"
+            exit 0
+          fi
+          cargo publish --allow-dirty || echo "crates.io publish failed (may already exist)"
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
       - name: Package
         shell: bash
         run: |

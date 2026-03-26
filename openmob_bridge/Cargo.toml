@@ -1,9 +1,20 @@
 [package]
-name = "aibridge"
+name = "openmob-bridge"
 version = "0.0.9"
 edition = "2021"
 rust-version = "1.70"
-description = "PTY wrapper for terminal AI agents with HTTP injection API"
+description = "Wrap terminal AI agents (Claude Code, Codex, Gemini) with PTY layer and HTTP injection API. Part of OpenMob — free mobile device automation."
+license = "MIT"
+repository = "https://github.com/wm-jenildgohel/openmob"
+homepage = "https://github.com/wm-jenildgohel/openmob"
+documentation = "https://github.com/wm-jenildgohel/openmob"
+readme = "README.md"
+keywords = ["ai", "mcp", "mobile", "automation", "pty"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "aibridge"
+path = "src/main.rs"
 
 [dependencies]
 portable-pty = "0.8"
