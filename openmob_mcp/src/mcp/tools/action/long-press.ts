@@ -6,32 +6,36 @@ import { createTextResponse, createErrorResponse } from "../../common/response.j
 import { registerToolDual } from "../../common/dual-register.js";
 import type { ActionResult } from "../../../types/index.js";
 
-export function registerTap(server: McpServer, hub: HubClient): void {
+export function registerLongPress(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
-    "tap",
+    "long_press",
     {
       description:
-        "Tap on the device screen — like a finger touch. Use element index (from get_ui_tree) to tap a specific button/field, or x,y coordinates for precise position.",
+        "Long-press on the device screen — like pressing and holding your finger. Opens context menus, triggers drag mode, or selects items. Use element index or x,y coordinates. Default hold duration is 1.5 seconds.",
       inputSchema: {
         device_id: deviceIdSchema,
         x: z.number().optional().describe("X coordinate on screen"),
         y: z.number().optional().describe("Y coordinate on screen"),
         index: z.number().optional().describe("Element number from get_ui_tree — recommended over coordinates"),
+        duration: z.number().optional().describe("How long to hold in milliseconds (default: 1500)"),
       },
     },
-    async ({ device_id, x, y, index }) => {
+    async ({ device_id, x, y, index, duration }) => {
       try {
         const body: Record<string, unknown> =
-          index !== undefined ? { index } : { x, y };
-        const result = await hub.post<ActionResult>(`/devices/${device_id}/tap`, body);
+          index !== undefined
+            ? { index, duration: duration ?? 1500 }
+            : { x, y, duration: duration ?? 1500 };
+        const result = await hub.post<ActionResult>(`/devices/${device_id}/long-press`, body);
 
+        const durationSec = ((duration ?? 1500) / 1000).toFixed(1);
         const summary = index !== undefined
-          ? `Tapped element #${index} on the screen`
-          : `Tapped at position (${x}, ${y}) on the screen`;
+          ? `Long-pressed element #${index} for ${durationSec}s`
+          : `Long-pressed at (${x}, ${y}) for ${durationSec}s`;
 
         return createTextResponse(result, summary);
       } catch (error) {
-        return createErrorResponse(error, "Could not tap on the device — check if the device is still connected");
+        return createErrorResponse(error, "Could not long-press — check device connection");
       }
     }
   );

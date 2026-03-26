@@ -31,7 +31,7 @@ class ApiServer {
     TestRunnerService testRunner,
     RecordingService recordingSvc,
   ) {
-    final deviceRouter = deviceRoutes(dm, ss, uts);
+    final deviceRouter = deviceRoutes(dm, ss, uts, action);
     final actionRouter = actionRoutes(action, dm);
     final testRouter = testRoutes(testRunner);
     final recRouter = recordingRoutes(recordingSvc);

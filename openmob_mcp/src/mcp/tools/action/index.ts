@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { HubClient } from "../../common/hub-client.js";
 import { registerTap } from "./tap.js";
+import { registerDoubleTap } from "./double-tap.js";
+import { registerLongPress } from "./long-press.js";
 import { registerTypeText } from "./type-text.js";
 import { registerSwipe } from "./swipe.js";
 import { registerPressButton } from "./press-button.js";
@@ -12,6 +14,8 @@ import { registerInstallApp, registerUninstallApp } from "./install-app.js";
 
 export function registerActionTools(server: McpServer, hub: HubClient): void {
   registerTap(server, hub);
+  registerDoubleTap(server, hub);
+  registerLongPress(server, hub);
   registerTypeText(server, hub);
   registerSwipe(server, hub);
   registerPressButton(server, hub);

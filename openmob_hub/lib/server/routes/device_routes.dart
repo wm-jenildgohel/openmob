@@ -4,6 +4,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../../models/ui_node.dart';
+import '../../services/action_service.dart';
 import '../../services/device_manager.dart';
 import '../../services/screenshot_service.dart';
 import '../../services/ui_tree_service.dart';
@@ -12,6 +13,7 @@ Router deviceRoutes(
   DeviceManager dm,
   ScreenshotService ss,
   UiTreeService uts,
+  ActionService action,
 ) {
   final router = Router();
 
@@ -95,6 +97,80 @@ Router deviceRoutes(
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'WiFi connect failed: $e'}),
+      );
+    }
+  });
+
+  // GET /<id>/screen-size -> get device screen dimensions
+  router.get('/<id>/screen-size', (Request request, String id) async {
+    final device = dm.getDevice(id);
+    if (device == null) {
+      return Response.notFound(jsonEncode({'error': 'Device not found'}));
+    }
+    try {
+      final result = await action.getScreenSize(device.serial);
+      return Response.ok(jsonEncode(result.toJson()));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Screen size failed: $e'}),
+      );
+    }
+  });
+
+  // GET /<id>/orientation -> get current screen orientation
+  router.get('/<id>/orientation', (Request request, String id) async {
+    final device = dm.getDevice(id);
+    if (device == null) {
+      return Response.notFound(jsonEncode({'error': 'Device not found'}));
+    }
+    try {
+      final result = await action.getOrientation(device.serial);
+      return Response.ok(jsonEncode(result.toJson()));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Orientation failed: $e'}),
+      );
+    }
+  });
+
+  // POST /<id>/save-screenshot -> save screenshot to file on host
+  router.post('/<id>/save-screenshot', (Request request, String id) async {
+    final device = dm.getDevice(id);
+    if (device == null) {
+      return Response.notFound(jsonEncode({'error': 'Device not found'}));
+    }
+    try {
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final path = body['path'] as String;
+      final result = await action.saveScreenshot(device.serial, path);
+      return Response.ok(jsonEncode(result.toJson()));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Save screenshot failed: $e'}),
+      );
+    }
+  });
+
+  // GET /<id>/find-element -> smart element search by text, class, resource_id
+  router.get('/<id>/find-element', (Request request, String id) async {
+    final device = dm.getDevice(id);
+    if (device == null) {
+      return Response.notFound(jsonEncode({'error': 'Device not found'}));
+    }
+    try {
+      final text = request.url.queryParameters['text'];
+      final className = request.url.queryParameters['class'];
+      final resourceId = request.url.queryParameters['resource_id'];
+      final result = await action.findElement(
+        device.serial,
+        text: text,
+        className: className,
+        resourceId: resourceId,
+      );
+      return Response.ok(jsonEncode(result.toJson()));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Find element failed: $e'}),
       );
     }
   });

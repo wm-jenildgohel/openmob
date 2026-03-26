@@ -87,7 +87,56 @@ Router actionRoutes(ActionService action, DeviceManager dm) {
     }
   });
 
-  // POST /<id>/type -> type text
+  // POST /<id>/double-tap -> double tap at coordinates or by element index
+  router.post('/<id>/double-tap', (Request request, String id) async {
+    final device = dm.getDevice(id);
+    if (device == null) {
+      return Response.notFound(jsonEncode({'error': 'Device not found'}));
+    }
+    try {
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      if (body.containsKey('index')) {
+        final index = (body['index'] as num).toInt();
+        final result = await action.doubleTapElement(device.serial, index);
+        return Response.ok(jsonEncode(result.toJson()));
+      }
+      final x = (body['x'] as num).toInt();
+      final y = (body['y'] as num).toInt();
+      final result = await action.doubleTap(device.serial, x, y);
+      return Response.ok(jsonEncode(result.toJson()));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Double tap failed: $e'}),
+      );
+    }
+  });
+
+  // POST /<id>/long-press -> long press at coordinates or by element index
+  router.post('/<id>/long-press', (Request request, String id) async {
+    final device = dm.getDevice(id);
+    if (device == null) {
+      return Response.notFound(jsonEncode({'error': 'Device not found'}));
+    }
+    try {
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final duration = (body['duration'] as num?)?.toInt() ?? 1500;
+      if (body.containsKey('index')) {
+        final index = (body['index'] as num).toInt();
+        final result = await action.longPressElement(device.serial, index, durationMs: duration);
+        return Response.ok(jsonEncode(result.toJson()));
+      }
+      final x = (body['x'] as num).toInt();
+      final y = (body['y'] as num).toInt();
+      final result = await action.longPress(device.serial, x, y, durationMs: duration);
+      return Response.ok(jsonEncode(result.toJson()));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Long press failed: $e'}),
+      );
+    }
+  });
+
+  // POST /<id>/type -> type text (with optional submit)
   router.post('/<id>/type', (Request request, String id) async {
     final device = dm.getDevice(id);
     if (device == null) {
@@ -96,7 +145,8 @@ Router actionRoutes(ActionService action, DeviceManager dm) {
     try {
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final text = body['text'] as String;
-      final result = await action.typeText(device.serial, text);
+      final submit = body['submit'] as bool? ?? false;
+      final result = await action.typeText(device.serial, text, submit: submit);
       return Response.ok(jsonEncode(result.toJson()));
     } catch (e) {
       return Response.internalServerError(

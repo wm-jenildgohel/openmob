@@ -6,12 +6,12 @@ import { createTextResponse, createErrorResponse } from "../../common/response.j
 import { registerToolDual } from "../../common/dual-register.js";
 import type { ActionResult } from "../../../types/index.js";
 
-export function registerTap(server: McpServer, hub: HubClient): void {
+export function registerDoubleTap(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
-    "tap",
+    "double_tap",
     {
       description:
-        "Tap on the device screen — like a finger touch. Use element index (from get_ui_tree) to tap a specific button/field, or x,y coordinates for precise position.",
+        "Double-tap on the device screen — like quickly tapping twice with your finger. Useful for zooming into maps/images or selecting text. Use element index (from get_ui_tree) or x,y coordinates.",
       inputSchema: {
         device_id: deviceIdSchema,
         x: z.number().optional().describe("X coordinate on screen"),
@@ -23,15 +23,15 @@ export function registerTap(server: McpServer, hub: HubClient): void {
       try {
         const body: Record<string, unknown> =
           index !== undefined ? { index } : { x, y };
-        const result = await hub.post<ActionResult>(`/devices/${device_id}/tap`, body);
+        const result = await hub.post<ActionResult>(`/devices/${device_id}/double-tap`, body);
 
         const summary = index !== undefined
-          ? `Tapped element #${index} on the screen`
-          : `Tapped at position (${x}, ${y}) on the screen`;
+          ? `Double-tapped element #${index}`
+          : `Double-tapped at position (${x}, ${y})`;
 
         return createTextResponse(result, summary);
       } catch (error) {
-        return createErrorResponse(error, "Could not tap on the device — check if the device is still connected");
+        return createErrorResponse(error, "Could not double-tap — check if the device is still connected");
       }
     }
   );

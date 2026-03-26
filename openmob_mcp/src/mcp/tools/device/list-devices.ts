@@ -1,10 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { HubClient } from "../../common/hub-client.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 import type { Device } from "../../../types/index.js";
 
 export function registerListDevices(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "list_devices",
     {
       description:

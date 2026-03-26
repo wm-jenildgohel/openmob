@@ -3,10 +3,11 @@ import { z } from "zod";
 import type { HubClient } from "../../common/hub-client.js";
 import { deviceIdSchema } from "../../common/schemas.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 import type { UiTreeResult } from "../../../types/index.js";
 
 export function registerGetUiTree(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "get_ui_tree",
     {
       description:

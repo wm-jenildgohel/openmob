@@ -4,6 +4,12 @@ import { registerListDevices } from "./list-devices.js";
 import { registerGetScreenshot } from "./screenshot.js";
 import { registerGetUiTree } from "./ui-tree.js";
 import {
+  registerGetScreenSize,
+  registerGetOrientation,
+  registerSaveScreenshot,
+  registerFindElement,
+} from "./screen-info.js";
+import {
   registerListApps,
   registerGetCurrentActivity,
   registerClearAppData,
@@ -20,6 +26,10 @@ export function registerDeviceTools(server: McpServer, hub: HubClient): void {
   registerListDevices(server, hub);
   registerGetScreenshot(server, hub);
   registerGetUiTree(server, hub);
+  registerGetScreenSize(server, hub);
+  registerGetOrientation(server, hub);
+  registerSaveScreenshot(server, hub);
+  registerFindElement(server, hub);
   registerListApps(server, hub);
   registerGetCurrentActivity(server, hub);
   registerClearAppData(server, hub);

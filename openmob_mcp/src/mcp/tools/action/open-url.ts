@@ -3,10 +3,11 @@ import { z } from "zod";
 import type { HubClient } from "../../common/hub-client.js";
 import { deviceIdSchema } from "../../common/schemas.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 import type { ActionResult } from "../../../types/index.js";
 
 export function registerOpenUrl(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "open_url",
     {
       description:

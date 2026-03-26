@@ -2,9 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { HubClient } from "../../common/hub-client.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 
 export function registerGetRecording(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "get_recording",
     {
       description:

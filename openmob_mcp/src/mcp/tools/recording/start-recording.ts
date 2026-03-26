@@ -3,9 +3,10 @@ import { z } from "zod";
 import type { HubClient } from "../../common/hub-client.js";
 import { deviceIdSchema } from "../../common/schemas.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 
 export function registerStartRecording(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "start_recording",
     {
       description:

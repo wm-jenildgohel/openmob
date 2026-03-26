@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { HubClient } from "../../common/hub-client.js";
 import { deviceIdSchema } from "../../common/schemas.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 import type { ActionResult } from "../../../types/index.js";
 
 const KEY_NAMES: Record<number, string> = {
@@ -17,7 +18,7 @@ const KEY_NAMES: Record<number, string> = {
 };
 
 export function registerPressButton(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "press_button",
     {
       description:

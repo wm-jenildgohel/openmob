@@ -7,8 +7,13 @@
   "bin": {
     "openmob-mcp": "build/app/index.js"
   },
+  "files": [
+    "build/**/*.js",
+    "build/**/*.d.ts"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepare": "tsc",
     "bundle": "tsc && npx esbuild build/app/index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/openmob-mcp-bundle.cjs",
     "dev": "tsx src/app/index.ts",
     "start": "node build/app/index.js"

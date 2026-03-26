@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../core/constants.dart';
 import '../models/action_result.dart';
 import 'adb_service.dart';
@@ -68,8 +70,161 @@ class ActionService {
     }
   }
 
+  /// Double-tap at absolute screen coordinates.
+  Future<ActionResult> doubleTap(String serial, int x, int y) async {
+    try {
+      final first = await tap(serial, x, y);
+      if (!first.success) return first;
+      await Future.delayed(const Duration(milliseconds: 100));
+      return tap(serial, x, y);
+    } catch (e) {
+      return ActionResult.fail('Double tap failed: $e');
+    }
+  }
+
+  /// Double-tap an element by its UI tree index.
+  Future<ActionResult> doubleTapElement(String serial, int index) async {
+    try {
+      final nodes = await _uiTree.getUiTree(serial);
+      final matches = nodes.where((n) => n.index == index);
+      if (matches.isEmpty) {
+        return ActionResult.fail('Element with index $index not found');
+      }
+      final node = matches.first;
+      return doubleTap(serial, node.bounds.centerX, node.bounds.centerY);
+    } catch (e) {
+      return ActionResult.fail('Double tap element failed: $e');
+    }
+  }
+
+  /// Long-press an element by its UI tree index.
+  Future<ActionResult> longPressElement(String serial, int index, {int durationMs = 1500}) async {
+    try {
+      final nodes = await _uiTree.getUiTree(serial);
+      final matches = nodes.where((n) => n.index == index);
+      if (matches.isEmpty) {
+        return ActionResult.fail('Element with index $index not found');
+      }
+      final node = matches.first;
+      return longPress(serial, node.bounds.centerX, node.bounds.centerY, durationMs: durationMs);
+    } catch (e) {
+      return ActionResult.fail('Long press element failed: $e');
+    }
+  }
+
+  /// Get the screen size (width x height) in pixels.
+  Future<ActionResult> getScreenSize(String serial) async {
+    if (_isIos(serial)) {
+      // Try from cached device info
+      final device = _dm.getDevice(serial);
+      if (device != null && device.screenWidth > 0 && device.screenHeight > 0) {
+        return ActionResult.ok(data: {'width': device.screenWidth, 'height': device.screenHeight});
+      }
+      return ActionResult.fail('Screen size not available for iOS device');
+    }
+
+    try {
+      final result = await _adb.run(serial, ['shell', 'wm', 'size']);
+      final stdout = (result.stdout as String).replaceAll('\r', '').trim();
+      // Parse "Physical size: 1080x1920" or "Override size: 1080x1920"
+      final match = RegExp(r'(\d+)x(\d+)').firstMatch(stdout);
+      if (match != null) {
+        final width = int.parse(match.group(1)!);
+        final height = int.parse(match.group(2)!);
+        return ActionResult.ok(data: {'width': width, 'height': height});
+      }
+      return ActionResult.fail('Could not parse screen size from: $stdout');
+    } catch (e) {
+      return ActionResult.fail('Get screen size failed: $e');
+    }
+  }
+
+  /// Get the current screen orientation ("portrait" or "landscape").
+  Future<ActionResult> getOrientation(String serial) async {
+    if (_isIos(serial)) {
+      return ActionResult.fail('Orientation query not supported on iOS via this API');
+    }
+
+    try {
+      final result = await _adb.run(serial, ['shell', 'dumpsys', 'display']);
+      final stdout = (result.stdout as String).replaceAll('\r', '');
+      // Look for mCurrentOrientation= or orientation=
+      final match = RegExp(r'mCurrentOrientation=(\d)').firstMatch(stdout);
+      if (match != null) {
+        final orient = int.parse(match.group(1)!);
+        final name = (orient == 0 || orient == 2) ? 'portrait' : 'landscape';
+        return ActionResult.ok(data: {'orientation': name, 'rotation': orient});
+      }
+      // Fallback: check SurfaceOrientation
+      final surfMatch = RegExp(r'SurfaceOrientation:\s*(\d)').firstMatch(stdout);
+      if (surfMatch != null) {
+        final orient = int.parse(surfMatch.group(1)!);
+        final name = (orient == 0 || orient == 2) ? 'portrait' : 'landscape';
+        return ActionResult.ok(data: {'orientation': name, 'rotation': orient});
+      }
+      return ActionResult.fail('Could not determine orientation');
+    } catch (e) {
+      return ActionResult.fail('Get orientation failed: $e');
+    }
+  }
+
+  /// Save a screenshot to a file path on the host machine.
+  Future<ActionResult> saveScreenshot(String serial, String path) async {
+    try {
+      final bytes = await _adb.runBinary(serial, ['exec-out', 'screencap', '-p']);
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+      // Parse dimensions from PNG
+      final width = bytes.length >= 24 ? _readUint32BE(bytes, 16) : 0;
+      final height = bytes.length >= 24 ? _readUint32BE(bytes, 20) : 0;
+      return ActionResult.ok(data: {'path': path, 'width': width, 'height': height});
+    } catch (e) {
+      return ActionResult.fail('Save screenshot failed: $e');
+    }
+  }
+
+  /// Read a big-endian uint32 from bytes at offset.
+  int _readUint32BE(List<int> bytes, int offset) {
+    return (bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3];
+  }
+
+  /// Find UI elements matching criteria (text, className, resourceId).
+  Future<ActionResult> findElement(
+    String serial, {
+    String? text,
+    String? className,
+    String? resourceId,
+  }) async {
+    try {
+      final nodes = await _uiTree.getUiTree(serial);
+      final matches = nodes.where((n) {
+        if (text != null && !n.text.toLowerCase().contains(text.toLowerCase()) && !n.contentDesc.toLowerCase().contains(text.toLowerCase())) {
+          return false;
+        }
+        if (className != null && !n.className.toLowerCase().contains(className.toLowerCase())) {
+          return false;
+        }
+        if (resourceId != null && !n.resourceId.toLowerCase().contains(resourceId.toLowerCase())) {
+          return false;
+        }
+        return true;
+      }).toList();
+
+      return ActionResult.ok(data: {
+        'found': matches.isNotEmpty,
+        'count': matches.length,
+        'elements': matches.map((n) => n.toJson()).toList(),
+      });
+    } catch (e) {
+      return ActionResult.fail('Find element failed: $e');
+    }
+  }
+
   /// Type text on the device.
-  Future<ActionResult> typeText(String serial, String text) async {
+  Future<ActionResult> typeText(String serial, String text, {bool submit = false}) async {
     if (_isIos(serial)) {
       if (_idb != null) {
         try {
@@ -99,6 +254,9 @@ class ActionService {
           .replaceAll('`', r'\`');
 
       await _adb.run(serial, ['shell', 'input', 'text', escaped]);
+      if (submit) {
+        await _adb.run(serial, ['shell', 'input', 'keyevent', '${AdbKeyCodes.enter}']);
+      }
       return ActionResult.ok();
     } catch (e) {
       return ActionResult.fail('Type text failed: $e');

@@ -3,10 +3,11 @@ import { z } from "zod";
 import type { HubClient } from "../../common/hub-client.js";
 import { deviceIdSchema, packageSchema } from "../../common/schemas.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 import type { ActionResult } from "../../../types/index.js";
 
 export function registerListApps(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "list_apps",
     {
       description: "List all installed apps on the device. Shows package names. Use third_party_only to filter to user-installed apps (excludes system apps).",
@@ -30,7 +31,7 @@ export function registerListApps(server: McpServer, hub: HubClient): void {
 }
 
 export function registerGetCurrentActivity(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "get_current_activity",
     {
       description: "See which app and screen is currently in the foreground on the device.",
@@ -52,7 +53,7 @@ export function registerGetCurrentActivity(server: McpServer, hub: HubClient): v
 }
 
 export function registerClearAppData(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "clear_app_data",
     {
       description: "Clear all data for an app — like a fresh install. Removes saved settings, login, cache, everything.",
@@ -73,7 +74,7 @@ export function registerClearAppData(server: McpServer, hub: HubClient): void {
 }
 
 export function registerGetLogs(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "get_device_logs",
     {
       description: "Get recent device logs (logcat). Filter by app tag, log level, or number of lines. Useful for debugging crashes, errors, and app behavior.",
@@ -102,7 +103,7 @@ export function registerGetLogs(server: McpServer, hub: HubClient): void {
 }
 
 export function registerWaitForElement(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "wait_for_element",
     {
       description: "Wait until a specific UI element appears on screen. Useful after navigation, loading screens, or animations. Returns the element's index for tapping.",
@@ -131,7 +132,7 @@ export function registerWaitForElement(server: McpServer, hub: HubClient): void 
 }
 
 export function registerSetRotation(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "set_rotation",
     {
       description: "Rotate the device screen. 0=portrait, 1=landscape (left), 2=reverse portrait, 3=landscape (right).",
@@ -153,7 +154,7 @@ export function registerSetRotation(server: McpServer, hub: HubClient): void {
 }
 
 export function registerToggleWifi(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "toggle_wifi",
     {
       description: "Turn WiFi on or off on the device.",
@@ -174,7 +175,7 @@ export function registerToggleWifi(server: McpServer, hub: HubClient): void {
 }
 
 export function registerToggleAirplane(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "toggle_airplane_mode",
     {
       description: "Turn airplane mode on or off on the device.",
@@ -195,7 +196,7 @@ export function registerToggleAirplane(server: McpServer, hub: HubClient): void 
 }
 
 export function registerGrantPermissions(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "grant_permissions",
     {
       description: "Auto-grant all runtime permissions for an app — camera, location, storage, etc. Useful to avoid permission popups during testing.",
@@ -216,7 +217,7 @@ export function registerGrantPermissions(server: McpServer, hub: HubClient): voi
 }
 
 export function registerGetNotifications(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "get_notifications",
     {
       description: "Read the device's notification bar — see all current notifications with their title, text, and source app.",

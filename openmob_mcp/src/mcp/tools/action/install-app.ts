@@ -3,10 +3,11 @@ import { z } from "zod";
 import type { HubClient } from "../../common/hub-client.js";
 import { deviceIdSchema } from "../../common/schemas.js";
 import { createTextResponse, createErrorResponse } from "../../common/response.js";
+import { registerToolDual } from "../../common/dual-register.js";
 import type { ActionResult } from "../../../types/index.js";
 
 export function registerInstallApp(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "install_app",
     {
       description: "Install an APK on the device from a file path on this computer.",
@@ -31,7 +32,7 @@ export function registerInstallApp(server: McpServer, hub: HubClient): void {
 }
 
 export function registerUninstallApp(server: McpServer, hub: HubClient): void {
-  server.registerTool(
+  registerToolDual(server,
     "uninstall_app",
     {
       description: "Uninstall an app from the device by package name.",
