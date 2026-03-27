@@ -63,7 +63,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-Type: filesandirs; Name: "{app}\data"
+Type: filesandordirs; Name: "{app}\data"
 
 [Code]
 // PATH modification — adds {app} to user PATH so aibridge is accessible from terminal
