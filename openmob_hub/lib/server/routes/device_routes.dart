@@ -101,6 +101,33 @@ Router deviceRoutes(
     }
   });
 
+  // POST /pair-wireless -> pair with device wirelessly (Android 11+)
+  router.post('/pair-wireless', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final address = body['address'] as String?;
+      final code = body['pairing_code'] as String?;
+      if (address == null || address.isEmpty || code == null || code.isEmpty) {
+        return Response(400, body: jsonEncode({'error': 'Missing address or pairing_code'}));
+      }
+      final success = await dm.pairWireless(address, code);
+      if (success) {
+        return Response.ok(jsonEncode({
+          'success': true,
+          'summary': 'Device paired successfully. Now connect using the wireless debugging port.',
+        }));
+      }
+      return Response.ok(jsonEncode({
+        'success': false,
+        'error': 'Pairing failed — check the IP, port, and pairing code',
+      }));
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Wireless pairing failed: $e'}),
+      );
+    }
+  });
+
   // GET /<id>/screen-size -> get device screen dimensions
   router.get('/<id>/screen-size', (Request request, String id) async {
     final device = dm.getDevice(id);

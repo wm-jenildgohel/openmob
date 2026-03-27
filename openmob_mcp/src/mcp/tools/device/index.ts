@@ -21,6 +21,7 @@ import {
   registerGrantPermissions,
   registerGetNotifications,
 } from "./device-info.js";
+import { registerPairWireless, registerConnectWireless } from "./wireless.js";
 
 export function registerDeviceTools(server: McpServer, hub: HubClient): void {
   registerListDevices(server, hub);
@@ -40,4 +41,6 @@ export function registerDeviceTools(server: McpServer, hub: HubClient): void {
   registerToggleAirplane(server, hub);
   registerGrantPermissions(server, hub);
   registerGetNotifications(server, hub);
+  registerPairWireless(server, hub);
+  registerConnectWireless(server, hub);
 }

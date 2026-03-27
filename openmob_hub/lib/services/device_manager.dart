@@ -204,6 +204,22 @@ class DeviceManager {
     return connectWifi('$ip:$port');
   }
 
+  /// Pair with device wirelessly (Android 11+)
+  /// Requires: Developer Options → Wireless debugging → Pair with pairing code
+  /// The device shows an IP:port and a 6-digit pairing code
+  Future<bool> pairWireless(String ipPort, String pairingCode) async {
+    final result = await _adb.runGlobal(['pair', ipPort, pairingCode]);
+    final output = (result.stdout as String).trim() +
+        (result.stderr as String).trim();
+    if (output.contains('Successfully paired') || output.contains('paired')) {
+      // After pairing, connect to the device's wireless debugging port
+      // (different from the pairing port)
+      await refreshDevices();
+      return true;
+    }
+    return false;
+  }
+
   Device? getDevice(String id) {
     try {
       return currentDevices.firstWhere((d) => d.id == id);
