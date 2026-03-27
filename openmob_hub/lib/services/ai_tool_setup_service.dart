@@ -11,7 +11,6 @@ class AiToolSetupService {
 
   AiToolSetupService(this._logService);
 
-  bool _installRan = false;
 
   final _tools = BehaviorSubject<List<AiTool>>.seeded([]);
   ValueStream<List<AiTool>> get tools$ => _tools.stream;
@@ -322,13 +321,11 @@ class AiToolSetupService {
 
   // ─── Install All ───
 
-  bool _skillsInstalled = false;
 
   Future<void> installAll() async {
-    if (_installRan) return; // Prevent duplicate install runs
-    _installRan = true;
+    // Install/update MCP config for ALL detected tools (even already configured — ensures latest npx config)
     for (final tool in currentTools) {
-      if (tool.detected && !tool.configured) {
+      if (tool.detected) {
         switch (tool.name) {
           case 'Cursor':
             await installCursor();
@@ -347,11 +344,8 @@ class AiToolSetupService {
         }
       }
     }
-    // Install skill files once (not on every call)
-    if (!_skillsInstalled) {
-      await _installSkillFiles();
-      _skillsInstalled = true;
-    }
+    // Always install/update skill files
+    await _installSkillFiles();
     await detectAll();
   }
 
