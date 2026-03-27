@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../core/res_colors.dart';
 import '../../main.dart';
 
@@ -14,12 +15,12 @@ class Sidebar extends StatelessWidget {
     this.compact = false,
   });
 
-  static const _items = [
-    _NavItem(Icons.dashboard_rounded, 'Dashboard'),
-    _NavItem(Icons.phone_android_rounded, 'Devices'),
-    _NavItem(Icons.terminal_rounded, 'Logs'),
-    _NavItem(Icons.bug_report_rounded, 'Testing'),
-    _NavItem(Icons.tune_rounded, 'System'),
+  static final _items = [
+    _NavItem(Iconsax.category_2, 'Dashboard'),
+    _NavItem(Iconsax.mobile, 'Devices'),
+    _NavItem(Iconsax.document_text, 'Logs'),
+    _NavItem(Iconsax.task_square, 'Testing'),
+    _NavItem(Iconsax.setting_2, 'System'),
   ];
 
   @override
@@ -27,7 +28,7 @@ class Sidebar extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
-      width: compact ? 56 : 72,
+      width: compact ? 64 : 84,
       decoration: const BoxDecoration(
         color: ResColors.sidebar,
         border: Border(
@@ -71,7 +72,7 @@ class Sidebar extends StatelessWidget {
                 final item = _items[index];
                 final isSelected = index == selectedIndex;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: _SidebarButton(
                     icon: item.icon,
                     label: item.label,
@@ -151,7 +152,7 @@ class _SidebarButtonState extends State<_SidebarButton> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(8),
@@ -162,12 +163,12 @@ class _SidebarButtonState extends State<_SidebarButton> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, size: 20, color: iconColor),
-              const SizedBox(height: 4),
+              Icon(widget.icon, size: 22, color: iconColor),
+              const SizedBox(height: 6),
               Text(
                 widget.label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight:
                       widget.isSelected ? FontWeight.w600 : FontWeight.w400,
                   color: textColor,
