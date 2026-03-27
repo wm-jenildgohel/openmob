@@ -55,11 +55,13 @@ class OpenMobApp extends StatelessWidget {
       scaffoldBackgroundColor: ResColors.bg,
       colorScheme: const ColorScheme.dark(
         surface: ResColors.bg,
-        primary: ResColors.accent,
-        secondary: ResColors.bridged,
+        primary: ResColors.primary,
+        secondary: ResColors.accent,
+        tertiary: ResColors.primaryLight,
         error: ResColors.error,
         onSurface: ResColors.textPrimary,
         onPrimary: ResColors.textOnAccent,
+        onSecondary: ResColors.textOnAccent,
       ),
       cardTheme: CardThemeData(
         color: ResColors.cardBg,
