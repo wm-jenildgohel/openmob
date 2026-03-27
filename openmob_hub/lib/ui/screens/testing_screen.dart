@@ -242,8 +242,18 @@ class TestingScreen extends StatelessWidget {
     return ValueStreamBuilder<List<TestScript>>(
       stream: testRunnerService.scripts$,
       builder: (context, scripts, _) {
-        if (scripts.isEmpty) {
-          return _buildEmptyState(context);
+        // Show empty state only when no scripts AND not creating a new one
+        if (scripts.isEmpty && _selectedScriptId.value != '__new__') {
+          return ValueStreamBuilder<String?>(
+            stream: _selectedScriptId.stream,
+            builder: (context, selectedId, _) {
+              if (selectedId == '__new__') {
+                // User clicked New Test — show the editor full-width
+                return _ScriptEditorPanel();
+              }
+              return _buildEmptyState(context);
+            },
+          );
         }
         return LayoutBuilder(
           builder: (context, constraints) {
