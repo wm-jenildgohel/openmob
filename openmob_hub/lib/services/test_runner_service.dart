@@ -200,44 +200,70 @@ class TestRunnerService {
 
     switch (step.action) {
       case 'tap':
-        if (p.containsKey('index')) {
+        if (p.containsKey('index') && p['index'] != null) {
           final r = await _actionService.tapElement(
             deviceId,
             (p['index'] as num).toInt(),
           );
           return (success: r.success, error: r.error);
         }
+        final x = p['x'];
+        final y = p['y'];
+        if (x == null || y == null) {
+          return (success: false, error: 'Tap requires either index or x,y coordinates');
+        }
         final r = await _actionService.tap(
           deviceId,
-          (p['x'] as num).toInt(),
-          (p['y'] as num).toInt(),
+          (x as num).toInt(),
+          (y as num).toInt(),
         );
         return (success: r.success, error: r.error);
 
       case 'swipe':
-        final r = await _actionService.swipe(
-          deviceId,
-          (p['x1'] as num).toInt(),
-          (p['y1'] as num).toInt(),
-          (p['x2'] as num).toInt(),
-          (p['y2'] as num).toInt(),
+        int x1, y1, x2, y2;
+        if (p.containsKey('direction') && p['direction'] != null) {
+          // Convert direction to center-screen swipe coordinates
+          const cx = 540, cy = 960;
+          const dist = 400;
+          switch (p['direction'] as String) {
+            case 'up':    x1 = cx; y1 = cy + dist; x2 = cx; y2 = cy - dist;
+            case 'down':  x1 = cx; y1 = cy - dist; x2 = cx; y2 = cy + dist;
+            case 'left':  x1 = cx + dist; y1 = cy; x2 = cx - dist; y2 = cy;
+            case 'right': x1 = cx - dist; y1 = cy; x2 = cx + dist; y2 = cy;
+            default: return (success: false, error: 'Unknown direction: ${p['direction']}');
+          }
+        } else {
+          final sx1 = p['x1'], sy1 = p['y1'], sx2 = p['x2'], sy2 = p['y2'];
+          if (sx1 == null || sy1 == null || sx2 == null || sy2 == null) {
+            return (success: false, error: 'Swipe requires direction or x1,y1,x2,y2 coordinates');
+          }
+          x1 = (sx1 as num).toInt(); y1 = (sy1 as num).toInt();
+          x2 = (sx2 as num).toInt(); y2 = (sy2 as num).toInt();
+        }
+        final sr = await _actionService.swipe(
+          deviceId, x1, y1, x2, y2,
           durationMs: (p['duration'] as num?)?.toInt() ?? 300,
         );
-        return (success: r.success, error: r.error);
+        return (success: sr.success, error: sr.error);
 
       case 'type_text':
-        final r = await _actionService.typeText(
-          deviceId,
-          p['text'] as String,
-        );
-        return (success: r.success, error: r.error);
+        final text = p['text'];
+        if (text == null || (text as String).isEmpty) {
+          return (success: false, error: 'type_text requires a text parameter');
+        }
+        final tr = await _actionService.typeText(deviceId, text);
+        return (success: tr.success, error: tr.error);
 
       case 'press_key':
-        final r = await _actionService.pressKey(
+        final keyCode = p['keyCode'];
+        if (keyCode == null) {
+          return (success: false, error: 'press_key requires a keyCode parameter');
+        }
+        final kr = await _actionService.pressKey(
           deviceId,
-          (p['keyCode'] as num).toInt(),
+          (keyCode as num).toInt(),
         );
-        return (success: r.success, error: r.error);
+        return (success: kr.success, error: kr.error);
 
       case 'launch_app':
         final r = await _actionService.launchApp(
