@@ -230,9 +230,12 @@ class AiToolSetupService {
 
   Future<AiTool> _detectCodexCli() async {
     final path = _codexAgentsPath;
-    final detected =
-        _commandExists('codex') || File(path).existsSync();
-    final configured = detected && _hasOpenMobConfig(path);
+    final fileExists = File(path).existsSync();
+    final dirExists = Directory(File(path).parent.path).existsSync();
+    final binaryExists = _commandExists('codex');
+    // Detected if codex binary is installed OR the config directory exists OR we already wrote the file
+    final detected = binaryExists || dirExists || fileExists;
+    final configured = fileExists && _hasOpenMobConfig(path);
     return AiTool(
       name: 'Codex CLI',
       icon: 'codex',
@@ -323,7 +326,7 @@ class AiToolSetupService {
 
 
   Future<void> installAll() async {
-    // Install/update MCP config for ALL detected tools (even already configured — ensures latest npx config)
+    // Install/update MCP config for detected tools
     for (final tool in currentTools) {
       if (tool.detected) {
         switch (tool.name) {
@@ -337,13 +340,12 @@ class AiToolSetupService {
             await installVSCode();
           case 'Windsurf':
             await installWindsurf();
-          case 'Codex CLI':
-            await installCodexCli();
-          case 'Gemini CLI':
-            await installGeminiCli();
         }
       }
     }
+    // Always install skill files for text-based agents (just writes a file, no detection needed)
+    await installCodexCli();
+    await installGeminiCli();
     // Always install/update skill files
     await _installSkillFiles();
     await detectAll();
