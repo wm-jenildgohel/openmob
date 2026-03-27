@@ -11,6 +11,7 @@ class AiToolSetupService {
 
   AiToolSetupService(this._logService);
 
+  bool _installing = false;
 
   final _tools = BehaviorSubject<List<AiTool>>.seeded([]);
   ValueStream<List<AiTool>> get tools$ => _tools.stream;
@@ -326,6 +327,16 @@ class AiToolSetupService {
 
 
   Future<void> installAll() async {
+    if (_installing) return;
+    _installing = true;
+    try {
+      await _installAllInner();
+    } finally {
+      _installing = false;
+    }
+  }
+
+  Future<void> _installAllInner() async {
     // Install/update MCP config for detected tools
     for (final tool in currentTools) {
       if (tool.detected) {
@@ -353,8 +364,16 @@ class AiToolSetupService {
 
   // ─── Skill file installation ───
 
-  /// Public method to install skill files from UI
-  Future<void> installSkillFiles() => _installSkillFiles();
+  /// Public method to install skill files from UI (debounced)
+  Future<void> installSkillFiles() async {
+    if (_installing) return;
+    _installing = true;
+    try {
+      await _installSkillFiles();
+    } finally {
+      _installing = false;
+    }
+  }
 
   Future<void> _installSkillFiles() async {
     _logService.addLine('hub', 'Installing OpenMob skill files...');
