@@ -6,7 +6,7 @@ import 'package:rxdart/rxdart.dart';
 
 import 'log_service.dart';
 
-const _currentVersion = '0.0.10';
+const _currentVersion = '0.0.11';
 const _repoOwner = 'wm-jenildgohel';
 const _repoName = 'openmob';
 const _apiBase = 'https://api.github.com/repos/$_repoOwner/$_repoName';

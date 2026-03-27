@@ -1,6 +1,6 @@
 [package]
 name = "openmob-bridge"
-version = "0.0.10"
+version = "0.0.11"
 edition = "2021"
 rust-version = "1.70"
 description = "Wrap terminal AI agents (Claude Code, Codex, Gemini) with PTY layer and HTTP injection API. Part of OpenMob — free mobile device automation."
