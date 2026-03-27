@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../core/res_colors.dart';
@@ -51,8 +49,6 @@ class LiveMirror extends StatefulWidget {
 }
 
 class _LiveMirrorState extends State<LiveMirror> {
-  Player? _player;
-  VideoController? _controller;
   Timer? _screenshotTimer;
 
   BehaviorSubject<_MirrorState> get _state => _getState(widget.deviceSerial);
@@ -64,46 +60,10 @@ class _LiveMirrorState extends State<LiveMirror> {
   }
 
   Future<void> _startMirroring() async {
-    // If media_kit isn't available (locale crash, missing libs), go straight to screenshots
-    if (!mediaKitAvailable) {
-      _startScreenshotPolling();
-      return;
-    }
-
-    try {
-      final tcpUrl = await scrcpyStreamService.startStream(widget.deviceSerial);
-
-      if (tcpUrl == null) {
-        _startScreenshotPolling();
-        return;
-      }
-
-      final player = Player();
-      final controller = VideoController(player);
-
-      if (player.platform is NativePlayer) {
-        final native = player.platform as NativePlayer;
-        await native.setProperty('profile', 'low-latency');
-        await native.setProperty('untimed', '');
-        await native.setProperty('no-cache', '');
-        await native.setProperty('demuxer-lavf-format', 'h264');
-        await native.setProperty('demuxer-lavf-o', 'live=1');
-        await native.setProperty('video-sync', 'display-resample');
-        await native.setProperty('vd-lavc-threads', '1');
-        await native.setProperty('cache', 'no');
-        await native.setProperty('cache-secs', '0');
-      }
-
-      await player.open(Media(tcpUrl));
-
-      if (mounted) {
-        _player = player;
-        _controller = controller;
-        _state.add(const _MirrorState(mode: _MirrorMode.live));
-      }
-    } catch (e) {
-      _startScreenshotPolling();
-    }
+    // media_kit_video has platform registration issues without media_kit_libs_video.
+    // Use fast screenshot polling as the reliable default.
+    // TODO: Re-enable live H.264 streaming when media_kit_libs build is fixed.
+    _startScreenshotPolling();
   }
 
   void _startScreenshotPolling() {
@@ -129,7 +89,6 @@ class _LiveMirrorState extends State<LiveMirror> {
 
   @override
   void dispose() {
-    _player?.dispose();
     _screenshotTimer?.cancel();
     super.dispose();
   }
@@ -144,8 +103,7 @@ class _LiveMirrorState extends State<LiveMirror> {
 
         return switch (state.mode) {
           _MirrorMode.loading => _buildPlaceholder(),
-          _MirrorMode.live => _buildLiveStream(),
-          _MirrorMode.screenshot => _buildScreenshot(state.screenshotBase64),
+          _MirrorMode.live || _MirrorMode.screenshot => _buildScreenshot(state.screenshotBase64),
           _MirrorMode.error => _buildScreenshot(null),
         };
       },
@@ -170,42 +128,6 @@ class _LiveMirrorState extends State<LiveMirror> {
             ),
             SizedBox(height: 12),
             Text('Connecting...', style: TextStyle(color: ResColors.textMuted, fontSize: 12)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLiveStream() {
-    if (_controller == null) return _buildPlaceholder();
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        color: Colors.black,
-        child: Stack(
-          children: [
-            Video(controller: _controller!, fit: BoxFit.contain),
-            Positioned(
-              top: 8, right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red.withAlpha(200),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.circle, size: 8, color: Colors.white),
-                    SizedBox(width: 4),
-                    Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
