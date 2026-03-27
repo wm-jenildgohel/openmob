@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -32,12 +33,18 @@ class SystemCheckScreen extends StatelessWidget {
                 ],
               ),
               const Spacer(),
+              OutlinedButton.icon(
+                onPressed: () => autoSetupService.runAutoSetup(),
+                icon: const Icon(Iconsax.magic_star, size: 16),
+                label: const Text('Re-run Setup'),
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: () {
                   systemCheckService.checkAll();
                   aiToolSetupService.detectAll();
                 },
-                icon: const Icon(Icons.refresh_rounded, size: 16),
+                icon: const Icon(Iconsax.refresh, size: 16),
                 label: const Text('Re-check'),
               ),
             ],
@@ -68,32 +75,32 @@ class SystemCheckScreen extends StatelessWidget {
           case UpdateStatus.idle:
           case UpdateStatus.checking:
             statusColor = ResColors.textSecondary;
-            statusIcon = Icons.update_rounded;
+            statusIcon = Iconsax.refresh;
             statusText = 'Checking for updates...';
             subtitle = 'Current version: v${info.currentVersion}';
           case UpdateStatus.upToDate:
             statusColor = ResColors.connected;
-            statusIcon = Icons.check_circle_rounded;
+            statusIcon = Iconsax.tick_circle;
             statusText = 'Up to date';
             subtitle = 'v${info.currentVersion} is the latest version';
           case UpdateStatus.available:
             statusColor = ResColors.accent;
-            statusIcon = Icons.new_releases_rounded;
+            statusIcon = Iconsax.notification_status;
             statusText = 'Update available: v${info.latestVersion}';
             subtitle = 'Current: v${info.currentVersion}';
           case UpdateStatus.downloading:
             statusColor = ResColors.warning;
-            statusIcon = Icons.downloading_rounded;
+            statusIcon = Iconsax.import_1;
             statusText = 'Downloading v${info.latestVersion}...';
             subtitle = '${(info.progress * 100).toInt()}%';
           case UpdateStatus.installing:
             statusColor = ResColors.warning;
-            statusIcon = Icons.install_desktop_rounded;
+            statusIcon = Iconsax.document_download;
             statusText = 'Installing...';
             subtitle = 'Please wait';
           case UpdateStatus.error:
             statusColor = ResColors.error;
-            statusIcon = Icons.error_outline_rounded;
+            statusIcon = Iconsax.warning_2;
             statusText = 'Update check failed';
             subtitle = info.error ?? 'Unknown error';
         }
@@ -135,7 +142,7 @@ class SystemCheckScreen extends StatelessWidget {
                     if (info.downloadUrl != null)
                       ElevatedButton.icon(
                         onPressed: () => updateService.downloadAndInstall(),
-                        icon: const Icon(Icons.download_rounded, size: 16),
+                        icon: const Icon(Iconsax.import_1, size: 16),
                         label: const Text('Download'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ResColors.accent,
@@ -153,7 +160,7 @@ class SystemCheckScreen extends StatelessWidget {
                   if (info.status == UpdateStatus.upToDate || info.status == UpdateStatus.error)
                     TextButton.icon(
                       onPressed: () => updateService.checkForUpdate(),
-                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      icon: const Icon(Iconsax.refresh, size: 16),
                       label: const Text('Check Again'),
                     ),
                   if (info.status == UpdateStatus.idle || info.status == UpdateStatus.checking)
@@ -228,7 +235,7 @@ class SystemCheckScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.build_rounded, size: 18, color: ResColors.textSecondary),
+                const Icon(Iconsax.cpu, size: 18, color: ResColors.textSecondary),
                 const SizedBox(width: 8),
                 Text('Required Software', style: textTheme.titleMedium),
                 const SizedBox(width: 12),
@@ -301,7 +308,7 @@ class SystemCheckScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.smart_toy_rounded, size: 18, color: ResColors.textSecondary),
+                const Icon(Iconsax.cpu_charge, size: 18, color: ResColors.textSecondary),
                 const SizedBox(width: 8),
                 Text('AI Tools', style: textTheme.titleMedium),
                 const SizedBox(width: 12),
@@ -310,10 +317,16 @@ class SystemCheckScreen extends StatelessWidget {
                   color: configured == detected.length ? ResColors.accent : ResColors.warning,
                 ),
                 const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: () => aiToolSetupService.installSkillFiles(),
+                  icon: const Icon(Iconsax.document_code, size: 16),
+                  label: const Text('Install Skills'),
+                ),
+                const SizedBox(width: 8),
                 if (unconfigured.isNotEmpty)
                   ElevatedButton.icon(
                     onPressed: () => aiToolSetupService.installAll(),
-                    icon: const Icon(Icons.auto_fix_high_rounded, size: 16),
+                    icon: const Icon(Iconsax.magic_star, size: 16),
                     label: const Text('Setup All'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ResColors.accent,
@@ -377,19 +390,19 @@ class _AiToolCard extends StatelessWidget {
 
     if (!tool.detected) {
       statusColor = ResColors.textMuted;
-      statusIcon = Icons.remove_circle_outline_rounded;
+      statusIcon = Iconsax.minus_cirlce;
       statusText = 'Not installed';
     } else if (tool.configured) {
       statusColor = ResColors.connected;
-      statusIcon = Icons.check_circle_rounded;
+      statusIcon = Iconsax.tick_circle;
       statusText = 'Configured';
     } else if (tool.installing) {
       statusColor = ResColors.warning;
-      statusIcon = Icons.downloading_rounded;
+      statusIcon = Iconsax.import_1;
       statusText = 'Configuring...';
     } else {
       statusColor = ResColors.warning;
-      statusIcon = Icons.warning_amber_rounded;
+      statusIcon = Iconsax.warning_2;
       statusText = 'Detected \u2014 not configured';
     }
 
@@ -435,6 +448,25 @@ class _AiToolCard extends StatelessWidget {
                       ),
                       child: const Text('Setup', style: TextStyle(
                         color: ResColors.textOnAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      )),
+                    ),
+                  ),
+                ),
+              if (tool.detected && tool.configured)
+                GestureDetector(
+                  onTap: () => _handleSetup(),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: ResColors.bgSurface,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('Re-configure', style: TextStyle(
+                        color: ResColors.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       )),

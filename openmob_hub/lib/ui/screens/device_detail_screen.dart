@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
@@ -41,7 +42,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.phonelink_erase, size: 64, color: ResColors.muted),
+                  Icon(Iconsax.mobile, size: 64, color: ResColors.muted),
                   const SizedBox(height: 16),
                   const Text('Device disconnected'),
                   const SizedBox(height: 8),
@@ -91,7 +92,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                           children: [
                             _buildMetadataCard(context, device),
                             const SizedBox(height: 16),
-                            _buildBridgeCard(context, device),
+                            _buildQuickActionsCard(context, device),
                           ],
                         ),
                       ),
@@ -112,7 +113,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                     const SizedBox(height: 16),
                     _buildMetadataCard(context, device),
                     const SizedBox(height: 16),
-                    _buildBridgeCard(context, device),
+                    _buildQuickActionsCard(context, device),
                   ],
                 ),
               );
@@ -148,7 +149,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     );
   }
 
-  Widget _buildBridgeCard(BuildContext context, Device device) {
+  Widget _buildQuickActionsCard(BuildContext context, Device device) {
     final textTheme = Theme.of(context).textTheme;
 
     return Card(
@@ -157,55 +158,102 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text('Device Automation', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const Spacer(),
-                Tooltip(
-                  message: 'Enable this device for MCP tool control.\n'
-                      'When active, AI agents can interact with this device.',
-                  child: Icon(Icons.info_outline, size: 18, color: ResColors.muted),
-                ),
-              ],
-            ),
+            Text('Quick Actions', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: device.bridgeActive ? ResColors.connected : ResColors.offline,
-                  ),
+                _QuickActionButton(
+                  icon: Iconsax.image,
+                  label: 'Screenshot',
+                  onTap: () async {
+                    try {
+                      final screenshot = await screenshotService.captureScreenshot(widget.deviceId);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Screenshot captured (${screenshot.width}x${screenshot.height})')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Screenshot failed: $e')),
+                        );
+                      }
+                    }
+                  },
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  device.bridgeActive ? 'Enabled - AI agents can control this device' : 'Disabled',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: device.bridgeActive ? ResColors.connected : ResColors.offline,
-                    fontWeight: FontWeight.w500,
-                  ),
+                _QuickActionButton(
+                  icon: Iconsax.refresh,
+                  label: 'Refresh',
+                  onTap: () => deviceManager.refreshDevices(),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: device.bridgeActive
-                      ? () => deviceManager.stopBridge(widget.deviceId)
-                      : () => deviceManager.startBridge(widget.deviceId),
-                  icon: Icon(device.bridgeActive ? Icons.stop : Icons.play_arrow),
-                  label: Text(device.bridgeActive ? 'Disable' : 'Enable'),
-                  style: device.bridgeActive
-                      ? ElevatedButton.styleFrom(foregroundColor: ResColors.offline)
-                      : null,
+                _QuickActionButton(
+                  icon: Iconsax.home_2,
+                  label: 'Go Home',
+                  onTap: () async {
+                    try {
+                      await actionService.goHome(widget.deviceId);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Go Home failed: $e')),
+                        );
+                      }
+                    }
+                  },
+                ),
+                _QuickActionButton(
+                  icon: Iconsax.global,
+                  label: 'Open URL',
+                  onTap: () => _showOpenUrlDialog(context),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showOpenUrlDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Open URL'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'https://example.com',
+            labelText: 'URL',
+          ),
+          autofocus: true,
+          onSubmitted: (_) {
+            final url = controller.text.trim();
+            if (url.isNotEmpty) {
+              actionService.openUrl(widget.deviceId, url);
+              Navigator.pop(ctx);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final url = controller.text.trim();
+              if (url.isNotEmpty) {
+                actionService.openUrl(widget.deviceId, url);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Open'),
+          ),
+        ],
       ),
     );
   }
@@ -251,6 +299,63 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
           const SizedBox(width: 4),
           Text(displayStatus, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickActionButton extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_QuickActionButton> createState() => _QuickActionButtonState();
+}
+
+class _QuickActionButtonState extends State<_QuickActionButton> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: _hovering ? ResColors.accentSoft : ResColors.bgSurface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _hovering ? ResColors.accent.withValues(alpha: 0.3) : ResColors.cardBorder,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, size: 16, color: _hovering ? ResColors.accent : ResColors.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  color: _hovering ? ResColors.accent : ResColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

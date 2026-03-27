@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
@@ -18,7 +19,7 @@ class ProcessControls extends StatelessWidget {
             child: _ProcessCard(
           title: 'MCP Server',
           subtitle: 'Device tools for AI agents',
-          icon: Icons.hub_rounded,
+          icon: Iconsax.cpu_charge,
           stream: processManager.mcpStatus$,
           onStart: () => processManager.startMcp(),
           onStop: () => processManager.stopMcp(),
@@ -29,7 +30,7 @@ class ProcessControls extends StatelessWidget {
             child: _ProcessCard(
           title: 'AiBridge',
           subtitle: 'AI Agent Bridge',
-          icon: Icons.terminal_rounded,
+          icon: Iconsax.command_square,
           stream: processManager.bridgeStatus$,
           onStart: () => _showAgentPicker(context),
           onStop: () => processManager.stopBridge(),
@@ -60,7 +61,7 @@ class ProcessControls extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: agents
               .map((a) => ListTile(
-                    leading: const Icon(Icons.terminal_rounded),
+                    leading: const Icon(Iconsax.command_square),
                     title: Text(a),
                     onTap: () {
                       Navigator.pop(ctx);
@@ -213,21 +214,21 @@ class _ProcessCard extends StatelessWidget {
                 children: [
                   _ActionButton(
                     label: 'Start',
-                    icon: Icons.play_arrow_rounded,
+                    icon: Iconsax.play,
                     onPressed: (isRunning || isStarting) ? null : onStart,
                     isPrimary: true,
                   ),
                   const SizedBox(width: 8),
                   _ActionButton(
                     label: 'Stop',
-                    icon: Icons.stop_rounded,
+                    icon: Iconsax.stop,
                     onPressed: (isRunning || isError) ? onStop : null,
                   ),
                   if (onRestart != null) ...[
                     const SizedBox(width: 8),
                     _ActionButton(
                       label: 'Restart',
-                      icon: Icons.refresh_rounded,
+                      icon: Iconsax.refresh,
                       onPressed: isRunning ? onRestart : null,
                     ),
                   ],

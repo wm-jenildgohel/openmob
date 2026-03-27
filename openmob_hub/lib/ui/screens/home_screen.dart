@@ -61,7 +61,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Iconsax.refresh),
                     tooltip: 'Refresh devices',
                     onPressed: () => deviceManager.refreshDevices(),
                   ),
@@ -129,7 +129,7 @@ class _HomeEmptyStateState extends State<_HomeEmptyState>
                 child: child,
               );
             },
-            child: Icon(Icons.phone_android, size: 64, color: ResColors.muted),
+            child: Icon(Iconsax.mobile, size: 64, color: ResColors.muted),
           ),
           const SizedBox(height: 16),
           ShaderMask(
@@ -171,7 +171,7 @@ class _HomeEmptyStateState extends State<_HomeEmptyState>
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.refresh_rounded,
+                    Icon(Iconsax.refresh,
                         size: 16, color: ResColors.textOnAccent),
                     SizedBox(width: 8),
                     Text(
@@ -442,7 +442,7 @@ class _WirelessPairDialogState extends State<_WirelessPairDialog> {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close,
+                    icon: const Icon(Iconsax.close_circle,
                         size: 18, color: ResColors.textMuted),
                     onPressed: () => Navigator.of(context).pop(),
                     splashRadius: 16,

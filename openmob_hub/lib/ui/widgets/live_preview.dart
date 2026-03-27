@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
@@ -73,7 +74,7 @@ class LivePreview extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.phone_android, size: 48, color: ResColors.muted),
+                    Icon(Iconsax.mobile, size: 48, color: ResColors.muted),
                     const SizedBox(height: 12),
                     Text(
                       'Waiting for screenshot...',

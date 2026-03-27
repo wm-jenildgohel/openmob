@@ -357,6 +357,9 @@ class AiToolSetupService {
 
   // ─── Skill file installation ───
 
+  /// Public method to install skill files from UI
+  Future<void> installSkillFiles() => _installSkillFiles();
+
   Future<void> _installSkillFiles() async {
     _logService.addLine('hub', 'Installing OpenMob skill files...');
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../core/res_colors.dart';
 
 class ConnectionBadge extends StatelessWidget {
@@ -32,10 +33,10 @@ class ConnectionBadge extends StatelessWidget {
 
   (Color, IconData, String) _resolve(String type) {
     return switch (type.toLowerCase()) {
-      'usb' => (ResColors.usb, Icons.usb, 'USB'),
-      'wifi' => (ResColors.wifi, Icons.wifi, 'WiFi'),
-      'emulator' => (ResColors.emulator, Icons.phone_android, 'Emulator'),
-      _ => (ResColors.muted, Icons.device_unknown, type),
+      'usb' => (ResColors.usb, Iconsax.link_21, 'USB'),
+      'wifi' => (ResColors.wifi, Iconsax.wifi, 'WiFi'),
+      'emulator' => (ResColors.emulator, Iconsax.mobile, 'Emulator'),
+      _ => (ResColors.muted, Iconsax.mobile, type),
     };
   }
 }

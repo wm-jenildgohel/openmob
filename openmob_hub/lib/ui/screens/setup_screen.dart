@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
@@ -114,10 +115,10 @@ class _PhaseIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (phase == SetupPhase.complete) {
-      return const Icon(Icons.check_circle_rounded, color: ResColors.accent, size: 24);
+      return const Icon(Iconsax.tick_circle, color: ResColors.accent, size: 24);
     }
     if (phase == SetupPhase.failed) {
-      return const Icon(Icons.error_rounded, color: ResColors.error, size: 24);
+      return const Icon(Iconsax.warning_2, color: ResColors.error, size: 24);
     }
     return const SizedBox(
       width: 20, height: 20,
@@ -160,14 +161,14 @@ class _SetupChecklist extends StatelessWidget {
             child: Row(
               children: [
                 if (isDone)
-                  const Icon(Icons.check_circle_rounded, size: 18, color: ResColors.accent)
+                  const Icon(Iconsax.tick_circle, size: 18, color: ResColors.accent)
                 else if (isCurrent)
                   const SizedBox(
                     width: 18, height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2, color: ResColors.accent),
                   )
                 else
-                  Icon(Icons.circle_outlined, size: 18,
+                  Icon(Iconsax.record, size: 18,
                       color: isPending ? ResColors.textMuted : ResColors.textSecondary),
                 const SizedBox(width: 12),
                 Text(

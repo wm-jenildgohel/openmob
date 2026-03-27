@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
@@ -150,7 +151,7 @@ class _DashboardContent extends StatelessWidget {
           // Devices header
           Row(
             children: [
-              const Icon(Icons.phone_android_rounded,
+              const Icon(Iconsax.mobile,
                   size: 20, color: ResColors.textSecondary),
               const SizedBox(width: 8),
               Text('Connected Devices', style: textTheme.titleMedium),
@@ -289,7 +290,7 @@ class _EmptyDeviceStateState extends State<_EmptyDeviceState>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
-                Icons.phone_android_rounded,
+                Iconsax.mobile,
                 size: 32,
                 color: ResColors.textMuted,
               ),
@@ -335,7 +336,7 @@ class _EmptyDeviceStateState extends State<_EmptyDeviceState>
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.refresh_rounded,
+                    Icon(Iconsax.refresh,
                         size: 16, color: ResColors.textOnAccent),
                     SizedBox(width: 8),
                     Text(
@@ -490,8 +491,8 @@ class _DeviceRowState extends State<_DeviceRow> {
                 ),
                 child: Icon(
                   device.platform == 'ios'
-                      ? Icons.phone_iphone_rounded
-                      : Icons.phone_android_rounded,
+                      ? Iconsax.mobile
+                      : Iconsax.mobile,
                   color: ResColors.accent,
                   size: 20,
                 ),
@@ -544,7 +545,7 @@ class _DeviceRowState extends State<_DeviceRow> {
               PulseDot.fromStatus(device.status, size: 8),
               const SizedBox(width: 8),
               Icon(
-                Icons.chevron_right_rounded,
+                Iconsax.arrow_right_3,
                 size: 20,
                 color:
                     _hovering ? ResColors.textSecondary : ResColors.textMuted,

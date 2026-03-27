@@ -24,7 +24,10 @@ class TestRunnerService {
     this._deviceManager,
     this._logService, {
     UiTreeService? uiTree,
-  }) : _uiTree = uiTree;
+  }) : _uiTree = uiTree {
+    _loadScriptsFromDisk();
+    _loadResultsFromDisk();
+  }
 
   final _scripts = BehaviorSubject<List<TestScript>>.seeded([]);
   final _results = BehaviorSubject<List<TestResult>>.seeded([]);
@@ -36,10 +39,12 @@ class TestRunnerService {
 
   void addScript(TestScript script) {
     _scripts.add([..._scripts.value, script]);
+    _saveScriptsToDisk();
   }
 
   void removeScript(String id) {
     _scripts.add(_scripts.value.where((s) => s.id != id).toList());
+    _saveScriptsToDisk();
   }
 
   TestScript? getScript(String id) {
@@ -175,6 +180,7 @@ class TestRunnerService {
 
     _results.add([..._results.value, finalResult]);
     _currentRun.add(null);
+    _saveResultsToDisk();
 
     _logService.addLine(
       'test',
@@ -397,6 +403,7 @@ class TestRunnerService {
       );
       _results.add([..._results.value, failResult]);
       _currentRun.add(null);
+      _saveResultsToDisk();
       return failResult;
     }
 
@@ -464,6 +471,7 @@ class TestRunnerService {
 
     _results.add([..._results.value, finalResult]);
     _currentRun.add(null);
+    _saveResultsToDisk();
 
     _logService.addLine(
       'test',
@@ -487,7 +495,73 @@ class TestRunnerService {
     return null;
   }
 
+  // ─── Persistence ───
+
+  String get _dataDir {
+    final home = Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ?? '.';
+    final dir = '$home/.openmob/data';
+    Directory(dir).createSync(recursive: true);
+    return dir;
+  }
+
+  void _loadScriptsFromDisk() {
+    try {
+      final f = File('$_dataDir/test_scripts.json');
+      if (f.existsSync()) {
+        final data = jsonDecode(f.readAsStringSync()) as List<dynamic>;
+        final scripts = data
+            .map((e) => TestScript.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _scripts.add(scripts);
+      }
+    } catch (_) {
+      // Corrupt file — start fresh
+    }
+  }
+
+  void _saveScriptsToDisk() {
+    try {
+      final data = _scripts.value.map((s) => s.toJson()).toList();
+      File('$_dataDir/test_scripts.json').writeAsStringSync(
+        const JsonEncoder.withIndent('  ').convert(data),
+      );
+    } catch (_) {
+      // Disk write failed — non-critical
+    }
+  }
+
+  void _loadResultsFromDisk() {
+    try {
+      final f = File('$_dataDir/test_results.json');
+      if (f.existsSync()) {
+        final data = jsonDecode(f.readAsStringSync()) as List<dynamic>;
+        final results = data
+            .map((e) => TestResult.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _results.add(results);
+      }
+    } catch (_) {
+      // Corrupt file — start fresh
+    }
+  }
+
+  void _saveResultsToDisk() {
+    try {
+      // Only keep last 100 results
+      final toSave = _results.value.take(100).toList();
+      final data = toSave.map((r) => r.toJson()).toList();
+      File('$_dataDir/test_results.json').writeAsStringSync(
+        const JsonEncoder.withIndent('  ').convert(data),
+      );
+    } catch (_) {
+      // Disk write failed — non-critical
+    }
+  }
+
   void dispose() {
+    _saveScriptsToDisk();
+    _saveResultsToDisk();
     _scripts.close();
     _results.close();
     _currentRun.close();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
@@ -39,7 +40,7 @@ class LogViewer extends StatelessWidget {
               stream: logService.logs$,
               builder: (context, logs, child) {
                 return IconButton(
-                  icon: const Icon(Icons.copy, size: 18),
+                  icon: const Icon(Iconsax.copy, size: 18),
                   tooltip: 'Copy logs',
                   onPressed: logs.isEmpty
                       ? null
@@ -68,7 +69,7 @@ class LogViewer extends StatelessWidget {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18),
+              icon: const Icon(Iconsax.trash, size: 18),
               tooltip: 'Clear logs',
               onPressed: () => logService.clear(),
             ),
@@ -161,8 +162,8 @@ class _AutoScrollToggleState extends State<_AutoScrollToggle>
             angle: _iconController.value * 0.5,
             child: Icon(
               widget.enabled
-                  ? Icons.vertical_align_bottom_rounded
-                  : Icons.vertical_align_center_rounded,
+                  ? Iconsax.arrow_down
+                  : Iconsax.arrow_up,
               size: 18,
               color: widget.enabled ? ResColors.accent : ResColors.textMuted,
             ),

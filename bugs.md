@@ -38,6 +38,7 @@ Findings
   router.get('/'). In practice that means /api/v1/devices/ works but /api/v1/
   devices does not. That is easy for clients to get wrong and is the direct
   cause of finding 1.
+  
 
   3. Medium: The MCP error message is misleading and points developers in the
      wrong direction.

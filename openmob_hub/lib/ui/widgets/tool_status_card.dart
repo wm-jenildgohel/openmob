@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../core/res_colors.dart';
 import '../../main.dart';
@@ -24,10 +25,10 @@ class ToolStatusCard extends StatelessWidget {
               children: [
                 Icon(
                   tool.installing
-                      ? Icons.downloading
+                      ? Iconsax.import_1
                       : tool.available
-                          ? Icons.check_circle
-                          : Icons.cancel,
+                          ? Iconsax.tick_circle
+                          : Iconsax.close_circle,
                   color: tool.installing
                       ? ResColors.warning
                       : tool.available
@@ -45,7 +46,7 @@ class ToolStatusCard extends StatelessWidget {
                 if (!tool.available && tool.canAutoInstall && !tool.installing)
                   TextButton.icon(
                     onPressed: () => _handleInstall(context),
-                    icon: const Icon(Icons.download, size: 16),
+                    icon: const Icon(Iconsax.import_1, size: 16),
                     label: const Text('Install'),
                     style: TextButton.styleFrom(
                       foregroundColor: ResColors.connected,

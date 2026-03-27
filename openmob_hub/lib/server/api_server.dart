@@ -65,6 +65,7 @@ class ApiServer {
         .addMiddleware(logRequests())
         .addMiddleware(corsMiddleware())
         .addMiddleware(jsonMiddleware())
+        .addMiddleware(_trailingSlashMiddleware())
         .addHandler(router.call);
   }
 
@@ -82,6 +83,32 @@ class ApiServer {
     );
 
     print('API server running on http://127.0.0.1:$_activePort');
+  }
+
+  /// Normalize URLs: /api/v1/devices → /api/v1/devices/ (add trailing slash for collection routes)
+  static Middleware _trailingSlashMiddleware() {
+    return (Handler innerHandler) {
+      return (Request request) {
+        final path = request.requestedUri.path;
+        // If path ends with a route segment (no trailing slash, no file extension, no path param)
+        // and it's a collection endpoint, add trailing slash
+        if (!path.endsWith('/') &&
+            !path.contains('.') &&
+            (path.endsWith('/devices') ||
+             path.endsWith('/tests') ||
+             path.endsWith('/recordings'))) {
+          final newUri = request.requestedUri.replace(path: '$path/');
+          return innerHandler(Request(
+            request.method,
+            newUri,
+            headers: request.headers,
+            body: request.read(),
+            context: request.context,
+          ));
+        }
+        return innerHandler(request);
+      };
+    };
   }
 
   Future<void> stop() async {

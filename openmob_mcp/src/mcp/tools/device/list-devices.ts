@@ -13,7 +13,7 @@ export function registerListDevices(server: McpServer, hub: HubClient): void {
     },
     async () => {
       try {
-        const devices = await hub.get<Device[]>("/devices");
+        const devices = await hub.get<Device[]>("/devices/");
         const count = devices.length;
         const summary = count === 0
           ? "No devices connected — connect a device via USB or start an emulator"

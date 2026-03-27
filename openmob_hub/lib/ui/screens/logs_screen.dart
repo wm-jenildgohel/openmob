@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:rxdart_flutter/rxdart_flutter.dart';
 
 import '../../core/res_colors.dart';
-import '../../main.dart';
 import '../widgets/log_viewer.dart';
 
 final _logFilter = BehaviorSubject<String?>.seeded(null);
@@ -19,19 +18,9 @@ class LogsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                'Logs',
-                style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Clear all logs',
-                onPressed: () => logService.clear(),
-              ),
-            ],
+          Text(
+            'Logs',
+            style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ValueStreamBuilder<String?>(

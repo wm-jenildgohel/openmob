@@ -44,8 +44,17 @@ export function createErrorResponse(error: unknown, summary?: string) {
 
 /** Convert technical errors into QA-friendly language */
 function humanizeError(error: string): string {
-  if (error.includes("ECONNREFUSED")) return "Cannot connect to the device — is OpenMob Hub running?";
-  if (error.includes("404")) return "Device not found — it may have been disconnected";
+  if (error.includes("ECONNREFUSED")) return "Cannot connect to OpenMob Hub — is it running?";
+
+  // Extract HTTP status from Hub API errors like "Hub API error 404: ..."
+  const httpMatch = error.match(/Hub API error (\d{3}):\s*(.*)/);
+  if (httpMatch) {
+    const status = httpMatch[1];
+    const body = httpMatch[2] || "no details";
+    return `Hub returned HTTP ${status} — ${body}`;
+  }
+
+  if (error.includes("404")) return "Route not found on Hub — check the API endpoint or Hub version";
   if (error.includes("timeout")) return "The device took too long to respond — try again";
   if (error.includes("uiautomator")) return "Could not read the screen — the app may be loading";
   if (error.includes("not found")) return "The requested item was not found on the device";
