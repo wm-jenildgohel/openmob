@@ -6,6 +6,8 @@ import '../../core/res_colors.dart';
 import '../../main.dart';
 import '../../services/log_service.dart';
 
+final _autoScroll = BehaviorSubject<bool>.seeded(true);
+
 class LogViewer extends StatelessWidget {
   final String? filterSource;
 
@@ -22,11 +24,22 @@ class LogViewer extends StatelessWidget {
           children: [
             Text('Logs', style: textTheme.titleMedium),
             const Spacer(),
+            // Auto-scroll toggle
+            ValueStreamBuilder<bool>(
+              stream: _autoScroll.stream,
+              builder: (context, isAutoScroll, child) {
+                return _AutoScrollToggle(
+                  enabled: isAutoScroll,
+                  onToggle: () => _autoScroll.add(!isAutoScroll),
+                );
+              },
+            ),
+            const SizedBox(width: 4),
             ValueStreamBuilder<List<LogEntry>>(
               stream: logService.logs$,
               builder: (context, logs, child) {
                 return IconButton(
-                  icon: const Icon(Icons.copy),
+                  icon: const Icon(Icons.copy, size: 18),
                   tooltip: 'Copy logs',
                   onPressed: logs.isEmpty
                       ? null
@@ -55,7 +68,7 @@ class LogViewer extends StatelessWidget {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Icons.delete_outline, size: 18),
               tooltip: 'Clear logs',
               onPressed: () => logService.clear(),
             ),
@@ -84,17 +97,8 @@ class LogViewer extends StatelessWidget {
                   );
                 }
 
-                return ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.all(8),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    // logs are already newest-first from LogService
-                    // reverse:true means index 0 is at the bottom
-                    // so we read from the end to show newest at bottom
-                    final entry = filtered[filtered.length - 1 - index];
-                    return _buildLogLine(entry);
-                  },
+                return _LogList(
+                  entries: filtered,
                 );
               },
             ),
@@ -103,27 +107,155 @@ class LogViewer extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildLogLine(LogEntry entry) {
+/// Auto-scroll toggle button with animated icon rotation.
+class _AutoScrollToggle extends StatefulWidget {
+  final bool enabled;
+  final VoidCallback onToggle;
+  const _AutoScrollToggle({required this.enabled, required this.onToggle});
+
+  @override
+  State<_AutoScrollToggle> createState() => _AutoScrollToggleState();
+}
+
+class _AutoScrollToggleState extends State<_AutoScrollToggle>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _iconController;
+
+  @override
+  void initState() {
+    super.initState();
+    _iconController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: widget.enabled ? 1.0 : 0.0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_AutoScrollToggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.enabled != oldWidget.enabled) {
+      if (widget.enabled) {
+        _iconController.forward();
+      } else {
+        _iconController.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _iconController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: AnimatedBuilder(
+        animation: _iconController,
+        builder: (context, child) {
+          return Transform.rotate(
+            angle: _iconController.value * 0.5,
+            child: Icon(
+              widget.enabled
+                  ? Icons.vertical_align_bottom_rounded
+                  : Icons.vertical_align_center_rounded,
+              size: 18,
+              color: widget.enabled ? ResColors.accent : ResColors.textMuted,
+            ),
+          );
+        },
+      ),
+      tooltip: widget.enabled ? 'Auto-scroll ON' : 'Auto-scroll OFF',
+      onPressed: widget.onToggle,
+    );
+  }
+}
+
+/// Log list that respects auto-scroll setting.
+class _LogList extends StatefulWidget {
+  final List<LogEntry> entries;
+  const _LogList({required this.entries});
+
+  @override
+  State<_LogList> createState() => _LogListState();
+}
+
+class _LogListState extends State<_LogList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void didUpdateWidget(_LogList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_autoScroll.value &&
+        widget.entries.length != oldWidget.entries.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Display oldest first (entries are stored newest-first)
+    final reversed = widget.entries.reversed.toList();
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(8),
+      itemCount: reversed.length,
+      itemBuilder: (context, index) {
+        final entry = reversed[index];
+        final isEven = index % 2 == 0;
+        return _buildLogLine(entry, isEven);
+      },
+    );
+  }
+
+  Widget _buildLogLine(LogEntry entry, bool isEven) {
     final ts = '${entry.timestamp.hour.toString().padLeft(2, '0')}:'
         '${entry.timestamp.minute.toString().padLeft(2, '0')}:'
         '${entry.timestamp.second.toString().padLeft(2, '0')}';
 
     final sourceColor = switch (entry.source) {
-      'mcp' => Colors.blue,
-      'aibridge' => Colors.green,
-      _ => Colors.grey,
+      'mcp' => ResColors.bridged,
+      'aibridge' => ResColors.connected,
+      _ => ResColors.textMuted,
     };
 
     final messageColor = switch (entry.level) {
-      LogLevel.info => Colors.white70,
-      LogLevel.warning => ResColors.warning,
-      LogLevel.error => ResColors.error,
+      LogLevel.info => ResColors.logText,
+      LogLevel.warning => ResColors.logWarning,
+      LogLevel.error => ResColors.logError,
       LogLevel.debug => ResColors.muted,
     };
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+    final (badgeColor, badgeLabel) = switch (entry.level) {
+      LogLevel.info => (ResColors.connected, 'INF'),
+      LogLevel.warning => (ResColors.warning, 'WRN'),
+      LogLevel.error => (ResColors.error, 'ERR'),
+      LogLevel.debug => (ResColors.textMuted, 'DBG'),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+      decoration: BoxDecoration(
+        color: isEven
+            ? Colors.transparent
+            : ResColors.bgSurface.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(2),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -132,21 +264,44 @@ class LogViewer extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'monospace',
               fontSize: 12,
-              color: ResColors.muted,
+              color: ResColors.logTimestamp,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
+          // Level badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(
+                color: badgeColor.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Text(
+              badgeLabel,
+              style: TextStyle(
+                fontSize: 9,
+                color: badgeColor,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Source badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: sourceColor.withValues(alpha: 0.3),
+              color: sourceColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               entry.source,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: Colors.white,
+                color: sourceColor,
                 fontWeight: FontWeight.w500,
               ),
             ),

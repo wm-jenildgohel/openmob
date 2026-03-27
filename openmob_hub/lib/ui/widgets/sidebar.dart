@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/res_colors.dart';
+import '../../main.dart';
 
 class Sidebar extends StatelessWidget {
   final int selectedIndex;
@@ -75,12 +76,12 @@ class Sidebar extends StatelessWidget {
               },
             ),
           ),
-          // Version badge at bottom
-          const Padding(
-            padding: EdgeInsets.all(12),
+          // Version badge at bottom — reads from UpdateService
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Text(
-              'v1.0.0',
-              style: TextStyle(
+              'v${updateService.currentVersion}',
+              style: const TextStyle(
                 fontSize: 10,
                 color: ResColors.textMuted,
               ),
@@ -161,7 +162,8 @@ class _SidebarButtonState extends State<_SidebarButton> {
                 widget.label,
                 style: TextStyle(
                   fontSize: 10,
-                  fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight:
+                      widget.isSelected ? FontWeight.w600 : FontWeight.w400,
                   color: textColor,
                 ),
               ),

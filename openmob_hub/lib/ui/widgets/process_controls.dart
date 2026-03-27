@@ -4,6 +4,7 @@ import 'package:rxdart_flutter/rxdart_flutter.dart';
 import '../../core/res_colors.dart';
 import '../../main.dart';
 import '../../models/process_info.dart';
+import 'pulse_dot.dart';
 
 class ProcessControls extends StatelessWidget {
   const ProcessControls({super.key});
@@ -13,7 +14,8 @@ class ProcessControls extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _ProcessCard(
+        Expanded(
+            child: _ProcessCard(
           title: 'MCP Server',
           subtitle: 'Device tools for AI agents',
           icon: Icons.hub_rounded,
@@ -23,7 +25,8 @@ class ProcessControls extends StatelessWidget {
           onRestart: () => processManager.restartMcp(),
         )),
         const SizedBox(width: 12),
-        Expanded(child: _ProcessCard(
+        Expanded(
+            child: _ProcessCard(
           title: 'AiBridge',
           subtitle: 'AI Agent Bridge',
           icon: Icons.terminal_rounded,
@@ -40,7 +43,8 @@ class ProcessControls extends StatelessWidget {
     final agents = processManager.availableAgents;
     if (agents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No supported AI agents found on this computer')),
+        const SnackBar(
+            content: Text('No supported AI agents found on this computer')),
       );
       return;
     }
@@ -54,11 +58,16 @@ class ProcessControls extends StatelessWidget {
         title: const Text('Select Agent'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: agents.map((a) => ListTile(
-            leading: const Icon(Icons.terminal_rounded),
-            title: Text(a),
-            onTap: () { Navigator.pop(ctx); processManager.startBridge(agent: a); },
-          )).toList(),
+          children: agents
+              .map((a) => ListTile(
+                    leading: const Icon(Icons.terminal_rounded),
+                    title: Text(a),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      processManager.startBridge(agent: a);
+                    },
+                  ))
+              .toList(),
         ),
       ),
     );
@@ -122,10 +131,16 @@ class _ProcessCard extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: isRunning ? ResColors.accentSoft : ResColors.bgSurface,
+                      color: isRunning
+                          ? ResColors.accentSoft
+                          : ResColors.bgSurface,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, size: 18, color: isRunning ? ResColors.accent : ResColors.textMuted),
+                    child: Icon(icon,
+                        size: 18,
+                        color: isRunning
+                            ? ResColors.accent
+                            : ResColors.textMuted),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -134,47 +149,45 @@ class _ProcessCard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Text(title, style: const TextStyle(
-                              color: ResColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            )),
+                            Text(title,
+                                style: const TextStyle(
+                                  color: ResColors.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                )),
                             if (isOptional) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 1),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: ResColors.border),
+                                  border:
+                                      Border.all(color: ResColors.border),
                                 ),
-                                child: const Text('Optional', style: TextStyle(
-                                  color: ResColors.textMuted,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w500,
-                                )),
+                                child: const Text('Optional',
+                                    style: TextStyle(
+                                      color: ResColors.textMuted,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w500,
+                                    )),
                               ),
                             ],
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(subtitle, style: const TextStyle(
-                          color: ResColors.textMuted,
-                          fontSize: 11,
-                        )),
+                        Text(subtitle,
+                            style: const TextStyle(
+                              color: ResColors.textMuted,
+                              fontSize: 11,
+                            )),
                       ],
                     ),
                   ),
-                  // Status dot with glow
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: statusColor,
-                      boxShadow: isRunning ? [
-                        BoxShadow(color: statusColor.withValues(alpha: 0.5), blurRadius: 8),
-                      ] : null,
-                    ),
+                  // Animated pulsing status dot with scale transition
+                  _AnimatedStatusDot(
+                    status: info.status,
+                    color: statusColor,
                   ),
                 ],
               ),
@@ -187,7 +200,10 @@ class _ProcessCard extends StatelessWidget {
                   ProcessStatus.starting => 'Starting...',
                   ProcessStatus.error => info.errorMessage ?? 'Error',
                 },
-                style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -221,6 +237,70 @@ class _ProcessCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Adds a subtle scale animation when process status changes.
+class _AnimatedStatusDot extends StatefulWidget {
+  final ProcessStatus status;
+  final Color color;
+  const _AnimatedStatusDot({required this.status, required this.color});
+
+  @override
+  State<_AnimatedStatusDot> createState() => _AnimatedStatusDotState();
+}
+
+class _AnimatedStatusDotState extends State<_AnimatedStatusDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    );
+    _scaleController.forward();
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedStatusDot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.status != widget.status) {
+      _scaleController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shouldAnimate = widget.status == ProcessStatus.running ||
+        widget.status == ProcessStatus.starting;
+
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: child,
+        );
+      },
+      child: PulseDot(
+        color: widget.color,
+        size: 10,
+        animate: shouldAnimate,
+      ),
     );
   }
 }
@@ -282,11 +362,12 @@ class _ActionButtonState extends State<_ActionButton> {
             children: [
               Icon(widget.icon, size: 14, color: fg),
               const SizedBox(width: 4),
-              Text(widget.label, style: TextStyle(
-                color: fg,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              )),
+              Text(widget.label,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  )),
             ],
           ),
         ),
