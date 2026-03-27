@@ -5,7 +5,7 @@ import '../../core/res_colors.dart';
 import '../../main.dart';
 import '../../models/device.dart';
 import '../widgets/connection_badge.dart';
-import '../widgets/live_preview.dart';
+import '../widgets/live_mirror.dart';
 
 class DeviceDetailScreen extends StatefulWidget {
   final String deviceId;
@@ -17,18 +17,10 @@ class DeviceDetailScreen extends StatefulWidget {
 }
 
 class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
-  late final LivePreviewController _previewController;
-
-  @override
-  void initState() {
-    super.initState();
-    _previewController = LivePreviewController(deviceId: widget.deviceId);
-    _previewController.start();
-  }
-
   @override
   void dispose() {
-    _previewController.dispose();
+    // Stop scrcpy stream when leaving device detail
+    scrcpyStreamService.stopStream(widget.deviceId);
     super.dispose();
   }
 
@@ -87,7 +79,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                       flex: 2,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: LivePreview(controller: _previewController),
+                        child: LiveMirror(deviceSerial: device.serial),
                       ),
                     ),
                     Expanded(
@@ -115,7 +107,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                   children: [
                     SizedBox(
                       height: 300,
-                      child: LivePreview(controller: _previewController),
+                      child: LiveMirror(deviceSerial: device.serial),
                     ),
                     const SizedBox(height: 16),
                     _buildMetadataCard(context, device),

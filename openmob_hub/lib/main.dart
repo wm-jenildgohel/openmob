@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'server/api_server.dart';
@@ -12,6 +13,7 @@ import 'services/ai_tool_setup_service.dart';
 import 'services/auto_setup_service.dart';
 import 'services/system_check_service.dart';
 import 'services/recording_service.dart';
+import 'services/scrcpy_stream_service.dart';
 import 'services/test_runner_service.dart';
 import 'services/ui_tree_service.dart';
 import 'services/update_service.dart';
@@ -34,9 +36,11 @@ late final ProcessManager processManager;
 late final AiToolSetupService aiToolSetupService;
 late final AutoSetupService autoSetupService;
 late final UpdateService updateService;
+late final ScrcpyStreamService scrcpyStreamService;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   await windowManager.ensureInitialized();
 
   const windowOptions = WindowOptions(
@@ -98,6 +102,7 @@ Future<void> main() async {
     uiTree: uiTreeService,
   );
   recordingService = RecordingService(adbService, logService: logService);
+  scrcpyStreamService = ScrcpyStreamService(adbService, logService: logService);
   systemCheckService = SystemCheckService(logService: logService);
   processManager = ProcessManager(logService);
   aiToolSetupService = AiToolSetupService(logService);
