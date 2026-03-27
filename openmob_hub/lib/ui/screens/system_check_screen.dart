@@ -318,14 +318,28 @@ class SystemCheckScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 OutlinedButton.icon(
-                  onPressed: () => aiToolSetupService.installSkillFiles(),
+                  onPressed: () async {
+                    await aiToolSetupService.installSkillFiles();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Skills installed to Claude Code, Windsurf, Codex, Gemini, and global')),
+                      );
+                    }
+                  },
                   icon: const Icon(Iconsax.document_code, size: 16),
                   label: const Text('Install Skills'),
                 ),
                 const SizedBox(width: 8),
                 if (unconfigured.isNotEmpty)
                   ElevatedButton.icon(
-                    onPressed: () => aiToolSetupService.installAll(),
+                    onPressed: () async {
+                      await aiToolSetupService.installAll();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Configured ${unconfigured.length} AI tool${unconfigured.length > 1 ? "s" : ""}')),
+                        );
+                      }
+                    },
                     icon: const Icon(Iconsax.magic_star, size: 16),
                     label: const Text('Setup All'),
                     style: ElevatedButton.styleFrom(
