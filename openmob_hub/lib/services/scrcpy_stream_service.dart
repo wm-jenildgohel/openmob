@@ -42,7 +42,21 @@ class ScrcpyStreamService {
       if (await File(candidate).exists()) return candidate;
     }
 
-    // Check if scrcpy is installed and find server from its installation
+    // Check standard system locations
+    final systemPaths = [
+      '/usr/local/share/scrcpy/scrcpy-server',
+      '/usr/share/scrcpy/scrcpy-server',
+      '/opt/scrcpy/scrcpy-server',
+      if (Platform.isWindows) ...([
+        'C:\\Program Files\\scrcpy\\scrcpy-server',
+        'C:\\scrcpy\\scrcpy-server',
+      ]),
+    ];
+    for (final path in systemPaths) {
+      if (await File(path).exists()) return path;
+    }
+
+    // Check if scrcpy is installed and find server relative to its binary
     try {
       final result = await Process.run(
         Platform.isWindows ? 'where' : 'which',
@@ -52,10 +66,17 @@ class ScrcpyStreamService {
         final scrcpyPath =
             (result.stdout as String).trim().split('\n').first.trim();
         final scrcpyDir = File(scrcpyPath).parent.path;
-        final serverInDir = '$scrcpyDir${sep}scrcpy-server';
-        if (await File(serverInDir).exists()) return serverInDir;
-        final serverJar = '$scrcpyDir${sep}scrcpy-server.jar';
-        if (await File(serverJar).exists()) return serverJar;
+
+        // Check next to the binary
+        for (final name in ['scrcpy-server', 'scrcpy-server.jar']) {
+          final candidate = '$scrcpyDir$sep$name';
+          if (await File(candidate).exists()) return candidate;
+        }
+
+        // Check ../share/scrcpy/ (standard Linux FHS layout: bin/ → share/scrcpy/)
+        final shareDir = '${File(scrcpyPath).parent.parent.path}${sep}share${sep}scrcpy';
+        final shareServer = '$shareDir${sep}scrcpy-server';
+        if (await File(shareServer).exists()) return shareServer;
       }
     } catch (_) {}
 

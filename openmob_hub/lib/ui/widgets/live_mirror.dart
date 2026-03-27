@@ -1,9 +1,36 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../core/res_colors.dart';
 import '../../main.dart';
+
+/// State for the live mirror widget
+enum _MirrorMode { loading, live, screenshot, error }
+
+/// Module-level streams per device (survives widget rebuilds)
+final _mirrorStates = <String, BehaviorSubject<_MirrorState>>{};
+
+class _MirrorState {
+  final _MirrorMode mode;
+  final String? screenshotBase64;
+
+  const _MirrorState({
+    this.mode = _MirrorMode.loading,
+    this.screenshotBase64,
+  });
+}
+
+BehaviorSubject<_MirrorState> _getState(String serial) {
+  return _mirrorStates.putIfAbsent(
+    serial,
+    () => BehaviorSubject<_MirrorState>.seeded(const _MirrorState()),
+  );
+}
 
 /// Live device screen mirror widget using scrcpy H.264 stream via media_kit.
 /// Falls back to periodic screenshot polling if scrcpy is unavailable.
@@ -26,9 +53,9 @@ class LiveMirror extends StatefulWidget {
 class _LiveMirrorState extends State<LiveMirror> {
   Player? _player;
   VideoController? _controller;
-  bool _isLoading = true;
-  bool _hasError = false;
-  String? _errorMsg;
+  Timer? _screenshotTimer;
+
+  BehaviorSubject<_MirrorState> get _state => _getState(widget.deviceSerial);
 
   @override
   void initState() {
@@ -38,23 +65,16 @@ class _LiveMirrorState extends State<LiveMirror> {
 
   Future<void> _startMirroring() async {
     try {
-      // Start scrcpy stream
       final tcpUrl = await scrcpyStreamService.startStream(widget.deviceSerial);
 
       if (tcpUrl == null) {
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-          _errorMsg = 'scrcpy not available — showing screenshots instead';
-        });
+        _startScreenshotPolling();
         return;
       }
 
-      // Create media_kit player with low-latency config
       final player = Player();
       final controller = VideoController(player);
 
-      // Configure for low-latency H.264 TCP playback
       if (player.platform is NativePlayer) {
         final native = player.platform as NativePlayer;
         await native.setProperty('profile', 'low-latency');
@@ -71,39 +91,87 @@ class _LiveMirrorState extends State<LiveMirror> {
       await player.open(Media(tcpUrl));
 
       if (mounted) {
-        setState(() {
-          _player = player;
-          _controller = controller;
-          _isLoading = false;
-        });
+        _player = player;
+        _controller = controller;
+        _state.add(const _MirrorState(mode: _MirrorMode.live));
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-          _errorMsg = 'Mirror failed: $e';
-        });
-      }
+      _startScreenshotPolling();
+    }
+  }
+
+  void _startScreenshotPolling() {
+    _state.add(const _MirrorState(mode: _MirrorMode.screenshot));
+    _fetchScreenshot();
+    _screenshotTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _fetchScreenshot(),
+    );
+  }
+
+  Future<void> _fetchScreenshot() async {
+    try {
+      final result = await screenshotService.captureScreenshot(widget.deviceSerial);
+      _state.add(_MirrorState(
+        mode: _MirrorMode.screenshot,
+        screenshotBase64: result.base64,
+      ));
+    } catch (_) {
+      // Device may have disconnected — keep trying
     }
   }
 
   @override
   void dispose() {
     _player?.dispose();
+    _screenshotTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return _buildPlaceholder('Connecting to device...');
-    }
+    return StreamBuilder<_MirrorState>(
+      stream: _state.stream,
+      initialData: _state.value,
+      builder: (context, snapshot) {
+        final state = snapshot.data ?? const _MirrorState();
 
-    if (_hasError || _controller == null) {
-      // Fall back to the existing LivePreview widget (screenshot polling)
-      return _buildFallback();
-    }
+        return switch (state.mode) {
+          _MirrorMode.loading => _buildPlaceholder(),
+          _MirrorMode.live => _buildLiveStream(),
+          _MirrorMode.screenshot => _buildScreenshot(state.screenshotBase64),
+          _MirrorMode.error => _buildScreenshot(null),
+        };
+      },
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 24, height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: ResColors.accent),
+            ),
+            SizedBox(height: 12),
+            Text('Connecting...', style: TextStyle(color: ResColors.textMuted, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveStream() {
+    if (_controller == null) return _buildPlaceholder();
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
@@ -113,14 +181,9 @@ class _LiveMirrorState extends State<LiveMirror> {
         color: Colors.black,
         child: Stack(
           children: [
-            Video(
-              controller: _controller!,
-              fit: BoxFit.contain,
-            ),
-            // Live indicator
+            Video(controller: _controller!, fit: BoxFit.contain),
             Positioned(
-              top: 8,
-              right: 8,
+              top: 8, right: 8,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -132,15 +195,7 @@ class _LiveMirrorState extends State<LiveMirror> {
                   children: [
                     Icon(Icons.circle, size: 8, color: Colors.white),
                     SizedBox(width: 4),
-                    Text(
-                      'LIVE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
+                    Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
                   ],
                 ),
               ),
@@ -151,63 +206,62 @@ class _LiveMirrorState extends State<LiveMirror> {
     );
   }
 
-  Widget _buildPlaceholder(String message) {
-    return Container(
-      width: widget.width,
-      height: widget.height,
-      decoration: BoxDecoration(
-        color: ResColors.bgElevated,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: ResColors.accent,
-            ),
+  Widget _buildScreenshot(String? base64Data) {
+    if (base64Data == null || base64Data.isEmpty) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 24, height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2, color: ResColors.accent),
+              ),
+              SizedBox(height: 12),
+              Text('Loading preview...', style: TextStyle(color: ResColors.textMuted, fontSize: 12)),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: const TextStyle(
-              color: ResColors.textMuted,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      );
+    }
 
-  Widget _buildFallback() {
-    return Container(
-      width: widget.width,
-      height: widget.height,
-      decoration: BoxDecoration(
-        color: ResColors.bgElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ResColors.cardBorder),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.screenshot_monitor, size: 32, color: ResColors.textMuted),
-          const SizedBox(height: 8),
-          Text(
-            _errorMsg ?? 'Live mirror unavailable',
-            style: const TextStyle(color: ResColors.textMuted, fontSize: 11),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Using screenshot preview',
-            style: TextStyle(color: ResColors.textMuted, fontSize: 10),
-          ),
-        ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        color: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: Image.memory(
+                base64Decode(base64Data),
+                fit: BoxFit.contain,
+                gaplessPlayback: true,
+              ),
+            ),
+            Positioned(
+              top: 8, right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ResColors.accent.withAlpha(180),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'PREVIEW',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
