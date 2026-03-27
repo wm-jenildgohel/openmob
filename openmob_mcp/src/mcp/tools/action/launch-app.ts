@@ -10,7 +10,11 @@ export function registerLaunchApp(server: McpServer, hub: HubClient): void {
     "launch_app",
     {
       description:
-        "Open an app on the device. Provide the app's package name (Android, e.g., 'com.example.myapp') or bundle ID (iOS, e.g., 'com.example.MyApp').",
+        "Open/launch an app on the device by its package name (Android, e.g., 'com.android.settings') or bundle ID (iOS, e.g., 'com.apple.mobilesafari'). " +
+        "If the app is already running, it brings it to the foreground. If not running, it cold-starts it. " +
+        "Use list_apps to find the correct package name if you don't know it. " +
+        "Returns: Confirmation that the app was launched. " +
+        "Related: list_apps (find package names), terminate_app (close an app), get_current_activity (verify which app is in foreground), get_screenshot (see the launched app).",
       inputSchema: {
         device_id: deviceIdSchema,
         package: packageSchema,

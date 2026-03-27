@@ -10,9 +10,12 @@ export function registerStartRecording(server: McpServer, hub: HubClient): void 
     "start_recording",
     {
       description:
-        "Start recording the device screen — captures video (and optionally audio) for bug reports and test evidence. " +
-        "Recording continues until you call stop_recording. Uses scrcpy if available (unlimited duration, audio support), " +
-        "otherwise falls back to Android's built-in recorder (3 min max, no audio).",
+        "Begin recording the device screen as video. Recording continues until you call stop_recording. " +
+        "Uses scrcpy backend if available (unlimited duration, audio support). Falls back to Android's built-in recorder (3 min max, no audio). " +
+        "Format options: MKV (recommended, survives crashes) or MP4. Configurable bitrate for quality control. " +
+        "Use this before performing a test flow to capture video evidence of bugs or successful scenarios. " +
+        "Returns: Recording ID and backend used. Call stop_recording with this device_id when done. " +
+        "Related: stop_recording (stop and save), list_recordings (see all recordings), get_recording (get recording details).",
       inputSchema: {
         device_id: deviceIdSchema,
         format: z.enum(["mkv", "mp4"]).optional().describe("Video format — mkv recommended (survives crashes). Default: mkv"),

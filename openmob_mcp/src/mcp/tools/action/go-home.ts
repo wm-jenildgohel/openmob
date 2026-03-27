@@ -9,7 +9,11 @@ export function registerGoHome(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "go_home",
     {
-      description: "Go to the device's home screen — like pressing the Home button.",
+      description:
+        "Navigate to the device home screen. Equivalent to pressing the physical Home button. " +
+        "Use this to reset navigation, exit an app, or return to a known starting point. " +
+        "Returns: Confirmation that the home screen is now showing. " +
+        "Related: press_button (press any hardware button), launch_app (open a specific app), get_screenshot (verify home screen).",
       inputSchema: {
         device_id: deviceIdSchema,
       },

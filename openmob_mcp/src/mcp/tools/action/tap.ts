@@ -11,7 +11,12 @@ export function registerTap(server: McpServer, hub: HubClient): void {
     "tap",
     {
       description:
-        "Tap on the device screen — like a finger touch. Use element index (from get_ui_tree) to tap a specific button/field, or x,y coordinates for precise position.",
+        "Tap on the device screen — the primary way to interact with UI elements. " +
+        "PREFERRED: Pass an element index (from get_ui_tree) to tap a specific button, field, or link reliably. " +
+        "ALTERNATIVE: Pass x,y pixel coordinates for precise position tapping when indices are unavailable. " +
+        "Always call get_screenshot after tapping to verify the result. " +
+        "Returns: Confirmation of which element or position was tapped. " +
+        "Related: get_ui_tree (get element indices first), double_tap (tap twice), long_press (press and hold), get_screenshot (verify after tap).",
       inputSchema: {
         device_id: deviceIdSchema,
         x: z.number().optional().describe("X coordinate on screen"),

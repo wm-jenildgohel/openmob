@@ -22,7 +22,10 @@ export function registerPressButton(server: McpServer, hub: HubClient): void {
     "press_button",
     {
       description:
-        "Press a device button — Home (3), Back (4), Volume Up (24), Volume Down (25), Power (26), Enter (66), Menu (82), Recent Apps (187). Use the key number.",
+        "Press a hardware/system button on the device. Common buttons: Back (4) to go back, Home (3) to go home, Enter (66) to submit, Volume Up (24), Volume Down (25), Power (26), Menu (82), Recent Apps (187). " +
+        "Use Back (key_code=4) to navigate back in the app. Use Enter (key_code=66) to submit forms. " +
+        "Returns: Confirmation of which button was pressed. " +
+        "Related: go_home (shortcut for Home button), tap (interact with on-screen elements instead).",
       inputSchema: {
         device_id: deviceIdSchema,
         key_code: z.number().describe("Button to press: 3=Home, 4=Back, 24=VolumeUp, 25=VolumeDown, 26=Power, 66=Enter"),

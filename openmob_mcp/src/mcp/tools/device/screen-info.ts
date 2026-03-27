@@ -11,7 +11,11 @@ export function registerGetScreenSize(server: McpServer, hub: HubClient): void {
     "get_screen_size",
     {
       description:
-        "Get the device screen dimensions in pixels — returns width and height. Useful for calculating tap coordinates, positioning elements, or determining if the device is in portrait/landscape mode.",
+        "Get the device screen dimensions in pixels. Returns width and height. " +
+        "Use this when you need exact coordinates for swipe or tap by position. " +
+        "Also useful for determining portrait vs landscape orientation. " +
+        "Returns: {width, height} in pixels. " +
+        "Related: get_orientation (check portrait/landscape), swipe (needs screen bounds for custom coordinates).",
       inputSchema: {
         device_id: deviceIdSchema,
       },
@@ -35,7 +39,10 @@ export function registerGetOrientation(server: McpServer, hub: HubClient): void 
     "get_orientation",
     {
       description:
-        "Check if the device is in portrait or landscape mode. Returns the current orientation and rotation value (0=portrait, 1=landscape left, 2=reverse portrait, 3=landscape right).",
+        "Check if the device is in portrait or landscape mode. " +
+        "Returns the current orientation name and rotation value (0=portrait, 1=landscape left, 2=reverse portrait, 3=landscape right). " +
+        "Use this before calculating tap coordinates that depend on screen layout. " +
+        "Related: set_rotation (change orientation), get_screen_size (get dimensions).",
       inputSchema: {
         device_id: deviceIdSchema,
       },
@@ -58,7 +65,10 @@ export function registerSaveScreenshot(server: McpServer, hub: HubClient): void 
     "save_screenshot",
     {
       description:
-        "Save a screenshot to a file on this computer (not base64). Provide a file path where the PNG should be saved. Returns the path, width, and height. Use this when you need to save evidence or compare screenshots later.",
+        "Save a screenshot as a PNG file on the host computer. Unlike get_screenshot which returns the image inline, this saves to disk at the path you specify. " +
+        "Use this when you need to save evidence, create before/after comparisons, or archive screenshots for reports. " +
+        "Returns: {path, width, height} confirming where the file was saved. " +
+        "Related: get_screenshot (view screen inline instead of saving), start_recording (capture video instead).",
       inputSchema: {
         device_id: deviceIdSchema,
         path: z.string().describe("Full file path where the screenshot PNG should be saved (e.g., '/tmp/screenshot.png')"),
@@ -83,10 +93,11 @@ export function registerFindElement(server: McpServer, hub: HubClient): void {
     "find_element",
     {
       description:
-        "Search for UI elements on the device screen by text, label, CSS class name, or resource ID. " +
-        "More powerful than get_ui_tree's text filter — matches against text content, content descriptions, class names, and resource IDs. " +
-        "Returns matching elements with their indices so you can tap them. " +
-        "Example: find_element with text='Login' finds all buttons/labels containing 'Login'.",
+        "Search for UI elements by text, class name, or resource ID. More powerful than get_ui_tree's text_filter because it searches across text content, content descriptions, class names, and resource IDs simultaneously. " +
+        "Use this when get_ui_tree returns too many elements and you need a targeted search. " +
+        "Returns: Matching elements with their index numbers so you can pass them to tap. " +
+        "Example: find_element(text='Login') finds all buttons/labels containing 'Login'. " +
+        "Related: get_ui_tree (get all elements), tap (interact with found elements), wait_for_element (wait for element to appear).",
       inputSchema: {
         device_id: deviceIdSchema,
         text: z.string().optional().describe("Search by visible text or content description (case-insensitive, partial match)"),

@@ -11,7 +11,11 @@ export function registerGetUiTree(server: McpServer, hub: HubClient): void {
     "get_ui_tree",
     {
       description:
-        "Read what's on the device screen — returns a list of all buttons, text fields, labels, and other UI elements with their positions and index numbers. Use the index numbers with the 'tap' tool to interact with specific elements. Optionally filter by text to find specific elements quickly.",
+        "Get all UI elements currently on the device screen — buttons, text fields, labels, images, etc. — each with an index number, position, and text content. " +
+        "Use the index numbers with tap, double_tap, or long_press to interact with specific elements. " +
+        "Use text_filter to search for a specific element (e.g., 'Login'). Set visible_only=true to ignore hidden elements. " +
+        "Returns: Array of UI nodes with index, text, class, bounds, and resource-id. " +
+        "Related: tap (interact with elements), find_element (advanced search by class/resource-id), get_screenshot (visual view).",
       inputSchema: {
         device_id: deviceIdSchema,
         text_filter: z.string().optional().describe("Search for elements containing this text (e.g., 'Login', 'Submit', 'Email')"),

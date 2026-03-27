@@ -9,7 +9,11 @@ export function registerTerminateApp(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "terminate_app",
     {
-      description: "Close/kill a running app on the device. The app will be force-stopped.",
+      description:
+        "Force-close a running app on the device. The app process is killed immediately — unsaved data may be lost. " +
+        "Use this to stop a misbehaving app, clear its runtime state, or free device resources. " +
+        "Returns: Confirmation that the app was terminated. " +
+        "Related: launch_app (restart the app), clear_app_data (also wipe stored data), get_current_activity (check what's running).",
       inputSchema: {
         device_id: deviceIdSchema,
         package: packageSchema,

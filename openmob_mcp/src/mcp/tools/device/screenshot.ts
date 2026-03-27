@@ -10,7 +10,11 @@ export function registerGetScreenshot(server: McpServer, hub: HubClient): void {
     "get_screenshot",
     {
       description:
-        "Take a screenshot of what's currently shown on the device screen. Returns the image so you can see exactly what the user sees. Use this to verify UI state, check if an action worked, or see what's on screen before deciding what to do next.",
+        "Capture the device screen as an image. Returns the actual screenshot so you can visually see what the user sees. " +
+        "Use this AFTER every action (tap, swipe, type_text) to verify it worked. " +
+        "Use this BEFORE deciding what to do next to understand the current screen state. " +
+        "Returns: PNG image of the screen plus dimensions. " +
+        "Related: get_ui_tree (read element text/positions), save_screenshot (save to file instead).",
       inputSchema: {
         device_id: deviceIdSchema,
       },

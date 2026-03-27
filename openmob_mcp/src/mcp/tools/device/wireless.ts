@@ -9,7 +9,10 @@ export function registerPairWireless(server: McpServer, hub: HubClient): void {
     "pair_wireless",
     {
       description:
-        "Pair with an Android device wirelessly (Android 11+). On the device: Settings → Developer Options → Wireless Debugging → Pair with pairing code. Enter the IP:port and 6-digit code shown on the device.",
+        "Pair with an Android device wirelessly (requires Android 11+). The user must go to Settings > Developer Options > Wireless Debugging > Pair with pairing code on the device, then provide the IP:port and 6-digit code shown. " +
+        "This is a one-time step — once paired, use connect_wireless to connect. " +
+        "Returns: Success/failure status. On success, call connect_wireless next. " +
+        "Related: connect_wireless (connect after pairing), list_devices (verify device appears).",
       inputSchema: {
         address: z.string().describe("IP:port shown on the device (e.g., '192.168.1.5:37123')"),
         pairing_code: z.string().describe("6-digit pairing code shown on the device"),
@@ -37,7 +40,10 @@ export function registerConnectWireless(server: McpServer, hub: HubClient): void
     "connect_wireless",
     {
       description:
-        "Connect to an Android device over WiFi. The device must be on the same network. For Android 11+, pair first using pair_wireless. For older Android, the device must have been connected via USB first with 'adb tcpip 5555' enabled.",
+        "Connect to an Android device over WiFi using its IP address. The device must be on the same network as the host computer. " +
+        "For Android 11+, you must pair first using pair_wireless. For older Android, the device must have been connected via USB first with 'adb tcpip 5555'. " +
+        "Returns: Success/failure status. On success, the device will appear in list_devices. " +
+        "Related: pair_wireless (required first step for Android 11+), list_devices (verify connection).",
       inputSchema: {
         address: z.string().describe("IP:port of the device (e.g., '192.168.1.5:5555')"),
       },

@@ -11,7 +11,11 @@ export function registerDoubleTap(server: McpServer, hub: HubClient): void {
     "double_tap",
     {
       description:
-        "Double-tap on the device screen — like quickly tapping twice with your finger. Useful for zooming into maps/images or selecting text. Use element index (from get_ui_tree) or x,y coordinates.",
+        "Double-tap on the device screen — two quick taps in succession. " +
+        "Use this for zooming into maps, images, or web pages; selecting a word of text; or triggering double-tap gestures in apps. " +
+        "Accepts element index (from get_ui_tree) or x,y coordinates. " +
+        "Returns: Confirmation of which element or position was double-tapped. " +
+        "Related: tap (single tap), long_press (press and hold), get_ui_tree (get element indices).",
       inputSchema: {
         device_id: deviceIdSchema,
         x: z.number().optional().describe("X coordinate on screen"),

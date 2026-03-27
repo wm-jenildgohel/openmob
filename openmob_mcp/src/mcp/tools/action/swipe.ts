@@ -11,7 +11,12 @@ export function registerSwipe(server: McpServer, hub: HubClient): void {
     "swipe",
     {
       description:
-        "Swipe on the device screen — like scrolling or swiping between pages. Use 'up' to scroll down (revealing content below), 'down' to scroll up, 'left'/'right' for horizontal swipes. You can also specify exact start and end coordinates.",
+        "Swipe/scroll on the device screen. Use direction for simple scrolling: 'up' scrolls content DOWN (reveals content below), 'down' scrolls content UP, 'left'/'right' for horizontal navigation. " +
+        "For precise control, specify exact start (x1,y1) and end (x2,y2) coordinates. " +
+        "Adjust duration for slower/more precise swipes (default 300ms). " +
+        "Use this to scroll through lists, swipe between pages, pull-to-refresh, or dismiss notifications. " +
+        "Returns: Confirmation of swipe direction and distance. " +
+        "Related: get_screenshot (verify scroll result), get_ui_tree (find elements after scrolling), get_screen_size (know bounds for coordinates).",
       inputSchema: {
         device_id: deviceIdSchema,
         direction: z.enum(["up", "down", "left", "right"]).optional().describe("Swipe direction — 'up' scrolls content down, 'down' scrolls content up"),

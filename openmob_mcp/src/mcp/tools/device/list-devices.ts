@@ -9,7 +9,10 @@ export function registerListDevices(server: McpServer, hub: HubClient): void {
     "list_devices",
     {
       description:
-        "See all connected mobile devices — shows each device's name, model, OS version, screen size, battery level, and how it's connected (USB/WiFi/emulator). Use the device ID from this list in all other tools.",
+        "See all connected mobile devices. Returns each device's ID, name, model, OS version, screen size, battery level, and connection type (USB/WiFi/emulator). " +
+        "ALWAYS call this first before using any other tool — you need the device_id from this list. " +
+        "If no devices appear, connect one via USB or start an emulator. " +
+        "Related: get_screenshot (see what's on screen), get_ui_tree (read UI elements).",
     },
     async () => {
       try {

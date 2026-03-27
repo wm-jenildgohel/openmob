@@ -10,7 +10,12 @@ export function registerInstallApp(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "install_app",
     {
-      description: "Install an APK on the device from a file path on this computer.",
+      description:
+        "Install an APK file onto the device from a local file path on the host computer. " +
+        "Set replace=true (default) to overwrite if already installed. Set grant_permissions=true (default) to auto-grant all runtime permissions. " +
+        "Use this to deploy a new build for testing. " +
+        "Returns: Confirmation of which APK was installed. " +
+        "Related: uninstall_app (remove the app), launch_app (open after installing), grant_permissions (grant permissions separately), list_apps (verify it was installed).",
       inputSchema: {
         device_id: deviceIdSchema,
         path: z.string().describe("Full path to the APK file on this computer"),
@@ -35,7 +40,11 @@ export function registerUninstallApp(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "uninstall_app",
     {
-      description: "Uninstall an app from the device by package name.",
+      description:
+        "Uninstall/remove an app from the device completely by package name. This deletes the app and all its data. " +
+        "Use this to clean up after testing or to test fresh-install scenarios. " +
+        "Returns: Confirmation that the app was uninstalled. " +
+        "Related: install_app (re-install), clear_app_data (wipe data without removing the app), list_apps (find package names).",
       inputSchema: {
         device_id: deviceIdSchema,
         package: z.string().describe("App package name (e.g., com.example.myapp)"),

@@ -11,7 +11,11 @@ export function registerLongPress(server: McpServer, hub: HubClient): void {
     "long_press",
     {
       description:
-        "Long-press on the device screen — like pressing and holding your finger. Opens context menus, triggers drag mode, or selects items. Use element index or x,y coordinates. Default hold duration is 1.5 seconds.",
+        "Long-press (press and hold) on the device screen. Opens context menus, triggers drag mode, selects items, or activates edit mode on home screens. " +
+        "Default hold duration is 1500ms (1.5 seconds). Customize with the duration parameter. " +
+        "Accepts element index (from get_ui_tree) or x,y coordinates. " +
+        "Returns: Confirmation of the long-press action and duration. " +
+        "Related: tap (single tap), double_tap (double tap), get_ui_tree (get element indices), get_screenshot (see context menu that appeared).",
       inputSchema: {
         device_id: deviceIdSchema,
         x: z.number().optional().describe("X coordinate on screen"),

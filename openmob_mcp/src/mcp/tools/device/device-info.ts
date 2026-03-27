@@ -10,7 +10,12 @@ export function registerListApps(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "list_apps",
     {
-      description: "List all installed apps on the device. Shows package names. Use third_party_only to filter to user-installed apps (excludes system apps).",
+      description:
+        "List all installed apps on the device. Returns package names (Android) or bundle IDs (iOS). " +
+        "Set third_party_only=true (default) to see only user-installed apps, excluding system apps. " +
+        "Use this to find the correct package name for launch_app, terminate_app, or clear_app_data. " +
+        "Returns: Array of package names and count. " +
+        "Related: launch_app (open an app), get_current_activity (see which app is in foreground).",
       inputSchema: {
         device_id: deviceIdSchema,
         third_party_only: z.boolean().optional().describe("Only show user-installed apps, not system apps (default: true)"),
@@ -34,7 +39,11 @@ export function registerGetCurrentActivity(server: McpServer, hub: HubClient): v
   registerToolDual(server,
     "get_current_activity",
     {
-      description: "See which app and screen is currently in the foreground on the device.",
+      description:
+        "See which app and activity/screen is currently in the foreground. " +
+        "Returns the package name and activity class of the active app. " +
+        "Use this to confirm an app launched correctly or to identify what's running before taking action. " +
+        "Related: launch_app (open a different app), terminate_app (close the current app), get_screenshot (see the screen).",
       inputSchema: {
         device_id: deviceIdSchema,
       },
@@ -56,7 +65,11 @@ export function registerClearAppData(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "clear_app_data",
     {
-      description: "Clear all data for an app — like a fresh install. Removes saved settings, login, cache, everything.",
+      description:
+        "Clear all data for an app — resets it to a fresh-install state. Removes saved settings, login credentials, cache, databases, and shared preferences. " +
+        "Use this before testing to ensure a clean starting state, or to force re-login. " +
+        "The app will NOT be uninstalled, just its data wiped. " +
+        "Related: uninstall_app (remove entirely), launch_app (open the reset app), grant_permissions (re-grant permissions after reset).",
       inputSchema: {
         device_id: deviceIdSchema,
         package: packageSchema,
@@ -77,7 +90,11 @@ export function registerGetLogs(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "get_device_logs",
     {
-      description: "Get recent device logs (logcat). Filter by app tag, log level, or number of lines. Useful for debugging crashes, errors, and app behavior.",
+      description:
+        "Get recent device logs (Android logcat). Filter by app tag, minimum log level, or number of lines to return. " +
+        "Use this to debug crashes, find error messages, or monitor app behavior after performing actions. " +
+        "Returns: Array of log lines with timestamps and tags. " +
+        "Related: get_screenshot (see error dialogs visually), get_current_activity (check which app crashed).",
       inputSchema: {
         device_id: deviceIdSchema,
         lines: z.number().optional().describe("Number of recent log lines to return (default: 100)"),
@@ -106,7 +123,12 @@ export function registerWaitForElement(server: McpServer, hub: HubClient): void 
   registerToolDual(server,
     "wait_for_element",
     {
-      description: "Wait until a specific UI element appears on screen. Useful after navigation, loading screens, or animations. Returns the element's index for tapping.",
+      description:
+        "Wait until a specific UI element appears on screen, polling repeatedly until found or timeout. " +
+        "Use this after navigation, page loads, or animations — instead of arbitrary delays. " +
+        "Search by visible text or resource ID. Default timeout is 10 seconds. " +
+        "Returns: The found element's index (for tapping) and how long it waited. Returns failure if element never appeared. " +
+        "Related: find_element (search without waiting), tap (interact with the found element), get_ui_tree (see all elements).",
       inputSchema: {
         device_id: deviceIdSchema,
         text: z.string().optional().describe("Text the element should contain (e.g., 'Login', 'Welcome')"),
@@ -135,7 +157,10 @@ export function registerSetRotation(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "set_rotation",
     {
-      description: "Rotate the device screen. 0=portrait, 1=landscape (left), 2=reverse portrait, 3=landscape (right).",
+      description:
+        "Rotate the device screen to a specific orientation. Values: 0=portrait, 1=landscape left, 2=reverse portrait, 3=landscape right. " +
+        "Use this to test how an app looks in different orientations. Take a screenshot after to verify the new layout. " +
+        "Related: get_orientation (check current orientation), get_screen_size (dimensions change after rotation), get_screenshot (verify new layout).",
       inputSchema: {
         device_id: deviceIdSchema,
         rotation: z.number().describe("0=portrait, 1=landscape left, 2=reverse portrait, 3=landscape right"),
@@ -157,7 +182,10 @@ export function registerToggleWifi(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "toggle_wifi",
     {
-      description: "Turn WiFi on or off on the device.",
+      description:
+        "Turn WiFi on or off on the device. Use this to test offline behavior, network error handling, or connectivity-dependent features. " +
+        "Set enabled=true to turn on, enabled=false to turn off. " +
+        "Related: toggle_airplane_mode (disable all radios at once).",
       inputSchema: {
         device_id: deviceIdSchema,
         enabled: z.boolean().describe("true to enable WiFi, false to disable"),
@@ -178,7 +206,10 @@ export function registerToggleAirplane(server: McpServer, hub: HubClient): void 
   registerToolDual(server,
     "toggle_airplane_mode",
     {
-      description: "Turn airplane mode on or off on the device.",
+      description:
+        "Turn airplane mode on or off. Airplane mode disables all wireless radios (WiFi, cellular, Bluetooth). " +
+        "Use this to test complete offline scenarios. Set enabled=true to enable, enabled=false to disable. " +
+        "Related: toggle_wifi (control WiFi only).",
       inputSchema: {
         device_id: deviceIdSchema,
         enabled: z.boolean().describe("true to enable airplane mode, false to disable"),
@@ -199,7 +230,11 @@ export function registerGrantPermissions(server: McpServer, hub: HubClient): voi
   registerToolDual(server,
     "grant_permissions",
     {
-      description: "Auto-grant all runtime permissions for an app — camera, location, storage, etc. Useful to avoid permission popups during testing.",
+      description:
+        "Auto-grant all runtime permissions (camera, location, storage, contacts, etc.) for an app. " +
+        "Use this before testing to avoid permission popup dialogs that interrupt automation. " +
+        "Call this after install_app or clear_app_data since permissions are reset. " +
+        "Related: install_app (can also grant on install), clear_app_data (resets permissions), launch_app (open the app after granting).",
       inputSchema: {
         device_id: deviceIdSchema,
         package: packageSchema,
@@ -220,7 +255,11 @@ export function registerGetNotifications(server: McpServer, hub: HubClient): voi
   registerToolDual(server,
     "get_notifications",
     {
-      description: "Read the device's notification bar — see all current notifications with their title, text, and source app.",
+      description:
+        "Read all current notifications from the device's notification bar. Returns each notification's title, text content, and source app package. " +
+        "Use this to verify push notifications arrived, check for error notifications, or see what alerts are showing. " +
+        "Returns: Array of notifications with title, text, and package name. " +
+        "Related: get_screenshot (see notifications visually), get_device_logs (see notification-related logs).",
       inputSchema: {
         device_id: deviceIdSchema,
       },

@@ -10,7 +10,12 @@ export function registerTypeText(server: McpServer, hub: HubClient): void {
   registerToolDual(server,
     "type_text",
     {
-      description: "Type text into the currently focused input field on the device — like typing on the keyboard. First tap a text field to focus it, then use this to enter text. Set submit=true to press Enter after typing (e.g., for search fields or login forms).",
+      description:
+        "Type text into the currently focused input field on the device. You MUST tap a text field first to focus it before calling this. " +
+        "Set submit=true to press Enter/Return after typing (useful for search boxes, login forms, chat messages). " +
+        "For special characters or emojis, the device's keyboard encoding is used. " +
+        "Returns: Confirmation of what was typed and whether Enter was pressed. " +
+        "Related: tap (focus a field first), get_ui_tree (find input fields), press_button (press Enter separately with key_code=66).",
       inputSchema: {
         device_id: deviceIdSchema,
         text: z.string().describe("Text to type into the focused field"),
