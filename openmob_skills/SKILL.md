@@ -1,6 +1,7 @@
 # OpenMob — Mobile Device Automation for AI Agents
 
 > Free, self-hosted alternative to MobAI. See and control Android/iOS devices from any AI coding agent.
+> **38 MCP tools** + 3 resources — device control, app management, wireless pairing, screen recording, testing, and more.
 
 ## Installation
 
@@ -22,15 +23,14 @@ Add to your MCP settings (`~/.cursor/mcp.json`, `claude_desktop_config.json`, et
 {
   "mcpServers": {
     "openmob": {
-      "command": "node",
-      "args": ["build/app/index.js"],
-      "cwd": "/path/to/openmob_mcp"
+      "command": "npx",
+      "args": ["-y", "openmob-mcp"]
     }
   }
 }
 ```
 
-MCP tools available: `list_devices`, `get_screenshot`, `get_ui_tree`, `tap`, `type_text`, `swipe`, `launch_app`, `terminate_app`, `press_button`, `go_home`, `open_url`, `run_test`
+Verify: `npx -y openmob-mcp --help`
 
 ### For Codex / Gemini CLI / Any HTTP-capable agent
 
@@ -57,6 +57,8 @@ tools:
       - POST /devices/{id}/terminate
       - POST /devices/{id}/open-url
       - POST /devices/{id}/gesture
+      - POST /devices/pair-wireless
+      - POST /devices/connect-wifi
 ```
 
 ## Prerequisites
@@ -65,6 +67,84 @@ tools:
 2. **Android device** connected via USB or WiFi ADB, OR **iOS Simulator** on macOS
 3. **ADB** installed (for Android): `sudo apt install adb` / `brew install android-platform-tools`
 4. **Node.js 18+** (for MCP server only): `sudo apt install nodejs` / `brew install node`
+
+## MCP Resources (3)
+
+| URI | Description |
+|-----|-------------|
+| `openmob://guide` | Step-by-step usage guide |
+| `openmob://tools` | Full tool reference with descriptions |
+| `openmob://status` | Live Hub and device connection status |
+
+## All 38 MCP Tools
+
+### Device Info (14 tools)
+
+| Tool | What it does |
+|------|-------------|
+| `list_devices` | See all connected devices with model, OS, screen size, battery |
+| `get_screenshot` | Take a photo of the device screen |
+| `get_ui_tree` | Read all buttons, text, fields with index numbers |
+| `find_element` | Smart search by text, class, or resource ID |
+| `get_screen_size` | Get screen dimensions |
+| `get_orientation` | Check portrait/landscape |
+| `list_apps` | List installed apps |
+| `get_current_activity` | See which app/screen is open |
+| `get_device_logs` | Read logcat for debugging |
+| `get_notifications` | Read notification bar |
+| `save_screenshot` | Save screenshot to file |
+| `wait_for_element` | Wait until a UI element appears |
+| `pair_wireless` | Pair Android 11+ wirelessly (one-time setup) |
+| `connect_wireless` | Connect to device over WiFi |
+
+### Touch & Input (7 tools)
+
+| Tool | What it does |
+|------|-------------|
+| `tap` | Tap a button or position (by index or x,y) |
+| `double_tap` | Double-tap gesture |
+| `long_press` | Long press with duration |
+| `type_text` | Type into a focused input field (+ optional submit) |
+| `swipe` | Scroll or swipe (by direction or coordinates) |
+| `press_button` | Press Home(3), Back(4), Volume, Power, Enter(66) |
+| `go_home` | Go to home screen |
+
+### App Management (8 tools)
+
+| Tool | What it does |
+|------|-------------|
+| `launch_app` | Open an app by package name |
+| `terminate_app` | Close/kill a running app |
+| `install_app` | Install APK from file path |
+| `uninstall_app` | Remove an app |
+| `open_url` | Open a website or deep link |
+| `clear_app_data` | Reset app (fresh install state) |
+| `grant_permissions` | Auto-grant all app permissions |
+
+### Device Settings (3 tools)
+
+| Tool | What it does |
+|------|-------------|
+| `set_rotation` | Rotate screen (0=portrait, 1=landscape) |
+| `toggle_wifi` | Turn WiFi on/off |
+| `toggle_airplane_mode` | Turn airplane mode on/off |
+
+### Screen Recording (4 tools)
+
+| Tool | What it does |
+|------|-------------|
+| `start_recording` | Record device screen video |
+| `stop_recording` | Stop and save recording |
+| `get_recording` | Get recording details |
+| `list_recordings` | List all recordings |
+
+### Testing (1 tool)
+
+| Tool | What it does |
+|------|-------------|
+| `run_test` | Run multi-step test with pass/fail |
+
+Each tool is also available with a `mobile_` prefix (e.g., `mobile_tap`, `mobile_get_screenshot`).
 
 ## Hub API Reference
 
@@ -98,6 +178,16 @@ Base URL: `http://127.0.0.1:8686`
 | POST | `/api/v1/devices/{id}/terminate` | `{ "package": "com.android.settings" }` | Kill app |
 | POST | `/api/v1/devices/{id}/open-url` | `{ "url": "https://google.com" }` | Open URL on device |
 | POST | `/api/v1/devices/{id}/gesture` | `{ "type": "longpress", "x": 720, "y": 1480, "duration": 1000 }` | Long press, pinch, etc. |
+| POST | `/api/v1/devices/{id}/install` | `{ "path": "/path/to/app.apk" }` | Install APK |
+| POST | `/api/v1/devices/{id}/uninstall` | `{ "package": "com.example.app" }` | Uninstall app |
+| POST | `/api/v1/devices/{id}/clear-data` | `{ "package": "com.example.app" }` | Clear app data |
+| POST | `/api/v1/devices/{id}/rotation` | `{ "rotation": 1 }` | Set rotation |
+| POST | `/api/v1/devices/{id}/wifi` | `{ "enabled": true }` | Toggle WiFi |
+| POST | `/api/v1/devices/{id}/airplane` | `{ "enabled": true }` | Toggle airplane mode |
+| POST | `/api/v1/devices/{id}/grant-permissions` | `{ "package": "com.example.app" }` | Grant all permissions |
+| POST | `/api/v1/devices/{id}/wait-for-element` | `{ "text": "Login", "timeout_ms": 5000 }` | Wait for element |
+| POST | `/api/v1/devices/pair-wireless` | `{ "address": "192.168.1.5:37123", "pairing_code": "123456" }` | Pair wirelessly |
+| POST | `/api/v1/devices/connect-wifi` | `{ "address": "192.168.1.5:5555" }` | Connect over WiFi |
 | GET | `/health` | — | `{ status: "ok" }` |
 
 ### Key Codes
@@ -125,45 +215,45 @@ Base URL: `http://127.0.0.1:8686`
 ### Pattern 1: See-Think-Act Loop (QA Testing)
 
 ```
-1. GET /api/v1/devices/              → discover device, get ID
-2. GET /api/v1/devices/{id}/screenshot   → see what's on screen
-3. GET /api/v1/devices/{id}/ui-tree?visible=true  → read all UI elements
-4. POST /api/v1/devices/{id}/tap     → interact based on what you see
-5. GET /api/v1/devices/{id}/ui-tree?visible=true  → verify result
+1. GET /api/v1/devices/              -> discover device, get ID
+2. GET /api/v1/devices/{id}/screenshot   -> see what's on screen
+3. GET /api/v1/devices/{id}/ui-tree?visible=true  -> read all UI elements
+4. POST /api/v1/devices/{id}/tap     -> interact based on what you see
+5. GET /api/v1/devices/{id}/ui-tree?visible=true  -> verify result
 6. Repeat 2-5 for each test step
 ```
 
 ### Pattern 2: App Launch + Navigate + Assert
 
 ```
-1. POST /launch  {"package":"com.myapp"}     → open the app
-2. GET /ui-tree?visible=true                  → read initial screen
-3. POST /tap  {"index": N}                    → tap target element
-4. GET /ui-tree?visible=true                  → verify navigation happened
+1. POST /launch  {"package":"com.myapp"}     -> open the app
+2. GET /ui-tree?visible=true                  -> read initial screen
+3. POST /tap  {"index": N}                    -> tap target element
+4. GET /ui-tree?visible=true                  -> verify navigation happened
 5. Assert: check that expected text/elements exist in the tree
 ```
 
 ### Pattern 3: Form Fill
 
 ```
-1. GET /ui-tree?visible=true                  → find input fields
-2. POST /tap  {"index": N}                    → focus first input
-3. POST /type  {"text":"user@email.com"}      → type email
-4. POST /keyevent  {"keyCode": 61}            → Tab to next field
-5. POST /type  {"text":"password123"}         → type password
-6. POST /tap  {"index": M}                    → tap Submit button
-7. GET /ui-tree?visible=true                  → verify success screen
+1. GET /ui-tree?visible=true                  -> find input fields
+2. POST /tap  {"index": N}                    -> focus first input
+3. POST /type  {"text":"user@email.com"}      -> type email
+4. POST /keyevent  {"keyCode": 61}            -> Tab to next field
+5. POST /type  {"text":"password123"}         -> type password
+6. POST /tap  {"index": M}                    -> tap Submit button
+7. GET /ui-tree?visible=true                  -> verify success screen
 ```
 
 ### Pattern 4: Scroll to Find Element
 
 ```
-1. GET /ui-tree?text=TargetText               → search for element
+1. GET /ui-tree?text=TargetText               -> search for element
 2. If not found:
-   POST /swipe  {"x1":720,"y1":1800,"x2":720,"y2":800}  → scroll up
-   GET /ui-tree?text=TargetText               → search again
+   POST /swipe  {"x1":720,"y1":1800,"x2":720,"y2":800}  -> scroll up
+   GET /ui-tree?text=TargetText               -> search again
 3. Repeat until found or max scrolls reached
-4. POST /tap  {"index": found_index}          → tap the element
+4. POST /tap  {"index": found_index}          -> tap the element
 ```
 
 ### Pattern 5: Run Test Script (via MCP)
@@ -183,30 +273,49 @@ Input: {
 Returns: structured pass/fail with timing and failure screenshots
 ```
 
+### Pattern 6: Wireless Device Setup (Android 11+)
+
+```
+1. On device: Settings > Developer Options > Wireless Debugging > Pair
+2. POST /devices/pair-wireless  {"address":"192.168.1.5:37123","pairing_code":"123456"}
+3. POST /devices/connect-wifi  {"address":"192.168.1.5:5555"}
+4. GET /devices/  -> verify device appears
+```
+
+### Pattern 7: Screen Recording
+
+```
+1. start_recording -> begin recording
+2. ... perform test steps
+3. stop_recording -> save recording
+4. list_recordings -> see all saved recordings
+5. get_recording -> get details/path of a recording
+```
+
 ## Architecture
 
 ```
                     AI Agent (Claude Code / Cursor / Codex / Gemini)
-                         │
-            ┌────────────┼────────────┐
-            │            │            │
+                         |
+            +------------+------------+
+            |            |            |
     MCP (stdio)   HTTP API (:8686)  AiBridge (:9999)
-            │            │            │
-            └────────────┼────────────┘
-                         │
+     38 tools          |            |
+            +----------+------------+
+                         |
                    OpenMob Hub (Flutter Desktop)
-                         │
-              ┌──────────┼──────────┐
-              │                     │
+                         |
+              +----------+----------+
+              |                     |
         ADB (Android)      xcrun/idb (iOS)
-              │                     │
+              |                     |
         Physical Device      iOS Simulator
         / Emulator
 ```
 
-- **Hub** (port 8686): Core — device management, HTTP API, desktop UI
-- **MCP Server** (stdio): Thin proxy — translates MCP tool calls to Hub HTTP API
-- **AiBridge** (port 9999): Optional — wraps terminal AI agents with context injection
+- **Hub** (port 8686): Core -- device management, HTTP API, desktop UI
+- **MCP Server** (stdio): 38 tools + 3 resources -- translates MCP tool calls to Hub HTTP API
+- **AiBridge** (port 9999): Optional -- wraps terminal AI agents with context injection
 
 ## ADB Knowledge Base
 
@@ -241,6 +350,7 @@ Returns: structured pass/fail with timing and failure screenshots
 | `adb tcpip 5555` | Enable WiFi ADB on device |
 | `adb connect <ip>:5555` | Connect via WiFi |
 | `adb disconnect <ip>:5555` | Disconnect WiFi device |
+| `adb pair <ip>:<port>` | Pair wirelessly (Android 11+) |
 | `adb install <apk>` | Install APK |
 | `adb uninstall <package>` | Uninstall app |
 | `adb push <local> <remote>` | Push file to device |
@@ -310,31 +420,34 @@ Returns: structured pass/fail with timing and failure screenshots
 3. Use `ui-tree?visible=true` to understand the current screen structure
 
 ### During Testing
-1. **Always verify** — after every action, re-check the UI tree or screenshot
-2. **Wait for animations** — add a short delay (1-2 seconds) after navigation actions
-3. **Use text search** — `ui-tree?text=ButtonText` to find specific elements
-4. **Scroll to find** — if an element isn't visible, scroll and check again
-5. **Use element index** — more reliable than coordinates across devices
+1. **Always verify** -- after every action, re-check the UI tree or screenshot
+2. **Wait for animations** -- use `wait_for_element` after navigation actions
+3. **Use text search** -- `ui-tree?text=ButtonText` to find specific elements
+4. **Scroll to find** -- if an element isn't visible, scroll and check again
+5. **Use element index** -- more reliable than coordinates across devices
 
 ### Handling Failures
 1. Take a screenshot on failure for debugging
 2. Check if a dialog/popup appeared (system dialog, permission request)
 3. Try pressing Back (keyCode: 4) to dismiss unexpected overlays
 4. Verify the app is still running with `list_devices`
+5. Check `get_device_logs` for crash info
 
 ### Common Test Scenarios
-- **Login flow**: launch → find email field → type → find password field → type → tap login → verify
-- **Navigation**: tap menu item → verify new screen → tap back → verify original screen
-- **Settings**: open settings → toggle switch → verify change → toggle back
-- **Search**: tap search → type query → verify results → tap result → verify detail page
-- **Form validation**: submit empty form → verify error messages → fill correctly → submit → verify success
+- **Login flow**: launch -> find email field -> type -> find password field -> type -> tap login -> verify
+- **Navigation**: tap menu item -> verify new screen -> tap back -> verify original screen
+- **Settings**: open settings -> toggle switch -> verify change -> toggle back
+- **Search**: tap search -> type query -> verify results -> tap result -> verify detail page
+- **Form validation**: submit empty form -> verify error messages -> fill correctly -> submit -> verify success
 
 ## Tips
 
 - Always use `ui-tree` with `?visible=true` to reduce noise and token usage
-- Prefer tapping by `index` over coordinates — more reliable across screen sizes
+- Prefer tapping by `index` over coordinates -- more reliable across screen sizes
 - After any action, re-fetch ui-tree to verify state changed before proceeding
 - Use `keyCode: 4` (Back) to navigate back, `keyCode: 3` (Home) for home screen
-- Screenshots are base64 PNG — large on high-res devices, use ui-tree when text is enough
-- If an element isn't in the tree, it may be off-screen — scroll first
+- Screenshots are base64 PNG -- large on high-res devices, use ui-tree when text is enough
+- If an element isn't in the tree, it may be off-screen -- scroll first
 - Device IDs persist across sessions as long as the device stays connected
+- Use `pair_wireless` + `connect_wireless` for cable-free Android 11+ testing
+- Use `start_recording` / `stop_recording` to capture test session videos

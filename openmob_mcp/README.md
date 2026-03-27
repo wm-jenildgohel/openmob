@@ -55,9 +55,16 @@ Add to `.vscode/mcp.json`:
 1. **OpenMob Hub** must be running (download from [releases](https://github.com/wm-jenildgohel/openmob/releases))
 2. **Android device** connected via USB, or emulator running
 
-## 34 Tools Available
+## 38 Tools + 3 Resources
 
-### Device Discovery
+### MCP Resources
+| URI | Description |
+|-----|-------------|
+| `openmob://guide` | Step-by-step usage guide |
+| `openmob://tools` | Full tool reference with descriptions |
+| `openmob://status` | Live Hub and device connection status |
+
+### Device Info (14 tools)
 | Tool | What it does |
 |------|-------------|
 | `list_devices` | See all connected devices |
@@ -66,8 +73,16 @@ Add to `.vscode/mcp.json`:
 | `find_element` | Smart search by text, class, resource ID |
 | `get_screen_size` | Get screen dimensions |
 | `get_orientation` | Check portrait/landscape |
+| `list_apps` | List installed apps |
+| `get_current_activity` | See current app/screen |
+| `get_device_logs` | Read logcat for debugging |
+| `get_notifications` | Read notification bar |
+| `save_screenshot` | Save screenshot to file |
+| `wait_for_element` | Wait for UI element to appear |
+| `pair_wireless` | Pair Android 11+ wirelessly (one-time) |
+| `connect_wireless` | Connect to device over WiFi |
 
-### Touch & Input
+### Touch & Input (7 tools)
 | Tool | What it does |
 |------|-------------|
 | `tap` | Tap by element index or coordinates |
@@ -77,39 +92,38 @@ Add to `.vscode/mcp.json`:
 | `swipe` | Scroll by direction or coordinates |
 | `press_button` | Press Home/Back/Volume/Power |
 | `go_home` | Go to home screen |
-| `open_url` | Open URL or deep link |
 
-### App Management
+### App Management (8 tools)
 | Tool | What it does |
 |------|-------------|
 | `launch_app` | Open app by package name |
 | `terminate_app` | Kill running app |
 | `install_app` | Install APK from file |
 | `uninstall_app` | Remove app |
+| `open_url` | Open URL or deep link |
 | `list_apps` | List installed apps |
 | `clear_app_data` | Reset app to fresh state |
 | `grant_permissions` | Auto-grant all permissions |
 
-### Device Settings
+### Device Settings (3 tools)
 | Tool | What it does |
 |------|-------------|
-| `get_current_activity` | See current app/screen |
-| `get_device_logs` | Read logcat for debugging |
-| `get_notifications` | Read notification bar |
 | `set_rotation` | Rotate screen |
 | `toggle_wifi` | WiFi on/off |
 | `toggle_airplane_mode` | Airplane mode on/off |
-| `save_screenshot` | Save screenshot to file |
 
-### Recording & Testing
+### Screen Recording (4 tools)
 | Tool | What it does |
 |------|-------------|
 | `start_recording` | Record device screen |
 | `stop_recording` | Stop and save recording |
 | `get_recording` | Get recording details |
 | `list_recordings` | List all recordings |
+
+### Testing (1 tool)
+| Tool | What it does |
+|------|-------------|
 | `run_test` | Run multi-step test scenario |
-| `wait_for_element` | Wait for UI element to appear |
 
 ## How It Works
 
