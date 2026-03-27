@@ -607,7 +607,7 @@ Speak in plain English for non-technical QA testers:
   bool _hasOpenMobConfig(String configPath) {
     try {
       final content = File(configPath).readAsStringSync();
-      return content.contains('openmob');
+      return content.toLowerCase().contains('openmob');
     } catch (_) {
       return false;
     }
