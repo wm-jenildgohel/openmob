@@ -37,10 +37,17 @@ late final AiToolSetupService aiToolSetupService;
 late final AutoSetupService autoSetupService;
 late final UpdateService updateService;
 late final ScrcpyStreamService scrcpyStreamService;
+bool mediaKitAvailable = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
+  try {
+    MediaKit.ensureInitialized();
+    mediaKitAvailable = true;
+  } catch (e) {
+    debugPrint('media_kit init failed (live mirroring disabled): $e');
+    mediaKitAvailable = false;
+  }
   await windowManager.ensureInitialized();
 
   const windowOptions = WindowOptions(

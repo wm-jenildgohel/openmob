@@ -64,6 +64,12 @@ class _LiveMirrorState extends State<LiveMirror> {
   }
 
   Future<void> _startMirroring() async {
+    // If media_kit isn't available (locale crash, missing libs), go straight to screenshots
+    if (!mediaKitAvailable) {
+      _startScreenshotPolling();
+      return;
+    }
+
     try {
       final tcpUrl = await scrcpyStreamService.startStream(widget.deviceSerial);
 
