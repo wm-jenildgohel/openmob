@@ -500,15 +500,17 @@ class _AiToolCard extends StatelessWidget {
     );
   }
 
-  void _handleSetup() {
+  Future<void> _handleSetup() async {
     switch (tool.name) {
-      case 'Cursor': aiToolSetupService.installCursor();
-      case 'Claude Desktop': aiToolSetupService.installClaudeDesktop();
-      case 'Claude Code': aiToolSetupService.installClaudeCode();
-      case 'VS Code': aiToolSetupService.installVSCode();
-      case 'Windsurf': aiToolSetupService.installWindsurf();
-      case 'Codex CLI': aiToolSetupService.installCodexCli();
-      case 'Gemini CLI': aiToolSetupService.installGeminiCli();
+      case 'Cursor': await aiToolSetupService.installCursor();
+      case 'Claude Desktop': await aiToolSetupService.installClaudeDesktop();
+      case 'Claude Code': await aiToolSetupService.installClaudeCode();
+      case 'VS Code': await aiToolSetupService.installVSCode();
+      case 'Windsurf': await aiToolSetupService.installWindsurf();
+      case 'Codex CLI': await aiToolSetupService.installCodexCli();
+      case 'Gemini CLI': await aiToolSetupService.installGeminiCli();
     }
+    // Re-detect to update UI state from disk
+    await aiToolSetupService.detectAll();
   }
 }
