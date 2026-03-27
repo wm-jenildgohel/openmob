@@ -377,15 +377,25 @@ class ProcessManager {
 
     try {
       if (Platform.isWindows) {
-        // On Windows, run aibridge directly as a child process (no terminal window needed)
-        // and capture its output in the Hub log viewer
-        _bridgeProcess = await Process.start(
-          binary,
-          ['--port', '$port', '--', agent],
-          mode: ProcessStartMode.normal,
-        );
+        // Open a real terminal window so user can interact with the AI agent
+        // Try Windows Terminal (wt) first, fall back to cmd.exe
+        final hasWt = _cacheReady ? (_cachedTerminal == 'wt') : _terminalEmulator == 'wt';
+        final pauseCmd = '& echo. & echo AiBridge exited. Press any key to close. & pause >nul';
+
+        if (hasWt) {
+          // Windows Terminal: new tab with title
+          _bridgeProcess = await Process.start('wt', [
+            '--title', 'AiBridge ($agent)',
+            'cmd', '/c', '"$binary" --port $port -- $agent $pauseCmd',
+          ]);
+        } else {
+          // cmd.exe: /k keeps window open, /c with pause keeps it open after exit
+          _bridgeProcess = await Process.start('cmd', [
+            '/c', 'title AiBridge ($agent) & "$binary" --port $port -- $agent $pauseCmd',
+          ]);
+        }
       } else {
-        // On Unix, try to open a terminal window so user can interact with the agent
+        // On Unix, open a terminal window so user can interact with the agent
         final terminal = _cacheReady ? _cachedTerminal : _terminalEmulator;
         final bridgeCmd = '$binary --port $port -- $agent';
 
