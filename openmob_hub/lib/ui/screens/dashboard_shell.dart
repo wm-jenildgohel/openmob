@@ -21,19 +21,26 @@ class DashboardShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ResColors.bg,
-      body: ValueStreamBuilder<int>(
-        stream: _navIndex.stream,
-        builder: (context, index, child) {
-          return Row(
-            children: [
-              Sidebar(
-                selectedIndex: index,
-                onDestinationSelected: (i) => _navIndex.add(i),
-              ),
-              Expanded(
-                child: _AnimatedPageSwitcher(index: index),
-              ),
-            ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 900;
+
+          return ValueStreamBuilder<int>(
+            stream: _navIndex.stream,
+            builder: (context, index, child) {
+              return Row(
+                children: [
+                  Sidebar(
+                    selectedIndex: index,
+                    onDestinationSelected: (i) => _navIndex.add(i),
+                    compact: isNarrow,
+                  ),
+                  Expanded(
+                    child: _AnimatedPageSwitcher(index: index),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),

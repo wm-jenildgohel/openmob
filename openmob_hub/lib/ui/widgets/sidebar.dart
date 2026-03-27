@@ -5,11 +5,13 @@ import '../../main.dart';
 class Sidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+  final bool compact;
 
   const Sidebar({
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    this.compact = false,
   });
 
   static const _items = [
@@ -22,8 +24,10 @@ class Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 72,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      width: compact ? 56 : 72,
       decoration: const BoxDecoration(
         color: ResColors.sidebar,
         border: Border(
@@ -43,17 +47,19 @@ class Sidebar extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'OpenMob',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: ResColors.accent,
-              letterSpacing: 0.5,
+          if (!compact) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'OpenMob',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: ResColors.accent,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
+          ],
+          SizedBox(height: compact ? 16 : 24),
           const Divider(indent: 16, endIndent: 16),
           const SizedBox(height: 8),
           // Nav items
