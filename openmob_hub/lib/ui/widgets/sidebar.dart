@@ -16,7 +16,7 @@ class Sidebar extends StatelessWidget {
   });
 
   static final _items = [
-    _NavItem(Iconsax.category_2, 'Dashboard'),
+    _NavItem(Iconsax.category_2, 'Home'),
     _NavItem(Iconsax.mobile, 'Devices'),
     _NavItem(Iconsax.document_text, 'Logs'),
     _NavItem(Iconsax.task_square, 'Testing'),
